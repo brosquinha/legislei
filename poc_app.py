@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime
-from poc import Deputados, Eventos, Proposicoes, Votacoes
+from poc_sdk import Deputados, Eventos, Proposicoes, Votacoes
 
 
 def procurarDeputado(nome_deputado):
