@@ -1,10 +1,15 @@
+# -*- coding: utf-8 -*-
 import json
 from datetime import timedelta, datetime
-from poc_sdk import Deputados, Eventos, Proposicoes, Votacoes
+from SDKs.CamaraDeputados.entidades import Deputados, Eventos, Proposicoes, Votacoes
 from flask import Flask, request, render_template
 
 
 app = Flask(__name__)
+dep = Deputados()
+ev = Eventos()
+prop = Proposicoes()
+vot = Votacoes()
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -61,7 +66,6 @@ def home():
 
 @app.route('/obterDeputados')
 def obterDeputados():
-    dep = Deputados()
     deputados = []
     for page in dep.obterTodosDeputados():
         for item in page:
@@ -70,7 +74,6 @@ def obterDeputados():
 
 
 def procurarDeputado(nome_deputado):
-    dep = Deputados()
     for page in dep.obterTodosDeputados():
         for item in page:
             if item['nome'].lower() == nome_deputado.lower():
@@ -87,7 +90,6 @@ def obterDataInicialEFinal(data_inicial):
 
 
 def obterOrgaosDeputado(deputado_id, data_inicial=datetime.now()):
-    dep = Deputados()
     orgaos = []
     di, df = obterDataInicialEFinal(data_inicial)
     for page in dep.obterOrgaosDeputado(deputado_id, dataInicial=di):
@@ -99,7 +101,6 @@ def obterOrgaosDeputado(deputado_id, data_inicial=datetime.now()):
 
 
 def procurarEventosComDeputado(deputado_id, data_inicial=datetime.now()):
-    ev = Eventos()
     eventos_com_deputado = []
     eventos_totais = []
     di, df = obterDataInicialEFinal(data_inicial)
@@ -116,13 +117,11 @@ def procurarEventosComDeputado(deputado_id, data_inicial=datetime.now()):
         presenca = 0
     else:
         presenca = 100*len(eventos_com_deputado)/len(eventos_totais)
-    print('Presença: {0:.2f}%'.format(presenca))
+    print('Presenca: {0:.2f}%'.format(presenca))
     return eventos_com_deputado, presenca, eventos_totais
 
 
 def obterPautaEvento(ev_id):
-    ev = Eventos()
-    prop = Proposicoes()
     pauta = ev.obterPautaEvento(ev_id)
     if not pauta:
         return None
@@ -134,7 +133,6 @@ def obterPautaEvento(ev_id):
 
 
 def obterVotoDeputado(vot_id, dep_id):
-    vot = Votacoes()
     for page in vot.obterVotos(vot_id):
         for v in page:
             if v['parlamentar']['id'] == dep_id:
