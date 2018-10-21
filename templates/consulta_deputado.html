@@ -16,7 +16,8 @@
             <div class="media-body">
                 <h1>{{ deputado_nome }} ({{ deputado_partido }}-{{ deputado_uf }})</h1>
                 <h5 class="mt-0">Última dia da semana: {{ data_inicial }}</h5>
-                Presença: {{ presenca }}
+                Presença: <span class="collapse show multi-collapse">{{ presenca }}</span>
+                <span class="collapse multi-collapse">{{ presenca_relativa }}</span>
             </div>
             <img class="align-self-start rounded" src="{{ deputado_img }}" alt="{{ deputado_nome }}" />
         </div>
@@ -34,13 +35,14 @@
             </ul></div>
             <div class="col-sm-4">Eventos do parlamentar ({{ eventos|length }}):
                 {% for item in eventos %}
-                    <div class="card mb-1">
-                        <div class="card-header"><a href="{{ item['evento']['uri'] }}" target="_blank">{{ item['evento']['titulo'] }}</a>
+                    <div class="card mb-1 bg-success text-light">
+                        <div class="card-header">
+                            <a href="{{ item['evento']['uri'] }}" target="_blank" class="text-white">{{ item['evento']['titulo'] }}</a>
                         ({{ item['evento']['dataHoraInicio'] }})</div>
                         <div class="card-body">
                             {% if 'proposicao' in item %}
                                 <p class="card-text">
-                                    <a href="{{ item['proposicao']['urlInteiroTeor'] }}" target="_blank">
+                                    <a href="{{ item['proposicao']['urlInteiroTeor'] }}" target="_blank" class="text-white">
                                         {{ item['proposicao']['ementa'] }}
                                     </a>
                                 </p>
@@ -57,9 +59,11 @@
                     </div>
                 {% endfor %}
             </div>
-            <div class="col-sm-4">Todos os eventos da semana  ({{ todos_eventos|length }}):
+            <div class="col-sm-4">Demais eventos da semana 
+                ({{ todos_eventos|length }}/{{ total_eventos_ausentes }}):
+                <a data-toggle="collapse" href=".multi-collapse">Filtrar</a>
                 {% for item in todos_eventos %}
-                    <div class="card mb-1 {{ 'text-white bg-dark' if item['orgaos'][0]['nome'] in orgaos_nome else '' }}">
+                    <div class="card mb-1 {{ 'text-white bg-warning' if item['controleAusencia'] else 'collapse show multi-collapse' }}">
                         <div class="card-header"><a href="{{ item['uri'] }}" target="_blank">{{ item['titulo'] }}</a>
                         ({{ item['dataHoraInicio'] }})</div>
                         {% if item['orgaos'] %}

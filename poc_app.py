@@ -21,6 +21,7 @@ def home():
         orgaos = obterOrgaosDeputado(deputado['id'], data_inicial)
         orgaos_nome = [orgao['nomeOrgao'] for orgao in orgaos]
         eventos_com_deputado = []
+        lista_evento_com_deputado = []
         for e in eventos:
             evento = {'evento': e}
             pauta = obterPautaEvento(e['id'])
@@ -32,6 +33,11 @@ def home():
                     'pauta': pauta[0]['ementa']
                 }
             eventos_com_deputado.append(evento)
+        lista_evento_com_deputado = [eventos_dep['evento']
+                                     for eventos_dep in eventos_com_deputado]
+        demais_eventos, total_eventos_ausentes = obterEventosAusentes(
+            lista_evento_com_deputado, orgaos_nome, todos_eventos
+        )
 
         return render_template(
             'consulta_deputado.html',
@@ -41,12 +47,13 @@ def home():
             deputado_img=deputado['urlFoto'],
             data_inicial=data_inicial.strftime("%d/%m/%Y"),
             presenca='{0:.2f}%'.format(presenca),
+            presenca_relativa='{0:.2f}%'.format(100*len(eventos)/total_eventos_ausentes),
+            total_eventos_ausentes=total_eventos_ausentes,
             orgaos=orgaos,
             orgaos_nome=orgaos_nome,
             eventos=eventos_com_deputado,
-            eventos_eventos=[eventos_dep['evento']
-                             for eventos_dep in eventos_com_deputado],
-            todos_eventos=todos_eventos
+            eventos_eventos=lista_evento_com_deputado,
+            todos_eventos=demais_eventos
         ), 200
     else:
         return render_template('consultar_form.html'), 200
@@ -132,6 +139,19 @@ def obterVotoDeputado(vot_id, dep_id):
         for v in page:
             if v['parlamentar']['id'] == dep_id:
                 return v['voto']
+
+
+def obterEventosAusentes(eventos_dep, orgaos_dep, todos_eventos):
+    demais_eventos = [x for x in todos_eventos if x not in eventos_dep]
+    ausencia = 0
+    for e in demais_eventos:
+        if (e['orgaos'][0]['nome'] in orgaos_dep or 
+                e['orgaos'][0]['apelido'] == 'PLEN'):
+            ausencia += 1
+            e['controleAusencia'] = True
+        else:
+            e['controleAusencia'] = None
+    return demais_eventos, ausencia
 
 
 if __name__ == '__main__':

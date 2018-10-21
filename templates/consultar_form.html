@@ -10,13 +10,31 @@
     </nav>
     <div class="container text-center">
         <form method="POST">
-            <input name="deputado" list="listaDeputados" placeholder="Deputado" />
-            <input type="date" name="data" />
+            <input name="deputado" list="listaDeputados" placeholder="Deputado" required />
+            <i class="fa fa-spinner fa-spin" id="loader"></i>
+            <input type="date" name="data" required />
             <input type="submit" />
             <datalist id="listaDeputados"></datalist>
         </form>
     </div>
     <script>
-        console.log('TODO: Carregar via AJAX lista de deputados e preencher datalist');
+        $.ajax({
+            url: "/obterDeputados",
+            method: "GET",
+            error: (jqXHR, txtStatus) => {
+                console.warn(txtStatus);
+            },
+            success: (data) => {
+                data = JSON.parse(data);
+                for (let i=0; i<data.length; i++) {
+                    deputadoOption = document.createElement("option");
+                    deputadoOption.setAttribute("value", data[i].nome);
+                    deputadoOption.innerText = data[i].nome + " (" + data[i].siglaPartido +
+                    "-" + data[i].siglaUf + ")";
+                    document.getElementById("listaDeputados").appendChild(deputadoOption);
+                }
+                $("#loader").remove();
+            }
+        });
     </script>
 {% endblock %}
