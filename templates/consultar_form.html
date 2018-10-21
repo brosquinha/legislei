@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Consultar Deputado{% endblock %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item active" aria-current="page">Consultar Deputado</li>
+        </ol>
+    </nav>
+    <div class="container text-center">
+        <form method="POST">
+            <input name="deputado" list="listaDeputados" placeholder="Deputado" />
+            <input type="date" name="data" />
+            <input type="submit" />
+            <datalist id="listaDeputados"></datalist>
+        </form>
+    </div>
+    <script>
+        console.log('TODO: Carregar via AJAX lista de deputados e preencher datalist');
+    </script>
+{% endblock %}

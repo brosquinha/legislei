@@ -87,6 +87,9 @@ class Deputados(APIData):
     def obterDeputado(self, dep_id):
         return self.getAPISingleRequest(dep_id)
 
+    def obterOrgaosDeputado(self, dep_id, **kwargs):
+        return self.runThroughAllPages(dep_id, 'orgaos', **kwargs)
+
 class Proposicoes(APIData):
 
     def __init__(self):

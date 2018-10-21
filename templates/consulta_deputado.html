@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Consulta ao Deputado{% endblock %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="javascript:window.history.back()">Consultar Deputado</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ deputado_nome }}</li>
+        </ol>
+    </nav>
+    <div class="container mb-3 bg-light rounded">
+        <div class="media">
+            <div class="media-body">
+                <h1>{{ deputado_nome }} ({{ deputado_partido }}-{{ deputado_uf }})</h1>
+                <h5 class="mt-0">Última dia da semana: {{ data_inicial }}</h5>
+                Presença: {{ presenca }}
+            </div>
+            <img class="align-self-start rounded" src="{{ deputado_img }}" alt="{{ deputado_nome }}" />
+        </div>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-4">Órgãos dos quais faz parte  ({{ orgaos|length }}):<ul class="list-group">
+                {% for item in orgaos %}
+                    <li class="list-group-item">
+                        <span title="{{ item['nomeOrgao'] }}">
+                            {{ item['siglaOrgao'] }}
+                        </span><span class="badge badge-secondary">{{ item['nomePapel'] }}</span>
+                    </li>
+                {% endfor %}
+            </ul></div>
+            <div class="col-sm-4">Eventos do parlamentar ({{ eventos|length }}):
+                {% for item in eventos %}
+                    <div class="card mb-1">
+                        <div class="card-header"><a href="{{ item['evento']['uri'] }}" target="_blank">{{ item['evento']['titulo'] }}</a>
+                        ({{ item['evento']['dataHoraInicio'] }})</div>
+                        <div class="card-body">
+                            {% if 'proposicao' in item %}
+                                <p class="card-text">
+                                    <a href="{{ item['proposicao']['urlInteiroTeor'] }}" target="_blank">
+                                        {{ item['proposicao']['ementa'] }}
+                                    </a>
+                                </p>
+                                <p class="card-text">Votou <b>{{ item['voto']['voto'] }}</b> em {{ item['voto']['pauta'] }}</p>
+                            {% endif %}
+                            {% if item['evento']['orgaos'] %}
+                            <p class="card-text">
+                                Órgão: <span title="{{ item['evento']['orgaos'][0]['nome'] }}">
+                                    {{ item['evento']['orgaos'][0]['apelido'] }}
+                                </span>
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="col-sm-4">Todos os eventos da semana  ({{ todos_eventos|length }}):
+                {% for item in todos_eventos %}
+                    <div class="card mb-1 {{ 'text-white bg-dark' if item['orgaos'][0]['nome'] in orgaos_nome else '' }}">
+                        <div class="card-header"><a href="{{ item['uri'] }}" target="_blank">{{ item['titulo'] }}</a>
+                        ({{ item['dataHoraInicio'] }})</div>
+                        {% if item['orgaos'] %}
+                            <div class="card-body">
+                                <p class="card-text">Órgão:
+                                    <span title="{{ item['orgaos'][0]['nome'] }}">
+                                        {{ item['orgaos'][0]['apelido'] }}
+                                    </span>
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
