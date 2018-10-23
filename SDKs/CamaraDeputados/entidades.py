@@ -15,6 +15,9 @@ class Deputados(APIData):
     def obterOrgaosDeputado(self, dep_id, **kwargs):
         return self.runThroughAllPages(dep_id, 'orgaos', **kwargs)
 
+    def obterEventosDeputado(self, dep_id, **kwargs):
+        return self.runThroughAllPages(dep_id, 'eventos', **kwargs)
+
 
 class Eventos(APIData):
 

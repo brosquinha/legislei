@@ -15,25 +15,54 @@
         <div class="media">
             <div class="media-body">
                 <h1>{{ deputado_nome }} ({{ deputado_partido }}-{{ deputado_uf }})</h1>
-                <h5 class="mt-0">Última dia da semana: {{ data_inicial }}</h5>
-                Presença: <span class="collapse show multi-collapse">{{ presenca }}</span>
-                <span class="collapse multi-collapse">{{ presenca_relativa }}</span>
+                <h5 class="mt-0">{{ data_inicial }} - {{ data_final }}</h5>
+                Presença: <span class="collapse multi-collapse">{{ presenca }}</span>
+                <span class="collapse show multi-collapse">{{ presenca_relativa }}</span>
             </div>
             <img class="align-self-start rounded" src="{{ deputado_img }}" alt="{{ deputado_nome }}" />
         </div>
     </div>
     <div class="container">
         <div class="row">
-            <div class="col-sm-4">Órgãos dos quais faz parte  ({{ orgaos|length }}):<ul class="list-group">
-                {% for item in orgaos %}
+            <div class="col-sm-3">Órgãos dos quais faz parte ({{ orgaos|length }}):
+                <ul class="list-group mb-1">
+                {% for item in orgaos if item['nomePapel'] == 'Titular' %}
                     <li class="list-group-item">
                         <span title="{{ item['nomeOrgao'] }}">
                             {{ item['siglaOrgao'] }}
                         </span><span class="badge badge-secondary">{{ item['nomePapel'] }}</span>
                     </li>
                 {% endfor %}
-            </ul></div>
-            <div class="col-sm-4">Eventos do parlamentar ({{ eventos|length }}):
+                </ul>
+                <ul class="list-group">
+                {% for item in orgaos if item['nomePapel'] != 'Titular' %}
+                    <li class="list-group-item">
+                        <span title="{{ item['nomeOrgao'] }}">
+                            {{ item['siglaOrgao'] }}
+                        </span><span class="badge badge-secondary">{{ item['nomePapel'] }}</span>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+            <div class="col-sm-3">Proposições da semana
+                ({{ proposicoes_deputado|length }}):
+                {% for item in proposicoes_deputado %}
+                    <div class="card mb-1 text-white {{ 'bg-primary' if item['siglaTipo'] in ['PL', 'PEC'] else 'bg-info' }}">
+                        <div class="card-header">
+                            <a href="{{ item['uri'] }}" target="_blank" class="text-white">
+                                {{ item['siglaTipo'] }}{{ item['numero'] }}</a>
+                            ({{ item['dataApresentacao'] }})
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">{{ item['ementa'] }}</p>
+                            <p class="card-text">
+                                <a href="{{ item['urlInteiroTeor'] }}" target="_blank" class="text-white">Detalhes</a>
+                            </p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="col-sm-3">Eventos do parlamentar ({{ eventos|length }}):
                 {% for item in eventos %}
                     <div class="card mb-1 bg-success text-light">
                         <div class="card-header">
@@ -59,12 +88,20 @@
                     </div>
                 {% endfor %}
             </div>
-            <div class="col-sm-4">Demais eventos da semana 
-                ({{ todos_eventos|length }}/{{ total_eventos_ausentes }}):
+            <div class="col-sm-3">Demais eventos da semana 
+                ({{ total_eventos_ausentes }}/{{ todos_eventos|length }}):
                 <a data-toggle="collapse" href=".multi-collapse">Filtrar</a>
                 {% for item in todos_eventos %}
-                    <div class="card mb-1 {{ 'text-white bg-warning' if item['controleAusencia'] else 'collapse show multi-collapse' }}">
-                        <div class="card-header"><a href="{{ item['uri'] }}" target="_blank">{{ item['titulo'] }}</a>
+                    {% if item['controleAusencia'] == 1 %}
+                    <div class="card mb-1 text-white bg-danger">
+                    {% elif item['controleAusencia'] == 2 %}
+                    <div class="card mb-1 text-white bg-warning">
+                    {% else %}
+                    <div class="card mb-1 collapse multi-collapse">
+                    {% endif %}
+                        <div class="card-header">
+                            <a href="{{ item['uri'] }}" target="_blank" class="{{ 'text-white' if item['controleAusencia'] }}">
+                                {{ item['titulo'] }}</a>
                         ({{ item['dataHoraInicio'] }})</div>
                         {% if item['orgaos'] %}
                             <div class="card-body">

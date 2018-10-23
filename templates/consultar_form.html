@@ -9,8 +9,8 @@
         </ol>
     </nav>
     <div class="container text-center">
-        <form method="POST">
-            <input name="deputado" list="listaDeputados" placeholder="Deputado" required />
+        <form method="POST" name="form1">
+            <input name="deputado" list="listaDeputados" placeholder="Deputado" required disabled />
             <i class="fa fa-spinner fa-spin" id="loader"></i>
             <input type="date" name="data" required />
             <input type="submit" />
@@ -18,23 +18,30 @@
         </form>
     </div>
     <script>
-        $.ajax({
-            url: "/obterDeputados",
-            method: "GET",
-            error: (jqXHR, txtStatus) => {
-                console.warn(txtStatus);
-            },
-            success: (data) => {
-                data = JSON.parse(data);
-                for (let i=0; i<data.length; i++) {
-                    deputadoOption = document.createElement("option");
-                    deputadoOption.setAttribute("value", data[i].nome);
-                    deputadoOption.innerText = data[i].nome + " (" + data[i].siglaPartido +
-                    "-" + data[i].siglaUf + ")";
-                    document.getElementById("listaDeputados").appendChild(deputadoOption);
-                }
-                $("#loader").remove();
+        let preencherDatalist = (data) => {
+            localStorage.deputados = data;
+            data = JSON.parse(data);
+            for (let i=0; i<data.length; i++) {
+                deputadoOption = document.createElement("option");
+                deputadoOption.setAttribute("value", data[i].id);
+                deputadoOption.innerText = data[i].nome + " (" + data[i].siglaPartido +
+                "-" + data[i].siglaUf + ")";
+                document.getElementById("listaDeputados").appendChild(deputadoOption);
+                document.form1.deputado.removeAttribute('disabled');
             }
-        });
+            $("#loader").remove();
+        }
+        if (localStorage.deputados) {
+            preencherDatalist(localStorage.deputados);
+        } else {
+            $.ajax({
+                url: "/obterDeputados",
+                method: "GET",
+                error: (jqXHR, txtStatus) => {
+                    console.warn(txtStatus);
+                },
+                success: preencherDatalist
+            });
+        }
     </script>
 {% endblock %}
