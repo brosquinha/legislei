@@ -1,47 +1,63 @@
 {% extends 'base.html' %}
 
-{% block title %}Consultar Deputado{% endblock %}
+{% block title %}Consultar Político{% endblock %}
 
 {% block content %}
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item active" aria-current="page">Consultar Deputado</li>
+            <li class="breadcrumb-item active" aria-current="page">Consultar Político</li>
         </ol>
     </nav>
     <div class="container text-center">
         <form method="POST" name="form1">
-            <input name="deputado" list="listaDeputados" placeholder="Deputado" required disabled />
-            <i class="fa fa-spinner fa-spin" id="loader"></i>
+            <select name="parlamentarTipo">
+                <option value="">Escolher...</option>
+                <option value="deputados">Deputado</option>
+                <option value="vereadores">Vereador</option>
+            </select>
+            <input name="deputado" list="listaPoliticos" placeholder="Deputado" required disabled />
+            <i class="fa fa-spinner fa-spin d-none" id="loader"></i>
             <input type="date" name="data" required />
             <input type="submit" />
-            <datalist id="listaDeputados"></datalist>
+            <datalist id="listaPoliticos"></datalist>
         </form>
     </div>
     <script>
         let preencherDatalist = (data) => {
-            localStorage.deputados = data;
             data = JSON.parse(data);
+            document.getElementById("listaPoliticos").innerHTML = '';
             for (let i=0; i<data.length; i++) {
                 deputadoOption = document.createElement("option");
                 deputadoOption.setAttribute("value", data[i].id);
                 deputadoOption.innerText = data[i].nome + " (" + data[i].siglaPartido +
                 "-" + data[i].siglaUf + ")";
-                document.getElementById("listaDeputados").appendChild(deputadoOption);
+                document.getElementById("listaPoliticos").appendChild(deputadoOption);
                 document.form1.deputado.removeAttribute('disabled');
             }
-            $("#loader").remove();
+            $("#loader").addClass('d-none');
         }
-        if (localStorage.deputados) {
-            preencherDatalist(localStorage.deputados);
-        } else {
-            $.ajax({
-                url: "/obterDeputados",
-                method: "GET",
-                error: (jqXHR, txtStatus) => {
-                    console.warn(txtStatus);
-                },
-                success: preencherDatalist
-            });
+        document.form1.parlamentarTipo.onchange = (e) => {
+            let parTipo = document.form1.parlamentarTipo.value;
+            if (parTipo == '')
+                return;
+            $("#loader").removeClass('d-none');
+            document.form1.deputado.setAttribute('disabled', 'true');
+            if (localStorage[parTipo]) {
+                preencherDatalist(localStorage[parTipo]);
+            } else {
+                $.ajax({
+                    url: "/"+parTipo,
+                    method: "GET",
+                    error: (jqXHR, txtStatus) => {
+                        console.warn(txtStatus);
+                        $("#loader").addClass('d-none');
+                    },
+                    success: (data) => {
+                        localStorage[parTipo] = data;
+                        preencherDatalist(data);
+                    }
+                });
+            }
         }
     </script>
 {% endblock %}

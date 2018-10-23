@@ -3,6 +3,7 @@ import json
 from time import time
 from datetime import timedelta, datetime
 from SDKs.CamaraDeputados.entidades import Deputados, Eventos, Proposicoes, Votacoes
+from SDKs.CamaraMunicipalSaoPaulo.base import CamaraMunicipal
 from flask import Flask, request, render_template
 
 
@@ -11,83 +12,159 @@ dep = Deputados()
 ev = Eventos()
 prop = Proposicoes()
 vot = Votacoes()
+ver = CamaraMunicipal()
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def home():
-    if request.method == 'POST':
-        start_time = time()
-        if 'data' in request.form:
-            data_inicial = datetime.strptime(request.form['data'], '%Y-%m-%d')
-            print(data_inicial)
-        else:
-            data_inicial = datetime.now()
-        deputado = dep.obterDeputado(request.form['deputado'])
-        print('Deputado obtido em {0:.5f}'.format(time() - start_time))
-        eventos, presenca, todos_eventos = procurarEventosComDeputado(
-            deputado['id'], data_inicial)
-        print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
-        orgaos = obterOrgaosDeputado(deputado['id'], data_inicial)
-        print('Orgaos obtidos em {0:.5f}'.format(time() - start_time))
-        orgaos_nome = [orgao['nomeOrgao'] for orgao in orgaos]
-        eventos_com_deputado = []
-        lista_evento_com_deputado = []
-        for e in eventos:
-            evento = {'evento': e}
-            pauta = obterPautaEvento(e['id'])
-            if pauta and pauta[1]:
-                evento['proposicao'] = pauta[0]
-                evento['voto'] = {
-                    'voto': obterVotoDeputado(pauta[1][0]['id'], deputado['id']),
-                    'pauta': pauta[0]['ementa']
-                }
-            eventos_com_deputado.append(evento)
-        print('Pautas obtidas em {0:.5f}'.format(time() - start_time))
-        lista_evento_com_deputado = [eventos_dep['evento']
-                                     for eventos_dep in eventos_com_deputado]
-        demais_eventos, total_eventos_ausentes = obterEventosAusentes(
-            deputado['id'],
-            data_inicial,
-            lista_evento_com_deputado,
-            orgaos_nome,
-            todos_eventos
-        )
-        print('Ausencias obtidas em {0:.5f}'.format(time() - start_time))
-        proposicoes_deputado = obterProposicoesDeputado(
-            deputado['id'], data_inicial)
-        print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
+    return render_template('consultar_form.html'), 200
 
-        return render_template(
-            'consulta_deputado.html',
-            deputado_nome=deputado['ultimoStatus']['nome'],
-            deputado_partido=deputado['ultimoStatus']['siglaPartido'],
-            deputado_uf=deputado['ultimoStatus']['siglaUf'],
-            deputado_img=deputado['ultimoStatus']['urlFoto'],
-            data_inicial=obterPeriodoDatas(
-                data_inicial, weeks=1).strftime("%d/%m/%Y"),
-            data_final=data_inicial.strftime("%d/%m/%Y"),
-            presenca='{0:.2f}%'.format(presenca),
-            presenca_relativa='{0:.2f}%'.format(
-                100*len(eventos)/(total_eventos_ausentes+len(eventos))),
-            total_eventos_ausentes=total_eventos_ausentes,
-            orgaos=orgaos,
-            orgaos_nome=orgaos_nome,
-            eventos=eventos_com_deputado,
-            eventos_eventos=lista_evento_com_deputado,
-            todos_eventos=demais_eventos,
-            proposicoes_deputado=proposicoes_deputado,
-        ), 200
+
+@app.route('/', methods=['POST'])
+def consultar_parlamentar():
+    if request.form['parlamentarTipo'] == 'deputados':
+        return consultar_deputado()
+    elif request.form['parlamentarTipo'] == 'vereadores':
+        return consultar_vereador()
     else:
-        return render_template('consultar_form.html'), 200
+        return 'Selecione um tipo de parlamentar, plz', 400
 
 
-@app.route('/obterDeputados')
+def consultar_deputado():
+    start_time = time()
+    if 'data' in request.form:
+        data_inicial = datetime.strptime(request.form['data'], '%Y-%m-%d')
+        print(data_inicial)
+    else:
+        data_inicial = datetime.now()
+    deputado = dep.obterDeputado(request.form['deputado'])
+    print('Deputado obtido em {0:.5f}'.format(time() - start_time))
+    eventos, presenca, todos_eventos = procurarEventosComDeputado(
+        deputado['id'], data_inicial)
+    print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
+    orgaos = obterOrgaosDeputado(deputado['id'], data_inicial)
+    print('Orgaos obtidos em {0:.5f}'.format(time() - start_time))
+    orgaos_nome = [orgao['nomeOrgao'] for orgao in orgaos]
+    eventos_com_deputado = []
+    lista_evento_com_deputado = []
+    for e in eventos:
+        evento = {'evento': e}
+        pauta = obterPautaEvento(e['id'])
+        if pauta and pauta[1]:
+            evento['proposicao'] = pauta[0]
+            evento['voto'] = {
+                'voto': obterVotoDeputado(pauta[1][0]['id'], deputado['id']),
+                'pauta': pauta[0]['ementa']
+            }
+        eventos_com_deputado.append(evento)
+    print('Pautas obtidas em {0:.5f}'.format(time() - start_time))
+    lista_evento_com_deputado = [eventos_dep['evento']
+                                    for eventos_dep in eventos_com_deputado]
+    demais_eventos, total_eventos_ausentes = obterEventosAusentes(
+        deputado['id'],
+        data_inicial,
+        lista_evento_com_deputado,
+        orgaos_nome,
+        todos_eventos
+    )
+    print('Ausencias obtidas em {0:.5f}'.format(time() - start_time))
+    proposicoes_deputado = obterProposicoesDeputado(
+        deputado['id'], data_inicial)
+    print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
+
+    return render_template(
+        'consulta_deputado.html',
+        deputado_nome=deputado['ultimoStatus']['nome'],
+        deputado_partido=deputado['ultimoStatus']['siglaPartido'],
+        deputado_uf=deputado['ultimoStatus']['siglaUf'],
+        deputado_img=deputado['ultimoStatus']['urlFoto'],
+        data_inicial=obterPeriodoDatas(
+            data_inicial, weeks=1).strftime("%d/%m/%Y"),
+        data_final=data_inicial.strftime("%d/%m/%Y"),
+        presenca='{0:.2f}%'.format(presenca),
+        presenca_relativa='{0:.2f}%'.format(
+            100*len(eventos)/(total_eventos_ausentes+len(eventos))),
+        total_eventos_ausentes=total_eventos_ausentes,
+        orgaos=orgaos,
+        orgaos_nome=orgaos_nome,
+        eventos=eventos_com_deputado,
+        eventos_eventos=lista_evento_com_deputado,
+        todos_eventos=demais_eventos,
+        proposicoes_deputado=proposicoes_deputado,
+    ), 200
+
+
+def consultar_vereador():
+    data_inicial = datetime.strptime(request.form['data'], '%Y-%m-%d')
+    print(request.form['deputado'])
+    vereador = obterVereador(request.form['deputado'])
+    presenca = []
+    sessoes_presentes = []
+    sessao_total = 0
+    presenca_total = 0
+    sessoes = []
+    for item in ver.obterPresenca(obterPeriodoDatas(data_inicial, weeks=1), data_inicial):
+        if item:
+            for v in item['vereadores']:
+                if v['nome'].lower() == vereador['nome'].lower():
+                    for s in v['sessoes']:
+                        if s['presenca'] == 'Presente':
+                            presenca.append(s['nome'])
+                    sessao_total += int(item['totalOrd']) + int(item['totalExtra'])
+                    presenca_total += int(v['presenteOrd']) + int(v['presenteExtra'])
+            print(item['sessoes'])
+            for key, value in item['sessoes'].items():
+                if key in presenca:
+                    sessoes_presentes.append(
+                        {
+                            'evento': {'titulo': key, 'orgaos': [{'apelido':str(value)}]}
+                        }
+                    )
+                else:
+                    sessoes.append({'titulo': key, 'orgaos': [{'apelido':str(value)}]})
+    
+    return render_template(
+        'consulta_deputado.html',
+        deputado_nome=vereador['nome'],
+        deputado_partido=vereador['siglaPartido'],
+        deputado_uf=vereador['siglaUf'],
+        deputado_img='https://www.99luca11.com/Users/usuario_sem_foto.png',
+        data_inicial=obterPeriodoDatas(
+            data_inicial, weeks=1).strftime("%d/%m/%Y"),
+        data_final=data_inicial.strftime("%d/%m/%Y"),
+        presenca='{0:.2f}%'.format(100*presenca_total/sessao_total),
+        presenca_relativa='{0:.2f}%'.format(100*presenca_total/sessao_total),
+        eventos=sessoes_presentes,
+        todos_eventos=sessoes
+    ), 200
+    '''
+    total_eventos_ausentes=total_eventos_ausentes,
+    orgaos=orgaos,
+    orgaos_nome=orgaos_nome,
+    eventos=eventos_com_deputado,
+    eventos_eventos=lista_evento_com_deputado,
+    todos_eventos=demais_eventos,
+    proposicoes_deputado=proposicoes_deputado,'''
+
+
+def obterVereador(nome):
+    for item in ver.obterVereadores():
+        if item['nome'].lower() == nome.lower():
+            return item
+
+
+@app.route('/deputados')
 def obterDeputados():
     deputados = []
     for page in dep.obterTodosDeputados():
         for item in page:
             deputados.append(item)
     return json.dumps(deputados), 200
+
+
+@app.route('/vereadores')
+def obterVereadores():
+    return json.dumps(ver.obterVereadores()), 200
 
 
 def procurarDeputado(nome_deputado):
