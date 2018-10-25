@@ -5,21 +5,45 @@
 {% block content %}
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item active" aria-current="page">Consultar Político</li>
+            <li class="breadcrumb-item active" aria-current="page">Consultar político</li>
         </ol>
     </nav>
     <div class="container text-center">
         <form method="POST" name="form1">
-            <select name="parlamentarTipo">
-                <option value="">Escolher...</option>
-                <option value="deputados">Deputado</option>
-                <option value="vereadores">Vereador</option>
-            </select>
-            <input name="deputado" list="listaPoliticos" placeholder="Deputado" required disabled />
-            <i class="fa fa-spinner fa-spin d-none" id="loader"></i>
-            <input type="date" name="data" required />
-            <input type="submit" />
-            <datalist id="listaPoliticos"></datalist>
+            <div class="form-row">
+                <div class="col-md">
+                    <select name="parlamentarTipo" class="form-control mb-1">
+                        <option value="">Escolher...</option>
+                        <option value="deputados">Deputado federal</option>
+                        <option value="deputados">Deputado estadual</option>
+                        <option value="vereadores">Vereador</option>
+                    </select>
+                </div>
+                <div class="col-md">
+                    Estado: SP / Cidade: São Paulo
+                </div>
+                <div class="col-md">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text form-control d-none" id="loader">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </span>
+                        </div>
+                        <input
+                            name="deputado"
+                            list="listaPoliticos"
+                            placeholder="Político"
+                            class="form-control mb-1 rounded-left"
+                            required
+                            disabled />
+                    </div>
+                </div>
+                <div class="col-md">
+                    <input type="date" name="data" class="form-control mb-1" required />
+                </div>
+                <input type="submit" />
+                <datalist id="listaPoliticos"></datalist>
+            </div>
         </form>
     </div>
     <script>
@@ -35,12 +59,14 @@
                 document.form1.deputado.removeAttribute('disabled');
             }
             $("#loader").addClass('d-none');
+            $(document.form1.deputado).addClass('rounded-left');
         }
         document.form1.parlamentarTipo.onchange = (e) => {
             let parTipo = document.form1.parlamentarTipo.value;
             if (parTipo == '')
                 return;
             $("#loader").removeClass('d-none');
+            $(document.form1.deputado).removeClass('rounded-left');
             document.form1.deputado.setAttribute('disabled', 'true');
             if (localStorage[parTipo]) {
                 preencherDatalist(localStorage[parTipo]);
@@ -51,6 +77,7 @@
                     error: (jqXHR, txtStatus) => {
                         console.warn(txtStatus);
                         $("#loader").addClass('d-none');
+                        $(document.form1.deputado).addClass('rounded-left');
                     },
                     success: (data) => {
                         localStorage[parTipo] = data;
