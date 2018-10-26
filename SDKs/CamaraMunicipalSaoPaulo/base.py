@@ -12,13 +12,13 @@ class CamaraMunicipal(object):
         self.http = urllib3.PoolManager()
 
     def obterPresenca(self, data_inicio, data_fim):
-        controle = data_inicio
+        data_controle = data_inicio
         presenca_total = []
-        while controle <= data_fim:
+        while data_controle <= data_fim:
             r = self.http.request(
                 'GET',
                 'https://splegispdarmazenamento.blob.core.windows.net/containersip/PRESENCAS_{:02d}_{:02d}_{}.xml'.format(
-                    controle.day, controle.month, controle.year
+                    data_controle.day, data_controle.month, data_controle.year
                 )
             )
             if r.status != 200:
@@ -44,22 +44,23 @@ class CamaraMunicipal(object):
                             'presenteExtra': child.attrib['PresenteExtra'],
                             'sessoes': child_sessoes
                         })
-                        print('{}: {} + {} presencas'.format(
+                        '''print('{}: {} + {} presencas'.format(
                             child.attrib['Nome'],
                             child.attrib['PresenteOrd'],
                             child.attrib['PresenteExtra']
-                        ))
+                        ))'''
                     elif child.tag == 'Presencas':
                         presenca['totalOrd'] = child.attrib['TotalSessoesOrdinarias']
                         presenca['totalExtra'] = child.attrib['TotalSessoesExtraOrdinarias']
-                        print('Total: {} + {}'.format(
+                        '''print('Total: {} + {}'.format(
                             child.attrib['TotalSessoesOrdinarias'],
                             child.attrib['TotalSessoesExtraOrdinarias']
-                        ))
+                        ))'''
                 sessoes_nomes = set(sessoes_nomes)
                 for sessao in sessoes_nomes:
-                    presenca['sessoes'][sessao] = self.obterPautaSessao(controle, sessao)
-            controle = controle + timedelta(days=1)
+                    presenca['sessoes'][sessao] = self.obterPautaSessao(
+                        data_controle, sessao)
+            data_controle = data_controle + timedelta(days=1)
             presenca_total.append(presenca)
         return presenca_total
 
@@ -86,6 +87,12 @@ class CamaraMunicipal(object):
         dados = r.data.decode('latin_1').encode('utf-8').decode('utf-8')
         for item in dados.split('\n'):
             busca = re.search(r'^(\d{3,5})\#(([^\#]+)\#){2}[^\#]*\#([^\#\^]*)\^', item)
+            """ TODO: Novo Regex para pegar todas as informações disponíveis
+            deste arquivo, incluindo de quais comissões o vereador faz parte.
+            Falta capturar mais grupos de dados e aumentar a cobertura (pega
+            1535 de 1744)
+            ^(\d{3,5})(\#([^\#]*)){3}(\#(([^\^\#]*\^i[^\^\#]*)(\^f[^\^\#]*)(\^c[^\^\#]*)\%)*)(\#([^\#]*))(\#((\^p\d\^n\d+\^s\w+\^q\d+)\%)*)(\#(\^i[\d\/]+\^f[\d\/]+(\^s\w+)?(\^p[\w ]+)?(\^[cbd][^\%\#]+)*\%)*)(\#((\^n[^\^]*)?(\^i[\d\/]*)?(\^f[\d\/]+)?(\^c[^\%]+)?(\^d[^\%]+)?\%)*)$
+            """
             if busca:
                 if '%' in busca.group(3):
                     nome = busca.group(3).split('%')[1]
