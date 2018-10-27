@@ -30,17 +30,13 @@ def consultar_parlamentar():
 @app.route('/deputados')
 def obterDeputados():
     dep = DeputadosApp()
-    deputados = []
-    for page in dep.dep.obterTodosDeputados():
-        for item in page:
-            deputados.append(item)
-    return json.dumps(deputados), 200
+    return dep.obterDeputados()
 
 
 @app.route('/vereadores')
 def obterVereadores():
     ver = VereadoresApp()
-    return json.dumps(ver.ver.obterVereadores()), 200
+    return ver.obterVereadoresAtuais()
 
 
 if __name__ == '__main__':

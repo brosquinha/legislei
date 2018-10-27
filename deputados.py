@@ -1,3 +1,4 @@
+import json
 from time import time
 from datetime import datetime
 from flask import render_template, request
@@ -195,3 +196,11 @@ class DeputadosApp(ParlamentaresApp):
             for item in page:
                 if item['nome'].lower() == nome_deputado.lower():
                     return item
+
+
+    def obterDeputados(self):
+        deputados = []
+        for page in self.dep.obterTodosDeputados():
+            for item in page:
+                deputados.append(item)
+        return json.dumps(deputados), 200

@@ -54,7 +54,7 @@
                 deputadoOption = document.createElement("option");
                 deputadoOption.setAttribute("value", data[i].id);
                 deputadoOption.innerText = data[i].nome + " (" + data[i].siglaPartido +
-                "-" + data[i].siglaUf + ")";
+                ((document.form1.parlamentarTipo.value == 'deputados') ? "-" + data[i].siglaUf : '') + ")";
                 document.getElementById("listaPoliticos").appendChild(deputadoOption);
                 document.form1.deputado.removeAttribute('disabled');
             }

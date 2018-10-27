@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from flask import render_template, request
 from SDKs.CamaraMunicipalSaoPaulo.base import CamaraMunicipal
@@ -48,7 +49,7 @@ class VereadoresApp(ParlamentaresApp):
             'consulta_vereador.html',
             politico_nome=vereador['nome'],
             politico_partido=vereador['siglaPartido'],
-            politico_uf=vereador['siglaUf'],
+            politico_uf='São Paulo',
             politico_img='https://www.99luca11.com/Users/usuario_sem_foto.png',
             data_inicial=self.obterDataInicial(
                 data_final, weeks=1).strftime("%d/%m/%Y"),
@@ -64,3 +65,20 @@ class VereadoresApp(ParlamentaresApp):
         for item in self.ver.obterVereadores():
             if item['nome'].lower() == nome.lower():
                 return item
+
+
+    def obterVereadoresAtuais(self):
+        vereadores = self.ver.obterVereadores()
+        atual = self.ver.obterAtualLegislatura()
+        lista = []
+        for v in vereadores:
+            if (len(v['legislaturas']) and 
+                    v['legislaturas'][-1]['numeroLegislatura'] == atual):
+                lista.append(
+                    {
+                        'nome': v['nome'],
+                        'id': v['nome'],
+                        'siglaPartido': v['siglaPartido']
+                    }
+                )
+        return json.dumps(lista), 200
