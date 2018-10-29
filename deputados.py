@@ -78,7 +78,9 @@ class DeputadosApp(ParlamentaresApp):
 
     def obterOrgaosDeputado(self, deputado_id, data_final=datetime.now()):
         orgaos = []
-        di = self.obterDataInicialEFinal(data_final)[0]
+        di = self.formatarDatasYMD(
+            self.obterDataInicial(data_final, weeks=1)
+        )
         for page in self.dep.obterOrgaosDeputado(deputado_id, dataInicial=di):
             for item in page:
                 if (item['dataFim'] == None or
@@ -187,15 +189,6 @@ class DeputadosApp(ParlamentaresApp):
             for item in page:
                 props.append(item)
         return props
-
-    
-    def procurarDeputado(self, nome_deputado):
-        """ Legacy method?
-        """
-        for page in self.dep.obterTodosDeputados():
-            for item in page:
-                if item['nome'].lower() == nome_deputado.lower():
-                    return item
 
 
     def obterDeputados(self):
