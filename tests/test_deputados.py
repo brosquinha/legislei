@@ -143,6 +143,10 @@ class TestDeputadosApp(unittest.TestCase):
             mock_obterProposicao,
             mock_obterVotacoesProposicao
     ):
+        def fakeObterProposicao(id):
+            if id == '12345':
+                return {'nome': 'Proposição I'}
+            return {'nome': 'Proposição II'}
         ev_id = '1234'
         mock_obterPautaEvento.return_value = [
             {
@@ -150,19 +154,45 @@ class TestDeputadosApp(unittest.TestCase):
                 'proposicao_': {
                     'id': '12345'
                 }
-            }
+            },
+            {
+                'codRegime': '123',
+                'proposicao_': {
+                    'id': '12345'
+                }
+            },
+            {
+                'codRegime': '987',
+                'proposicao_': {
+                    'id': '98765'
+                }
+            },
         ]
-        mock_obterProposicao.return_value = {'nome': 'Proposição I'}
+        mock_obterProposicao.side_effect = fakeObterProposicao
         mock_obterVotacoesProposicao.return_value = {'votos': '512'}
 
         actual_response = self.dep.obterPautaEvento(ev_id)
 
-        self.assertEqual(actual_response[0], {'nome': 'Proposição I'})
-        self.assertEqual(actual_response[1], {'votos': '512'})
+        self.assertEqual(actual_response, [
+            {
+                'codRegime': '123',
+                'proposicao_': {
+                    'id': '12345'
+                },
+                'proposicao_detalhes': {'nome': 'Proposição I'},
+                'votacao': {'votos': '512'}
+            },
+            {
+                'codRegime': '987',
+                'proposicao_': {
+                    'id': '98765'
+                },
+                'proposicao_detalhes': {'nome': 'Proposição II'},
+                'votacao': {'votos': '512'}
+            },
+        ])
 
         mock_obterPautaEvento.assert_called_once_with(ev_id)
-        mock_obterProposicao.assert_called_once_with('12345')
-        mock_obterVotacoesProposicao.assert_called_once_with('12345')
 
     @patch("SDKs.CamaraDeputados.entidades.Votacoes.obterVotos")
     def test_obterVotoDeputado(

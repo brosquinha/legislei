@@ -12,6 +12,7 @@ class DeputadosApp(ParlamentaresApp):
         self.ev = Eventos()
         self.prop = Proposicoes()
         self.vot = Votacoes()
+        self.periodo = {'weeks': 1}
 
     def consultar_deputado(self):
         start_time = time()
@@ -31,14 +32,23 @@ class DeputadosApp(ParlamentaresApp):
         eventos_com_deputado = []
         lista_evento_com_deputado = []
         for e in eventos:
-            evento = {'evento': e}
-            pauta = self.obterPautaEvento(e['id'])
-            if pauta and pauta[1]:
-                evento['proposicao'] = pauta[0]
-                evento['voto'] = {
-                    'voto': self.obterVotoDeputado(pauta[1][0]['id'], deputado['id']),
-                    'pauta': pauta[0]['ementa']
-                }
+            evento = {
+                'evento': e,
+                'pautas': []
+            }
+            pautas = self.obterPautaEvento(e['id'])
+            for pauta in pautas:
+                if len(pauta['votacao']):
+                    evento['pautas'].append(
+                        {
+                            'proposicao': pauta['proposicao_detalhes'],
+                            'voto': {
+                                'voto': self.obterVotoDeputado(
+                                    pauta['votacao'][0]['id'], deputado['id']),
+                                'pauta': pauta['proposicao_detalhes']['ementa']
+                            }
+                        }
+                    )
             eventos_com_deputado.append(evento)
         print('Pautas obtidas em {0:.5f}'.format(time() - start_time))
         lista_evento_com_deputado = [eventos_dep['evento']
@@ -62,7 +72,7 @@ class DeputadosApp(ParlamentaresApp):
             deputado_uf=deputado['ultimoStatus']['siglaUf'],
             deputado_img=deputado['ultimoStatus']['urlFoto'],
             data_inicial=self.obterDataInicial(
-                data_final, weeks=1).strftime("%d/%m/%Y"),
+                data_final, **self.periodo).strftime("%d/%m/%Y"),
             data_final=data_final.strftime("%d/%m/%Y"),
             presenca='{0:.2f}%'.format(presenca),
             presenca_relativa='{0:.2f}%'.format(
@@ -79,7 +89,7 @@ class DeputadosApp(ParlamentaresApp):
     def obterOrgaosDeputado(self, deputado_id, data_final=datetime.now()):
         orgaos = []
         di = self.formatarDatasYMD(
-            self.obterDataInicial(data_final, weeks=1)
+            self.obterDataInicial(data_final, **self.periodo)
         )
         for page in self.dep.obterOrgaosDeputado(deputado_id, dataInicial=di):
             for item in page:
@@ -123,14 +133,22 @@ class DeputadosApp(ParlamentaresApp):
 
 
     def obterPautaEvento(self, ev_id):
-        pauta = self.ev.obterPautaEvento(ev_id)
-        if not pauta:
-            return None
-        proposicao_id = pauta[0]['proposicao_']['id']
-        if proposicao_id:
-            proposicao_detalhes = self.prop.obterProposicao(proposicao_id)
-            votacao = self.prop.obterVotacoesProposicao(proposicao_id)
-            return (proposicao_detalhes, votacao)
+        pautas = self.ev.obterPautaEvento(ev_id)
+        if not pautas:
+            return []
+        pautas_unicas = []
+        pautas_unicas_ids = []
+        for p in pautas:
+            proposicao_id = p['proposicao_']['id']
+            if proposicao_id not in pautas_unicas_ids and proposicao_id != None:
+                pautas_unicas_ids.append(proposicao_id)
+                pautas_unicas.append(p)
+                p['proposicao_detalhes'] = self.prop.obterProposicao(proposicao_id)
+                try:
+                    p['votacao'] = self.prop.obterVotacoesProposicao(proposicao_id)
+                except:
+                    p['votacao'] = []
+        return pautas_unicas
 
 
     def obterVotoDeputado(self, vot_id, dep_id):

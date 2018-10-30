@@ -6,7 +6,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="javascript:window.history.back()">Consultar político</a>
+                <a href="/">Consultar político</a>
             </li>
             <li class="breadcrumb-item">Deputado federal</li>
             <li class="breadcrumb-item active" aria-current="page">{{ deputado_nome }}</li>
@@ -25,71 +25,87 @@
     </div>
     <div class="container">
         <div class="row">
-            <div class="col-sm-3">Órgãos dos quais faz parte ({{ orgaos|length }}):
-                <ul class="list-group mb-1">
-                {% for item in orgaos if item['nomePapel'] == 'Titular' %}
-                    <li class="list-group-item">
-                        <span title="{{ item['nomeOrgao'] }}">
-                            {{ item['siglaOrgao'] }}
-                        </span><span class="badge badge-secondary">{{ item['nomePapel'] }}</span>
-                    </li>
-                {% endfor %}
-                </ul>
-                <ul class="list-group">
-                {% for item in orgaos if item['nomePapel'] != 'Titular' %}
-                    <li class="list-group-item">
-                        <span title="{{ item['nomeOrgao'] }}">
-                            {{ item['siglaOrgao'] }}
-                        </span><span class="badge badge-secondary">{{ item['nomePapel'] }}</span>
-                    </li>
-                {% endfor %}
-                </ul>
-            </div>
-            <div class="col-sm-3">Proposições da semana
-                ({{ proposicoes_deputado|length }}):
-                {% for item in proposicoes_deputado %}
-                    <div class="card mb-1 text-white {{ 'bg-primary' if item['siglaTipo'] in ['PL', 'PEC'] else 'bg-info' }}">
-                        <div class="card-header">
-                            <a href="{{ item['uri'] }}" target="_blank" class="text-white">
-                                {{ item['siglaTipo'] }}{{ item['numero'] }}</a>
-                            ({{ item['dataApresentacao'] }})
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">{{ item['ementa'] }}</p>
-                            <p class="card-text">
-                                <a href="{{ item['urlInteiroTeor'] }}" target="_blank" class="text-white">Detalhes</a>
-                            </p>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="col-sm-3">Eventos do parlamentar ({{ eventos|length }}):
-                {% for item in eventos %}
-                    <div class="card mb-1 bg-success text-light">
-                        <div class="card-header">
-                            <a href="{{ item['evento']['uri'] }}" target="_blank" class="text-white">{{ item['evento']['titulo'] }}</a>
-                        ({{ item['evento']['dataHoraInicio'] }})</div>
-                        <div class="card-body">
-                            {% if 'proposicao' in item %}
+            {% if orgaos|length > 0 %}
+                <div class="col-sm">Órgãos dos quais faz parte ({{ orgaos|length }}):
+                    <ul class="list-group mb-1">
+                    {% for item in orgaos if item['nomePapel'] == 'Titular' %}
+                        <li class="list-group-item">
+                            <span title="{{ item['nomeOrgao'] }}">
+                                {{ item['siglaOrgao'] }}
+                            </span><span class="badge badge-secondary">{{ item['nomePapel'] }}</span>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                    <ul class="list-group">
+                    {% for item in orgaos if item['nomePapel'] != 'Titular' %}
+                        <li class="list-group-item">
+                            <span title="{{ item['nomeOrgao'] }}">
+                                {{ item['siglaOrgao'] }}
+                            </span><span class="badge badge-secondary">{{ item['nomePapel'] }}</span>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            {% if proposicoes_deputado|length > 0 %}
+                <div class="col-sm">Proposições da semana
+                    ({{ proposicoes_deputado|length }}):
+                    {% for item in proposicoes_deputado %}
+                        <div class="card mb-1 text-white {{ 'bg-primary' if item['siglaTipo'] in ['PL', 'PEC'] else 'bg-info' }}">
+                            <div class="card-header">
+                                <a href="{{ item['uri'] }}" target="_blank" class="text-white">
+                                    {{ item['siglaTipo'] }}{{ item['numero'] }}</a>
+                                ({{ item['dataApresentacao'] }})
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">{{ item['ementa'] }}</p>
                                 <p class="card-text">
-                                    <a href="{{ item['proposicao']['urlInteiroTeor'] }}" target="_blank" class="text-white">
-                                        {{ item['proposicao']['ementa'] }}
-                                    </a>
+                                    <a href="{{ item['urlInteiroTeor'] }}" target="_blank" class="text-white">Detalhes</a>
                                 </p>
-                                <p class="card-text">Votou <b>{{ item['voto']['voto'] }}</b> em {{ item['voto']['pauta'] }}</p>
-                            {% endif %}
-                            {% if item['evento']['orgaos'] %}
-                            <p class="card-text">
-                                Órgão: <span title="{{ item['evento']['orgaos'][0]['nome'] }}">
-                                    {{ item['evento']['orgaos'][0]['apelido'] }}
-                                </span>
-                            </p>
-                            {% endif %}
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="col-sm-3">Demais eventos da semana 
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if eventos|length > 0 %}
+                <div class="col-sm">Eventos do parlamentar ({{ eventos|length }}):
+                    {% for item in eventos %}
+                        <div class="card mb-1 bg-success text-light">
+                            <div class="card-header">
+                                <a href="{{ item['evento']['uri'] }}" target="_blank" class="text-white">{{ item['evento']['titulo'] }}</a>
+                            ({{ item['evento']['dataHoraInicio'] }})</div>
+                            <div class="card-body">
+                                {% for p in item['pautas'] %}
+                                    <p class="card-text">
+                                        {% if p['voto']['voto'] != 'null' %}
+                                            Votou <b>{{ p['voto']['voto'] }}</b> em
+                                        {% else %}
+                                            <b>Não votou</b> em
+                                        {% endif %}
+                                        <b>{{ p['proposicao']['siglaTipo'] }}</b>:
+                                        <a
+                                            href="{{ p['proposicao']['urlInteiroTeor'] }}"
+                                            target="_blank"
+                                            class="text-white">{{ p['voto']['pauta'] }}</a>
+                                        (<a
+                                            href="{{ p['proposicao']['uriAutores'] }}"
+                                            target="_blank"
+                                            class="text-white">ver autores</a>)
+                                    </p>
+                                {% endfor %}
+                                {% if item['evento']['orgaos'] %}
+                                <p class="card-text">
+                                    Órgão: <span title="{{ item['evento']['orgaos'][0]['nome'] }}">
+                                        {{ item['evento']['orgaos'][0]['apelido'] }}
+                                    </span>
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <div class="col-sm">Demais eventos da semana 
                 ({{ total_eventos_ausentes }}/{{ todos_eventos|length }}):
                 <a data-toggle="collapse" href=".multi-collapse">Filtrar</a>
                 {% for item in todos_eventos %}
