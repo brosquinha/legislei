@@ -77,7 +77,7 @@ class VereadoresApp(ParlamentaresApp):
                 lista.append(
                     {
                         'nome': v['nome'],
-                        'id': v['nome'],
+                        'id': v['id'],
                         'siglaPartido': v['siglaPartido']
                     }
                 )

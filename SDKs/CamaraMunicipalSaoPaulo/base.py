@@ -78,6 +78,30 @@ class CamaraMunicipal(object):
                 projetos.append(['{}{}'.format(x['tipo'], x['numero']) for x in item['projetos']])
         return projetos
 
+    def obterOcupacaoGabinete(self):
+        r = self.http.request(
+            'POST',
+            'http://splegisws.camara.sp.gov.br/ws/ws2.asmx/OcupacaoGabineteJSON',
+            encode_multipart=False
+        )
+        if r.status != 200:
+            raise Exception('API call failed')
+        try:
+            data_json = json.loads(r.data.decode('utf-8'))
+            return self.converterDataEmTime(data_json, ['inicio', 'fim'])
+        except:
+            raise Exception('Failed to decode API data')
+
+    def converterDataEmTime(self, json, params_para_converter):
+        for item in json:
+            for key, value in item.items():
+                if key in params_para_converter:
+                    value_re = re.match(r'^\/Date\((\d+)\)\/$', value)
+                    if value_re == None:
+                        continue
+                    item[key] = datetime.utcfromtimestamp(int(value_re.group(1))/1000)
+        return json
+
     def obterVereadores(self):
         def tratarDadosTxt(regex, txt, dict_params):
             """
@@ -125,22 +149,13 @@ class CamaraMunicipal(object):
             'http://www.saopaulo.sp.leg.br/wp-content/uploads/dados_abertos/vereador/vereador.txt'
         )
         dados = r.data.decode('latin_1').replace('\r\n', '\n').encode('utf-8').decode('utf-8')
+        gabinetes = self.obterOcupacaoGabinete()
         buscas = re.finditer(
             r'^(\d{1,5})((\#([^\#]*)){3})(\#(([^\^\#]*)(\^i[^\^\#]*)(\^f[^\^\#]*)(\^c[^\^\#]*)?\%)*)(\#([^\#]*))(\#(((\^p\d)(\^n\d+)(\^s\w+)(\^q[\d\.]+)?)\%)*)(\#((\^i[\d\/]+)(\^f[\d\/]+)(\^s\w+)?(\^p[^\%\#\^]+)?(\^[cbd][^\%\#]+)*\%)*)(\#((\^n[^\^]*)?(\^i[\d\/]*)?(\^f[\d\/]+)?(\^c[^\%\^]+)?(\^d[^\%]+)?\%)*)$',
             dados, re.MULTILINE)
         for busca in buscas:
             registro = busca.group(1) #Não é o ID utilizado pelo resto do sistema
-            nomes = busca.group(2).split('#') #Nome, NomeParlamentar, Outros nomes
-            if nomes[2]:
-                #TODO: Cruzar dados com a outra API da CMSP para obter o nome que ela utiliza
-                if '%' in nomes[2]:
-                    nome_vereador = nomes[2].split('%')[1]
-                else:
-                    nome_vereador = nomes[2]
-            elif nomes[1]:
-                nome_vereador = nomes[1]
-            else:
-                nome_vereador = nomes[0]
+            tipos_nomes = busca.group(2).split('#') #Nome, NomeParlamentar, Outros nomes
             liderancas = tratarDadosTxt(
                 r'^([^\^\#]*)\^i([^\^\#]*)\^f([^\^\#]*)(\^c([^\^\#]*))?$',
                 busca.group(5),
@@ -166,10 +181,33 @@ class CamaraMunicipal(object):
                 partido = mandatos[-1]['partido']
             else:
                 partido = 'NA'
+            vereador_id = None
+            if len(legislaturas):
+                gabinetes_nomes = [x['vereador'].lower() for x in gabinetes]
+                nome_vereador = None
+                for tipo in tipos_nomes:
+                    for nome in tipo.split('%'):
+                        if nome.lower() in gabinetes_nomes:
+                            nome_vereador = nome
+                            vereador_id = 'TODO'
+                if nome_vereador == None:
+                    nome_vereador = 'ERRO1'.join(tipos_nomes)
+            else:
+                nome_vereador = 'ERRO2'
+                """if nomes[2]:
+                    if '%' in nomes[2]:
+                        nome_vereador = nomes[2].split('%')[1]
+                    else:
+                        nome_vereador = nomes[2]
+                elif nomes[1]:
+                    nome_vereador = nomes[1]
+                else:
+                    nome_vereador = nomes[0]"""
             
             vereadores.append(
                 {
                     'registro': registro,
+                    'id': vereador_id,
                     'nome': nome_vereador,
                     'siglaPartido': partido,
                     'liderancas': liderancas,
@@ -180,7 +218,6 @@ class CamaraMunicipal(object):
                 }
             )
         return vereadores
-
 
     def obterAtualLegislatura(self):
         #TODO
