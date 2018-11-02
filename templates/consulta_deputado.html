@@ -27,14 +27,18 @@
         <div class="row">
             {% if orgaos|length > 0 %}
                 <div class="col-sm">Órgãos dos quais faz parte ({{ orgaos|length }}):
-                    <ul class="list-group mb-1">
-                    {% for item in orgaos if item['nomePapel'] == 'Titular' %}
-                        <li class="list-group-item">
-                            <span title="{{ item['nomeOrgao'] }}">
-                                {{ item['siglaOrgao'] }}
-                            </span><span class="badge badge-secondary">{{ item['nomePapel'] }}</span>
-                        </li>
-                    {% endfor %}
+                    {% if orgaos == [{'nomeOrgao': None}] %}
+                        <p class="text-danger">Não foi possível obter as comissões do deputado.</p>
+                    {% else %}
+                        <ul class="list-group mb-1">
+                        {% for item in orgaos if item['nomePapel'] == 'Titular' %}
+                            <li class="list-group-item">
+                                <span title="{{ item['nomeOrgao'] }}">
+                                    {{ item['siglaOrgao'] }}
+                                </span><span class="badge badge-secondary">{{ item['nomePapel'] }}</span>
+                            </li>
+                        {% endfor %}
+                    {% endif %}
                     </ul>
                     <ul class="list-group">
                     {% for item in orgaos if item['nomePapel'] != 'Titular' %}
@@ -73,26 +77,38 @@
                         <div class="card mb-1 bg-success text-light">
                             <div class="card-header">
                                 <a href="{{ item['evento']['uri'] }}" target="_blank" class="text-white">{{ item['evento']['titulo'] }}</a>
-                            ({{ item['evento']['dataHoraInicio'] }})</div>
+                            ({{ item['evento']['dataHoraInicio'] }}—{{ item['evento']['dataHoraFim'] }})</div>
                             <div class="card-body">
-                                {% for p in item['pautas'] %}
-                                    <p class="card-text">
-                                        {% if p['voto']['voto'] != 'null' %}
-                                            Votou <b>{{ p['voto']['voto'] }}</b> em
-                                        {% else %}
-                                            <b>Não votou</b> em
-                                        {% endif %}
-                                        <b>{{ p['proposicao']['siglaTipo'] }}</b>:
-                                        <a
-                                            href="{{ p['proposicao']['urlInteiroTeor'] }}"
-                                            target="_blank"
-                                            class="text-white">{{ p['voto']['pauta'] }}</a>
-                                        (<a
-                                            href="{{ p['proposicao']['uriAutores'] }}"
-                                            target="_blank"
-                                            class="text-white">ver autores</a>)
+                                {% if 'error' in item['pautas'] %}
+                                    <p class="card-text bg-danger">
+                                        Não foi possível obter pautas do evento.
                                     </p>
-                                {% endfor %}
+                                {% else %}
+                                    {% for p in item['pautas'] %}
+                                        <p class="card-text">
+                                            {% if 'error' in p['voto'] %}
+                                                Não foi possível obter voto do deputado
+                                            {% elif p['voto']['voto'] != None and 'null' not in p['voto']['voto'] %}
+                                                Votou <b>{{ p['voto']['voto'] }}</b> em
+                                            {% else %}
+                                                <b>Não votou</b> em
+                                            {% endif %}
+                                            {% if 'error' in p['proposicao'] %}
+                                                Não foi possível obter proposição da pauta
+                                            {% else %}
+                                                <b>{{ p['proposicao']['siglaTipo'] }}</b>:
+                                                <a
+                                                    href="{{ p['proposicao']['urlInteiroTeor'] }}"
+                                                    target="_blank"
+                                                    class="text-white">{{ p['voto']['pauta'] }}</a>
+                                                (<a
+                                                    href="{{ p['proposicao']['uriAutores'] }}"
+                                                    target="_blank"
+                                                    class="text-white">ver autores</a>)
+                                            {% endif %}
+                                        </p>
+                                    {% endfor %}
+                                {% endif %}
                                 {% if item['evento']['orgaos'] %}
                                 <p class="card-text">
                                     Órgão: <span title="{{ item['evento']['orgaos'][0]['nome'] }}">
@@ -108,6 +124,9 @@
             <div class="col-sm">Demais eventos da semana 
                 ({{ total_eventos_ausentes }}/{{ todos_eventos|length }}):
                 <a data-toggle="collapse" href=".multi-collapse">Filtrar</a>
+                {% if eventos_previstos == [{'id': None}] %}
+                    <p class="text-danger">Não foi possível obter eventos previstos do deputado.</p>
+                {% endif %}
                 {% for item in todos_eventos %}
                     {% if item['controleAusencia'] == 1 %}
                     <div class="card mb-1 text-white bg-danger">
@@ -119,7 +138,7 @@
                         <div class="card-header">
                             <a href="{{ item['uri'] }}" target="_blank" class="{{ 'text-white' if item['controleAusencia'] }}">
                                 {{ item['titulo'] }}</a>
-                        ({{ item['dataHoraInicio'] }})</div>
+                        ({{ item['dataHoraInicio'] }}—{{ item['dataHoraFim'] }})</div>
                         {% if item['orgaos'] %}
                             <div class="card-body">
                                 <p class="card-text">Órgão:

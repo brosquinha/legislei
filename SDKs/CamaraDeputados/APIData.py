@@ -1,5 +1,6 @@
 import json
 import urllib3
+from .exceptions import CamaraDeputadosConnectionError, CamaraDeputadosInvalidResponse
 
 
 class APIData(object):
@@ -33,36 +34,37 @@ class APIData(object):
                 headers={'accept': 'application/json'}
             )
             if r.status != 200:
-                raise Exception('API call failed: {}'.format(url_args))
+                raise CamaraDeputadosConnectionError(url_path, r.status)
             
             try:
                 page = json.loads(r.data.decode('utf-8'))
                 data_length = len(page['dados'])
                 dados = page['dados']
             except:
-                raise Exception('Failed to decode API data')
+                raise CamaraDeputadosInvalidResponse(r.data.decode('utf-8'))
             yield dados
             page_num += 1
 
     def getAPISingleRequest(self, param_id, param_page = ''):
         if param_page:
             param_page = '/{}'.format(param_page)
+        url = '{}{}/{}{}'.format(
+            self.camara_dos_deputados_endpoint,
+            self._api_section,
+            param_id,
+            param_page
+        )
         r = self.http.request(
             'GET',
-            '{}{}/{}{}'.format(
-                self.camara_dos_deputados_endpoint,
-                self._api_section,
-                param_id,
-                param_page
-            ),
+            url,
             headers={'accept': 'application/json'}
         )
         if r.status != 200:
-            raise Exception('API call failed: {}'.format(param_id))
+            raise CamaraDeputadosConnectionError(url, r.status)
         try:
             return json.loads(r.data.decode('utf-8'))['dados']
         except:
-            raise Exception('Failed to decode API data')
+            raise CamaraDeputadosInvalidResponse(r.data.decode('utf-8'))
 
     def getJSONFrom(self, uri, **kwargs):
         r = self.http.request(
@@ -72,8 +74,8 @@ class APIData(object):
             headers={'accept': 'application/json'}
         )
         if r.status != 200:
-            raise Exception('API call failed')
+            raise CamaraDeputadosConnectionError(uri, r.status)
         try:
             return json.loads(r.data.decode('utf-8'))
         except:
-            raise Exception('Failed to decode API data')
+            raise CamaraDeputadosInvalidResponse(r.data.decode('utf-8'))

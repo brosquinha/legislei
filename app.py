@@ -39,5 +39,32 @@ def obterVereadores():
     return ver.obterVereadoresAtuais()
 
 
+@app.errorhandler(500)
+def server_error(e):
+    return render_template(
+        'erro.html',
+        erro_titulo="500 - Erro interno do servidor",
+        erro_descricao="Yep... cometemos um erro, precisamos corrigir. Sorry."
+    ), 500
+
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template(
+        'erro.html',
+        erro_titulo="404 - Página não encontrada",
+        erro_descricao="O clássico. Definitivamente esse recurso não existe."
+    ), 404
+
+
+@app.errorhandler(400)
+def client_error(e):
+    return render_template(
+        'erro.html',
+        erro_titulo="404 - Erro do cliente",
+        erro_descricao="Aeow, tu não estás fazendo a requisição do jeito certo."
+    ), 400
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8080, threaded=True)
