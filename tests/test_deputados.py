@@ -265,6 +265,8 @@ class TestDeputadosApp(unittest.TestCase):
                 {'nome': 'Órgão 4', 'apelido': 'PLEN'}], 'controleAusencia': 2},
         ], actual_response[0])
         self.assertEqual(3, actual_response[1])
+        self.assertEqual(
+            actual_response[2], ['2', '3', '4'])
 
         mock_obterEventosPrevistosDeputado.assert_called_once_with(
             '123', datetime(2018, 10, 28))
@@ -281,6 +283,7 @@ class TestDeputadosApp(unittest.TestCase):
         def fakeObterTodasProposicoes(*args, **kwargs):
             yield proposicoes[0:2]
             yield proposicoes[2:]
+
         def fakeObterProposicao(*arg, **kwargs):
             return proposicoes[int(arg[0]) - 1]
         mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')

@@ -17,8 +17,23 @@
             <div class="media-body">
                 <h1>{{ deputado_nome }} ({{ deputado_partido }}-{{ deputado_uf }})</h1>
                 <h5 class="mt-0">{{ data_inicial }} - {{ data_final }}</h5>
-                Presença: <span class="collapse multi-collapse">{{ presenca }}</span>
-                <span class="collapse show multi-collapse">{{ presenca_relativa }}</span>
+                <p class="mb-0">
+                    Presença: <span class="collapse multi-collapse">{{ presenca }}</span>
+                    <span class="collapse show multi-collapse">{{ presenca_relativa }}</span>
+                </p>
+                <h4><a
+                    href="data:text/json;charset=utf-8,"
+                    id="downloadLink"
+                    download="relatorio.json"
+                    class="fa fa-download text-dark"></a></h4>
+                <script>
+                try {
+                    let relatorio = {{ json_data | tojson | safe }};
+                    document.getElementById("downloadLink").href += encodeURIComponent(JSON.stringify(relatorio));
+                } catch {
+                    document.getElementById("downloadLink").classList.add('d-none');
+                }
+                </script>
             </div>
             <img class="align-self-start rounded" src="{{ deputado_img }}" alt="{{ deputado_nome }}" />
         </div>
