@@ -4,7 +4,8 @@ from datetime import datetime
 from flask import render_template, request
 from SDKs.CamaraDeputados.entidades import Deputados, Eventos, Proposicoes, Votacoes
 from SDKs.CamaraDeputados.exceptions import CamaraDeputadosError
-from parlamentares import ParlamentaresApp
+from models.parlamentares import ParlamentaresApp
+from exceptions import ModelError
 
 
 class DeputadosApp(ParlamentaresApp):
@@ -17,130 +18,88 @@ class DeputadosApp(ParlamentaresApp):
         self.periodo = {'weeks': 1}
 
     def consultar_deputado(self, deputado_id, data_final=None):
-        relatorio_deputado = {}
-        start_time = time()
-        if data_final:
-            data_final = datetime.strptime(data_final, '%Y-%m-%d')
-            print(data_final)
-        else:
-            data_final = datetime.now()
-        relatorio_deputado['deputado'] = self.dep.obterDeputado(deputado_id)
-        relatorio_deputado['dataInicial'] = self.obterDataInicial(
-            data_final, **self.periodo).strftime("%d/%m/%Y")
-        relatorio_deputado['dataFinal'] = data_final.strftime("%d/%m/%Y")
-        print('Deputado obtido em {0:.5f}'.format(time() - start_time))
-        (
-            eventos,
-            relatorio_deputado['presencaTotal'],
-            todos_eventos
-        ) = self.procurarEventosComDeputado(
-            relatorio_deputado['deputado']['id'],
-            data_final
-        )
-        print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
-        relatorio_deputado['orgaos'] = self.obterOrgaosDeputado(
-            relatorio_deputado['deputado']['id'], data_final)
-        print('Orgaos obtidos em {0:.5f}'.format(time() - start_time))
-        relatorio_deputado['orgaosNomes'] = [orgao['nomeOrgao']
-                                             for orgao in relatorio_deputado['orgaos']]
-        relatorio_deputado['eventosPresentes'] = []
-        lista_evento_com_deputado = []
-        for e in eventos:
-            evento = {
-                'evento': e,
-                'pautas': []
-            }
-            pautas = self.obterPautaEvento(e['id'])
-            if pautas == [{'error': True}]:
-                evento['pautas'] = {'error': True}
+        try:
+            relatorio_deputado = {}
+            start_time = time()
+            if data_final:
+                data_final = datetime.strptime(data_final, '%Y-%m-%d')
+                print(data_final)
             else:
-                for pauta in pautas:
-                    if len(pauta['votacao']):
-                        if pauta['proposicao_detalhes'] == [{'error': True}]:
-                            proposicao = {'error': True}
-                        else:
-                            proposicao = pauta['proposicao_detalhes']
-                        if pauta['votacao'] == [{'error': True}]:
-                            voto = {'error': True}
-                        else:
-                            voto = {
-                                'voto': self.obterVotoDeputado(
-                                    pauta['votacao'][0]['id'], relatorio_deputado['deputado']['id']),
-                                'pauta': pauta['proposicao_detalhes']['ementa']
-                            }
-                        evento['pautas'].append(
-                            {'proposicao': proposicao, 'voto': voto}
-                        )
-            relatorio_deputado['eventosPresentes'].append(evento)
-        print('Pautas obtidas em {0:.5f}'.format(time() - start_time))
-        lista_evento_com_deputado = [eventos_dep['evento']
-                                     for eventos_dep in relatorio_deputado['eventosPresentes']]
-        (
-            relatorio_deputado['eventosAusentes'],
-            relatorio_deputado['eventosAusentesTotal'],
-            relatorio_deputado['eventosPrevistos']
-        ) = self.obterEventosAusentes(
-            relatorio_deputado['deputado']['id'],
-            data_final,
-            lista_evento_com_deputado,
-            relatorio_deputado['orgaosNomes'],
-            todos_eventos
-        )
-        print('Ausencias obtidas em {0:.5f}'.format(time() - start_time))
-        relatorio_deputado['presencaRelativa'] = '{0:.2f}%'.format(
-            100*len(eventos)/(relatorio_deputado['eventosAusentesTotal']+len(eventos)))
-        relatorio_deputado['presencaTotal'] = '{0:.2f}%'.format(
-            relatorio_deputado['presencaTotal'])
-        relatorio_deputado['proposicoes'] = self.obterProposicoesDeputado(
-            relatorio_deputado['deputado']['id'], data_final)
-        print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
-
-        #Esse tratamento aqui não é de responsabilidade de deputados.py, e sim da aplicação em si
-        arquivo = open(
-            'reports/{}-{}.json'.format(deputado_id, data_final.strftime('%Y-%m-%d')),
-            'w+'
-        )
-        arquivo.write(json.dumps(relatorio_deputado))
-        arquivo.close()
-        
-        return relatorio_deputado
-
-    def consultar_deputado_html(self, **kwargs):
-        try:
-            relatorio_deputado = self.consultar_deputado(**kwargs)
-
-            return render_template(
-                'consulta_deputado.html',
-                deputado_nome=relatorio_deputado['deputado']['ultimoStatus']['nome'],
-                deputado_partido=relatorio_deputado['deputado']['ultimoStatus']['siglaPartido'],
-                deputado_uf=relatorio_deputado['deputado']['ultimoStatus']['siglaUf'],
-                deputado_img=relatorio_deputado['deputado']['ultimoStatus']['urlFoto'],
-                data_inicial=relatorio_deputado['dataInicial'],
-                data_final=relatorio_deputado['dataFinal'],
-                presenca=relatorio_deputado['presencaTotal'],
-                presenca_relativa=relatorio_deputado['presencaRelativa'],
-                total_eventos_ausentes=relatorio_deputado['eventosAusentesTotal'],
-                orgaos=relatorio_deputado['orgaos'],
-                orgaos_nome=relatorio_deputado['orgaosNomes'],
-                eventos=relatorio_deputado['eventosPresentes'],
-                todos_eventos=relatorio_deputado['eventosAusentes'],
-                eventos_previstos=relatorio_deputado['eventosPrevistos'],
-                proposicoes_deputado=relatorio_deputado['proposicoes'],
-                json_data=relatorio_deputado
-            ), 200
+                data_final = datetime.now()
+            relatorio_deputado['deputado'] = self.dep.obterDeputado(deputado_id)
+            relatorio_deputado['dataInicial'] = self.obterDataInicial(
+                data_final, **self.periodo).strftime("%d/%m/%Y")
+            relatorio_deputado['dataFinal'] = data_final.strftime("%d/%m/%Y")
+            print('Deputado obtido em {0:.5f}'.format(time() - start_time))
+            (
+                eventos,
+                relatorio_deputado['presencaTotal'],
+                todos_eventos
+            ) = self.procurarEventosComDeputado(
+                relatorio_deputado['deputado']['id'],
+                data_final
+            )
+            print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
+            relatorio_deputado['orgaos'] = self.obterOrgaosDeputado(
+                relatorio_deputado['deputado']['id'], data_final)
+            print('Orgaos obtidos em {0:.5f}'.format(time() - start_time))
+            relatorio_deputado['orgaosNomes'] = [orgao['nomeOrgao']
+                                                for orgao in relatorio_deputado['orgaos']]
+            relatorio_deputado['eventosPresentes'] = []
+            lista_evento_com_deputado = []
+            for e in eventos:
+                evento = {
+                    'evento': e,
+                    'pautas': []
+                }
+                pautas = self.obterPautaEvento(e['id'])
+                if pautas == [{'error': True}]:
+                    evento['pautas'] = {'error': True}
+                else:
+                    for pauta in pautas:
+                        if len(pauta['votacao']):
+                            if pauta['proposicao_detalhes'] == [{'error': True}]:
+                                proposicao = {'error': True}
+                            else:
+                                proposicao = pauta['proposicao_detalhes']
+                            if pauta['votacao'] == [{'error': True}]:
+                                voto = {'error': True}
+                            else:
+                                voto = {
+                                    'voto': self.obterVotoDeputado(
+                                        pauta['votacao'][0]['id'], relatorio_deputado['deputado']['id']),
+                                    'pauta': pauta['proposicao_detalhes']['ementa']
+                                }
+                            evento['pautas'].append(
+                                {'proposicao': proposicao, 'voto': voto}
+                            )
+                relatorio_deputado['eventosPresentes'].append(evento)
+            print('Pautas obtidas em {0:.5f}'.format(time() - start_time))
+            lista_evento_com_deputado = [eventos_dep['evento']
+                                        for eventos_dep in relatorio_deputado['eventosPresentes']]
+            (
+                relatorio_deputado['eventosAusentes'],
+                relatorio_deputado['eventosAusentesTotal'],
+                relatorio_deputado['eventosPrevistos']
+            ) = self.obterEventosAusentes(
+                relatorio_deputado['deputado']['id'],
+                data_final,
+                lista_evento_com_deputado,
+                relatorio_deputado['orgaosNomes'],
+                todos_eventos
+            )
+            print('Ausencias obtidas em {0:.5f}'.format(time() - start_time))
+            relatorio_deputado['presencaRelativa'] = '{0:.2f}%'.format(
+                100*len(eventos)/(relatorio_deputado['eventosAusentesTotal']+len(eventos)))
+            relatorio_deputado['presencaTotal'] = '{0:.2f}%'.format(
+                relatorio_deputado['presencaTotal'])
+            relatorio_deputado['proposicoes'] = self.obterProposicoesDeputado(
+                relatorio_deputado['deputado']['id'], data_final)
+            print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
+            
+            return relatorio_deputado
         except CamaraDeputadosError:
-            return render_template(
-                'erro.html',
-                erro_titulo='500 - Serviço indisponível',
-                erro_descricao='Serviço da Câmara dos Deputados está indisponível. :('
-            ), 500
-
-    def consultar_deputado_json(self, **kwargs):
-        try:
-            relatorio_deputado = self.consultar_deputado(**kwargs)
-            return json.dumps(relatorio_deputado), 200
-        except CamaraDeputadosError:
-            return json.dumps({'error': 'Câmara dos Deputados API indisponível'}), 500
+            raise ModelError("API Câmara dos Deputados indisponível")
 
     def obterOrgaosDeputado(self, deputado_id, data_final=datetime.now()):
         orgaos = []

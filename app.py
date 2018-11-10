@@ -2,8 +2,9 @@
 import json
 from time import time
 from datetime import timedelta, datetime
-from deputados import DeputadosApp
-from vereadoresSaoPaulo import VereadoresApp
+from models.deputados import DeputadosApp
+from models.vereadoresSaoPaulo import VereadoresApp
+from exceptions import ModelError
 from flask import Flask, request, render_template
 
 
@@ -15,40 +16,54 @@ def home():
     return render_template('consultar_form.html'), 200
 
 
+def modelar_pagina_relatorio(relatorio, template='consulta_deputado.html'):
+    return render_template(
+        template,
+        relatorio=relatorio
+    ), 200
+
+
+def obter_relatorio(parlamentar, data, func, **kwargs):
+    try:
+        arquivo = open('reports/{}-{}.json'.format(
+            parlamentar, data
+        ))
+        relatorio = json.loads(arquivo.read())
+        print('Relatorio carregado!')
+        return relatorio
+    except FileNotFoundError:
+        try:
+            relatorio = func(**kwargs)
+            arquivo = open(
+                'reports/{}-{}.json'.format(parlamentar, data),
+                'w+'
+            )
+            arquivo.write(json.dumps(relatorio))
+            arquivo.close()
+            return relatorio
+        except ModelError as e:
+            return render_template(
+                'erro.html',
+                erro_titulo='500 - Serviço indisponível',
+                erro_descricao=e.message
+            ), 500
+
+
 @app.route('/', methods=['POST'])
 def consultar_parlamentar():
     if request.form['parlamentarTipo'] == 'deputados':
-        try:
-            arquivo = open('reports/{}-{}.json'.format(
-                request.form['deputado'], request.form['data']
-            ))
-            relatorio_deputado = json.loads(arquivo.read())
-            print('Relatorio carregado!')
-            return render_template(
-                'consulta_deputado.html',
-                deputado_nome=relatorio_deputado['deputado']['ultimoStatus']['nome'],
-                deputado_partido=relatorio_deputado['deputado']['ultimoStatus']['siglaPartido'],
-                deputado_uf=relatorio_deputado['deputado']['ultimoStatus']['siglaUf'],
-                deputado_img=relatorio_deputado['deputado']['ultimoStatus']['urlFoto'],
-                data_inicial=relatorio_deputado['dataInicial'],
-                data_final=relatorio_deputado['dataFinal'],
-                presenca=relatorio_deputado['presencaTotal'],
-                presenca_relativa=relatorio_deputado['presencaRelativa'],
-                total_eventos_ausentes=relatorio_deputado['eventosAusentesTotal'],
-                orgaos=relatorio_deputado['orgaos'],
-                orgaos_nome=relatorio_deputado['orgaosNomes'],
-                eventos=relatorio_deputado['eventosPresentes'],
-                todos_eventos=relatorio_deputado['eventosAusentes'],
-                eventos_previstos=relatorio_deputado['eventosPrevistos'],
-                proposicoes_deputado=relatorio_deputado['proposicoes'],
-                json_data=relatorio_deputado
-            ), 200
-        except FileNotFoundError:
-            dep = DeputadosApp()
-            return dep.consultar_deputado_html(
-                deputado_id=request.form['deputado'],
-                data_final=request.form['data'] if 'data' in request.form else None
-            )
+        dep = DeputadosApp()
+        if 'data' not in request.form:
+            data_final = datetime.now().strftime('%Y-%m-%d')
+        else:
+            data_final = request.form['data']
+        return modelar_pagina_relatorio(obter_relatorio(
+            parlamentar=request.form['deputado'],
+            data=data_final,
+            func=dep.consultar_deputado,
+            deputado_id=request.form['deputado'],
+            data_final=data_final
+        ))
     elif request.form['parlamentarTipo'] == 'vereadores':
         ver = VereadoresApp()
         return ver.consultar_vereador()
@@ -58,19 +73,14 @@ def consultar_parlamentar():
 
 @app.route('/API/relatorioDeputado')
 def consultar_deputado_api():
-    try:
-        arquivo = open('reports/{}-{}.json'.format(
-            request.args.get('deputado'), request.args.get('data')
-        ))
-        relatorio_deputado = arquivo.read()
-        print('Relatorio carregado!')
-        return relatorio_deputado, 200
-    except FileNotFoundError:
-        dep = DeputadosApp()
-        return dep.consultar_deputado_json(
-            deputado_id=request.args.get('deputado'),
-            data_final=request.args.get('data')
-        )
+    dep = DeputadosApp()
+    return json.dumps(obter_relatorio(
+        parlamentar=request.args.get('deputado'),
+        data=request.args.get('data'),
+        func=dep.consultar_deputado,
+        deputado_id=request.args.get('deputado'),
+        data_final=request.args.get('data')
+    )), 200
 
 
 @app.route('/deputados')

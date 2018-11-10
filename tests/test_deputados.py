@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import patch
 from SDKs.CamaraDeputados.entidades import Deputados
-from deputados import DeputadosApp
+from models.deputados import DeputadosApp
 
 
 class TestDeputadosApp(unittest.TestCase):
@@ -26,8 +26,8 @@ class TestDeputadosApp(unittest.TestCase):
         ]))
 
     @patch("SDKs.CamaraDeputados.entidades.Deputados.obterOrgaosDeputado")
-    @patch("parlamentares.ParlamentaresApp.formatarDatasYMD")
-    @patch("parlamentares.ParlamentaresApp.obterDataInicial")
+    @patch("models.parlamentares.ParlamentaresApp.formatarDatasYMD")
+    @patch("models.parlamentares.ParlamentaresApp.obterDataInicial")
     def test_obterOrgaosDeputado(
             self,
             mock_obterDataInicial,
@@ -62,7 +62,7 @@ class TestDeputadosApp(unittest.TestCase):
 
     @patch("SDKs.CamaraDeputados.entidades.Eventos.obterDeputadosEvento")
     @patch("SDKs.CamaraDeputados.entidades.Eventos.obterTodosEventos")
-    @patch("parlamentares.ParlamentaresApp.obterDataInicialEFinal")
+    @patch("models.parlamentares.ParlamentaresApp.obterDataInicialEFinal")
     def test_procurarEventosComDeputado(
             self,
             mock_obterDataInicialEFinal,
@@ -102,7 +102,7 @@ class TestDeputadosApp(unittest.TestCase):
         mock_obterDeputadosEvento.assert_called_with(dep_id)
 
     @patch("SDKs.CamaraDeputados.entidades.Deputados.obterEventosDeputado")
-    @patch("parlamentares.ParlamentaresApp.obterDataInicialEFinal")
+    @patch("models.parlamentares.ParlamentaresApp.obterDataInicialEFinal")
     def test_obterEventosPrevistosDeputado(
             self,
             mock_obterDataInicialEFinal,
@@ -223,7 +223,7 @@ class TestDeputadosApp(unittest.TestCase):
 
         self.assertEqual('Sim', actual_response)
 
-    @patch("deputados.DeputadosApp.obterEventosPrevistosDeputado")
+    @patch("models.deputados.DeputadosApp.obterEventosPrevistosDeputado")
     def test_obterEventosAusentes(
         self,
         mock_obterEventosPrevistosDeputado
@@ -273,7 +273,7 @@ class TestDeputadosApp(unittest.TestCase):
 
     @patch("SDKs.CamaraDeputados.entidades.Proposicoes.obterProposicao")
     @patch("SDKs.CamaraDeputados.entidades.Proposicoes.obterTodasProposicoes")
-    @patch("parlamentares.ParlamentaresApp.obterDataInicialEFinal")
+    @patch("models.parlamentares.ParlamentaresApp.obterDataInicialEFinal")
     def test_obterProposicoesDeputado(
         self,
         mock_obterDataInicialEFinal,

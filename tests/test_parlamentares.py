@@ -2,7 +2,7 @@ import json
 import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch
-from parlamentares import ParlamentaresApp
+from models.parlamentares import ParlamentaresApp
 
 class TestParlamentaresApp(unittest.TestCase):
 

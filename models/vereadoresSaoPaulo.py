@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from flask import render_template, request
 from SDKs.CamaraMunicipalSaoPaulo.base import CamaraMunicipal
-from parlamentares import ParlamentaresApp
+from models.parlamentares import ParlamentaresApp
 
 class VereadoresApp(ParlamentaresApp):
 

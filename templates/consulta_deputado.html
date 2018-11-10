@@ -4,42 +4,50 @@
 
 {% block content %}
     <nav aria-label="breadcrumb">
+        {% set deputado = relatorio['deputado']['ultimoStatus'] %}
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
                 <a href="/">Consultar político</a>
             </li>
             <li class="breadcrumb-item">Deputado federal</li>
-            <li class="breadcrumb-item active" aria-current="page">{{ deputado_nome }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ deputado['nome'] }}</li>
         </ol>
     </nav>
     <div class="container mb-3 bg-light rounded">
         <div class="media">
             <div class="media-body">
-                <h1>{{ deputado_nome }} ({{ deputado_partido }}-{{ deputado_uf }})</h1>
-                <h5 class="mt-0">{{ data_inicial }} - {{ data_final }}</h5>
+                <h1>{{ deputado['nome'] }} ({{ deputado['siglaPartido'] }}-{{ deputado['siglaUf'] }})</h1>
+                <h5 class="mt-0">{{ relatorio['dataInicial'] }} - {{ relatorio['dataFinal'] }}</h5>
                 <p class="mb-0">
-                    Presença: <span class="collapse multi-collapse">{{ presenca }}</span>
-                    <span class="collapse show multi-collapse">{{ presenca_relativa }}</span>
+                    Presença: <span class="collapse multi-collapse">{{ relatorio['presencaTotal'] }}</span>
+                    <span class="collapse show multi-collapse">{{ relatorio['presencaRelativa'] }}</span>
                 </p>
-                <h4><a
-                    href="data:text/json;charset=utf-8,"
-                    id="downloadLink"
-                    download="relatorio.json"
-                    class="fa fa-download text-dark"></a></h4>
+                <h4>
+                    <a
+                        href="data:text/json;charset=utf-8,"
+                        id="downloadLink"
+                        download="relatorio.json"
+                        class="fa fa-download text-dark icon-link"></a>
+                    <a
+                        href="#"
+                        class="fa fa-sync-alt text-dark ml-1 icon-link"></a>
+                </h4>
+                <span id="relatorioJSON" class="d-none">{{ relatorio | tojson | safe }}</span>
                 <script>
                 try {
-                    let relatorio = {{ json_data | tojson | safe }};
+                    let relatorio = JSON.parse(document.getElementById("relatorioJSON").innerText);
                     document.getElementById("downloadLink").href += encodeURIComponent(JSON.stringify(relatorio));
                 } catch {
                     document.getElementById("downloadLink").classList.add('d-none');
                 }
                 </script>
             </div>
-            <img class="align-self-start rounded" src="{{ deputado_img }}" alt="{{ deputado_nome }}" />
+            <img class="align-self-start rounded" src="{{ deputado['urlFoto'] }}" alt="{{ deputado['nome'] }}" />
         </div>
     </div>
     <div class="container">
         <div class="row">
+            {% set orgaos = relatorio['orgaos'] %}
             {% if orgaos|length > 0 %}
                 <div class="col-sm">Órgãos dos quais faz parte ({{ orgaos|length }}):
                     {% if orgaos == [{'nomeOrgao': None}] %}
@@ -66,6 +74,7 @@
                     </ul>
                 </div>
             {% endif %}
+            {% set proposicoes_deputado = relatorio['proposicoes'] %}
             {% if proposicoes_deputado|length > 0 %}
                 <div class="col-sm">Proposições da semana
                     ({{ proposicoes_deputado|length }}):
@@ -86,13 +95,15 @@
                     {% endfor %}
                 </div>
             {% endif %}
-            {% if eventos|length > 0 %}
-                <div class="col-sm">Eventos do parlamentar ({{ eventos|length }}):
-                    {% for item in eventos %}
+            {% set eventos_presentes = relatorio['eventosPresentes'] %}
+            {% if eventos_presentes|length > 0 %}
+                <div class="col-sm">Eventos do parlamentar ({{ eventos_presentes|length }}):
+                    {% for item in eventos_presentes %}
                         <div class="card mb-1 bg-success text-light">
                             <div class="card-header">
                                 <a href="{{ item['evento']['uri'] }}" target="_blank" class="text-white">{{ item['evento']['titulo'] }}</a>
-                            ({{ item['evento']['dataHoraInicio'] }}—{{ item['evento']['dataHoraFim'] }})</div>
+                            ({{ item['evento']['dataHoraInicio'] }}—{{ item['evento']['dataHoraFim'] }})
+                            ({{ item['evento']['descricaoSituacao'] }})</div>
                             <div class="card-body">
                                 {% if 'error' in item['pautas'] %}
                                     <p class="card-text bg-danger">
@@ -136,13 +147,15 @@
                     {% endfor %}
                 </div>
             {% endif %}
+            {% set eventos_ausentes = relatorio['eventosAusentes'] %}
+            {% set eventos_previstos = relatorio['eventosPrevistos'] %}
             <div class="col-sm">Demais eventos da semana 
-                ({{ total_eventos_ausentes }}/{{ todos_eventos|length }}):
+                ({{ relatorio['eventosAusentesTotal'] }}/{{ eventos_ausentes|length }}):
                 <a data-toggle="collapse" href=".multi-collapse">Filtrar</a>
                 {% if eventos_previstos == [{'id': None}] %}
                     <p class="text-danger">Não foi possível obter eventos previstos do deputado.</p>
                 {% endif %}
-                {% for item in todos_eventos %}
+                {% for item in eventos_ausentes %}
                     {% if item['controleAusencia'] == 1 %}
                     <div class="card mb-1 text-white bg-danger">
                     {% elif item['controleAusencia'] == 2 %}
@@ -153,7 +166,8 @@
                         <div class="card-header">
                             <a href="{{ item['uri'] }}" target="_blank" class="{{ 'text-white' if item['controleAusencia'] }}">
                                 {{ item['titulo'] }}</a>
-                        ({{ item['dataHoraInicio'] }}—{{ item['dataHoraFim'] }})</div>
+                        ({{ item['dataHoraInicio'] }}—{{ item['dataHoraFim'] }})
+                        ({{ item['descricaoSituacao'] }})</div>
                         {% if item['orgaos'] %}
                             <div class="card-body">
                                 <p class="card-text">Órgão:
