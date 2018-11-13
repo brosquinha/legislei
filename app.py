@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import json
 from time import time
 from datetime import timedelta, datetime
@@ -34,6 +35,8 @@ def obter_relatorio(parlamentar, data, func, **kwargs):
     except FileNotFoundError:
         try:
             relatorio = func(**kwargs)
+            if not os.path.exists('reports'):
+                os.makedirs('reports')
             arquivo = open(
                 'reports/{}-{}.json'.format(parlamentar, data),
                 'w+'
@@ -123,4 +126,6 @@ def client_error(e):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, threaded=True)
+    app.debug = True
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, threaded=True)

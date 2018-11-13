@@ -1,3 +1,4 @@
+import certifi
 import json
 import urllib3
 from .exceptions import CamaraDeputadosConnectionError, CamaraDeputadosInvalidResponse
@@ -9,7 +10,10 @@ class APIData(object):
 
     def __init__(self, api_section):
         self.camara_dos_deputados_endpoint = 'https://dadosabertos.camara.leg.br/api/v2/'
-        self.http = urllib3.PoolManager()
+        self.http = urllib3.PoolManager(
+            cert_reqs='CERT_REQUIRED',
+            ca_certs=certifi.where()
+        )
         self._api_section = api_section
 
     def runThroughAllPages(self, *args, **kwargs):
