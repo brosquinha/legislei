@@ -11,13 +11,13 @@ from exceptions import ModelError
 class DeputadosApp(ParlamentaresApp):
 
     def __init__(self):
+        super().__init__()
         self.dep = Deputados()
         self.ev = Eventos()
         self.prop = Proposicoes()
         self.vot = Votacoes()
-        self.periodo = {'weeks': 1}
 
-    def consultar_deputado(self, deputado_id, data_final=None):
+    def consultar_deputado(self, deputado_id, data_final=None, periodo_dias=7):
         try:
             relatorio_deputado = {}
             start_time = time()
@@ -26,6 +26,11 @@ class DeputadosApp(ParlamentaresApp):
                 print(data_final)
             else:
                 data_final = datetime.now()
+            try:
+                if int(periodo_dias) in range(7, 29):
+                    self.periodo['days'] = int(periodo_dias)
+            except ValueError:
+                periodo_dias = 7
             relatorio_deputado['deputado'] = self.dep.obterDeputado(deputado_id)
             relatorio_deputado['dataInicial'] = self.obterDataInicial(
                 data_final, **self.periodo).strftime("%d/%m/%Y")

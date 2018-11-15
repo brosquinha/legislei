@@ -3,7 +3,7 @@ from datetime import timedelta
 class ParlamentaresApp():
 
     def __init__(self):
-        self.periodo = {'weeks': 1}
+        self.periodo = {'days': 7}
     
     def obterDataInicial(self, data_final, **kwargs):
         return data_final - timedelta(**kwargs)

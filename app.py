@@ -65,7 +65,8 @@ def consultar_parlamentar():
             data=data_final,
             func=dep.consultar_deputado,
             deputado_id=request.form['deputado'],
-            data_final=data_final
+            data_final=data_final,
+            periodo_dias=request.form['dias']
         ))
     elif request.form['parlamentarTipo'] == 'vereadores':
         ver = VereadoresApp()
@@ -82,7 +83,8 @@ def consultar_deputado_api():
         data=request.args.get('data'),
         func=dep.consultar_deputado,
         deputado_id=request.args.get('deputado'),
-        data_final=request.args.get('data')
+        data_final=request.args.get('data'),
+        periodo_dias=request.args.get('dias')
     )), 200
 
 

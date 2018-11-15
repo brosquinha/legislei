@@ -55,7 +55,7 @@ class TestDeputadosApp(unittest.TestCase):
         self.assertEqual(len(actual_response), 2)
 
         mock_obterDataInicial.assert_called_once_with(
-            datetime(2018, 10, 28), weeks=1)
+            datetime(2018, 10, 28), days=7)
         mock_obterOrgaosDeputado.assert_called_with(
             '1234', dataInicial='2018-10-21')
         mock_formatarDatasYMD.assert_called_once_with(datetime(2018, 10, 21))

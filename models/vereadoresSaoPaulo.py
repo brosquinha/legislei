@@ -7,6 +7,7 @@ from models.parlamentares import ParlamentaresApp
 class VereadoresApp(ParlamentaresApp):
 
     def __init__(self):
+        super().__init__()
         self.ver = CamaraMunicipal()
     
     def consultar_vereador(self):

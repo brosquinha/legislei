@@ -79,7 +79,8 @@
                 <div class="col-sm">Proposições da semana
                     ({{ proposicoes_deputado|length }}):
                     {% for item in proposicoes_deputado %}
-                        <div class="card mb-1 text-white {{ 'bg-primary' if item['siglaTipo'] in ['PL', 'PEC'] else 'bg-info' }}">
+                        {% set color_class = 'primary' if item['siglaTipo'] in ['PL', 'PEC'] else 'info' %}
+                        <div class="card mb-1 text-white bg-{{ color_class }}">
                             <div class="card-header">
                                 <a href="{{ item['uri'] }}" target="_blank" class="text-white">
                                     {{ item['siglaTipo'] }}{{ item['numero'] }}</a>
@@ -90,6 +91,20 @@
                                 <p class="card-text">
                                     <a href="{{ item['urlInteiroTeor'] }}" target="_blank" class="text-white">Detalhes</a>
                                 </p>
+                            </div>
+                            <div class="card-footer text-center">
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Amei">
+                                    <span class="fa fa-heart"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Curti">
+                                    <span class="fa fa-thumbs-up"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Não curti">
+                                    <span class="fa fa-thumbs-down"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Detestei">
+                                    <span class="fa fa-skull"></span>
+                                </button>
                             </div>
                         </div>
                     {% endfor %}
@@ -143,6 +158,20 @@
                                 </p>
                                 {% endif %}
                             </div>
+                            <div class="card-footer text-center">
+                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Amei">
+                                    <span class="fa fa-heart"></span>
+                                </button>
+                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Curti">
+                                    <span class="fa fa-thumbs-up"></span>
+                                </button>
+                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Não curti">
+                                    <span class="fa fa-thumbs-down"></span>
+                                </button>
+                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Detestei">
+                                    <span class="fa fa-skull"></span>
+                                </button>
+                            </div>
                         </div>
                     {% endfor %}
                 </div>
@@ -157,10 +186,13 @@
                 {% endif %}
                 {% for item in eventos_ausentes %}
                     {% if item['controleAusencia'] == 1 %}
+                    {% set color_class = 'danger' %}
                     <div class="card mb-1 text-white bg-danger">
                     {% elif item['controleAusencia'] == 2 %}
+                    {% set color_class = 'warning' %}
                     <div class="card mb-1 text-white bg-warning">
                     {% else %}
+                    {% set color_class = 'light' %}
                     <div class="card mb-1 collapse multi-collapse">
                     {% endif %}
                         <div class="card-header">
@@ -176,10 +208,27 @@
                                     </span>
                                 </p>
                             </div>
+                            <div class="card-footer text-center">
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Amei">
+                                    <span class="fa fa-heart"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Curti">
+                                    <span class="fa fa-thumbs-up"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Não curti">
+                                    <span class="fa fa-thumbs-down"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Detestei">
+                                    <span class="fa fa-skull"></span>
+                                </button>
+                            </div>
                         {% endif %}
                     </div>
                 {% endfor %}
             </div>
         </div>
     </div>
+    <script>$(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });</script>
 {% endblock %}
