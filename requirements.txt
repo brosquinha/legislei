@@ -1,4 +1,13 @@
+APScheduler==3.5.3
 certifi==2018.10.15
+Click==7.0
 Flask==0.12.1
+itsdangerous==1.1.0
 Jinja2==2.8.1
+MarkupSafe==1.1.0
+python-dotenv==0.9.1
+pytz==2018.7
+six==1.11.0
+tzlocal==1.5.1
 urllib3==1.19.1
+Werkzeug==0.14.1

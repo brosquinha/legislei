@@ -1,4 +1,13 @@
-__pycache__
+#Visua Studio Code
 .vscode
+
+#Python
+__pycache__
 *.pyc
+
+#Report files
 reports/
+
+#Virtualenv
+politica/
+.env

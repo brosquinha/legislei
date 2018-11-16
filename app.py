@@ -2,14 +2,56 @@
 import os
 import json
 from time import time
+from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import timedelta, datetime
 from models.deputados import DeputadosApp
 from models.vereadoresSaoPaulo import VereadoresApp
 from exceptions import ModelError
+from send_reports import check_reports_to_send, send_email
 from flask import Flask, request, render_template
 
 
 app = Flask(__name__, static_url_path='/static')
+
+
+def check_and_send_reports():
+    return send_reports(check_reports_to_send())
+
+
+def send_reports(data):
+    dep = DeputadosApp()
+    for item in data["lista"]:
+        reports = []
+        for par in item["parlamentares"]:
+            reports.append(obter_relatorio(
+                par,
+                datetime.now().strftime('%Y-%m-%d'),
+                dep.consultar_deputado,
+                deputado_id=par,
+                data_final=datetime.now().strftime('%Y-%m-%d'),
+                periodo_dias=item["intervalo"]
+            ))
+        with app.app_context():
+            html_report = render_template(
+                'relatorio_deputado_email.out.html',
+                relatorios=reports,
+                data_final=datetime.now().strftime('%Y-%m-%d'),
+                intervalo=item["intervalo"]
+            )
+        send_email(item["email"], html_report)
+
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(
+    func=check_and_send_reports,
+    trigger='cron',
+    day_of_week='sat',
+    hour='12',
+    minute='0',
+    second=0,
+    day='*',
+    month='*'
+)
 
 
 @app.route('/')
@@ -52,23 +94,23 @@ def obter_relatorio(parlamentar, data, func, **kwargs):
             ), 500
 
 
-@app.route('/', methods=['POST'])
+@app.route('/relatorio')
 def consultar_parlamentar():
-    if request.form['parlamentarTipo'] == 'deputados':
+    if request.args.get('parlamentarTipo') == 'deputados':
         dep = DeputadosApp()
-        if 'data' not in request.form:
+        if 'data' not in request.args:
             data_final = datetime.now().strftime('%Y-%m-%d')
         else:
-            data_final = request.form['data']
+            data_final = request.args.get('data')
         return modelar_pagina_relatorio(obter_relatorio(
-            parlamentar=request.form['deputado'],
+            parlamentar=request.args.get('parlamentar'),
             data=data_final,
             func=dep.consultar_deputado,
-            deputado_id=request.form['deputado'],
+            deputado_id=request.args.get('parlamentar'),
             data_final=data_final,
-            periodo_dias=request.form['dias']
+            periodo_dias=request.args.get('dias')
         ))
-    elif request.form['parlamentarTipo'] == 'vereadores':
+    elif request.args.get('parlamentarTipo') == 'vereadores':
         ver = VereadoresApp()
         return ver.consultar_vereador()
     else:
@@ -79,10 +121,10 @@ def consultar_parlamentar():
 def consultar_deputado_api():
     dep = DeputadosApp()
     return json.dumps(obter_relatorio(
-        parlamentar=request.args.get('deputado'),
+        parlamentar=request.args.get('parlamentar'),
         data=request.args.get('data'),
         func=dep.consultar_deputado,
-        deputado_id=request.args.get('deputado'),
+        deputado_id=request.args.get('parlamentar'),
         data_final=request.args.get('data'),
         periodo_dias=request.args.get('dias')
     )), 200
@@ -128,6 +170,7 @@ def client_error(e):
 
 
 if __name__ == '__main__':
-    app.debug = True
+    app.debug = os.environ.get('DEBUG', 'True') in ['True', 'true']
     port = int(os.environ.get('PORT', 5000))
+    scheduler.start()
     app.run(host='0.0.0.0', port=port, threaded=True)
