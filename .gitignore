@@ -11,3 +11,7 @@ reports/
 #Virtualenv
 politica/
 .env
+
+#Sphinx docs
+_build
+_modules

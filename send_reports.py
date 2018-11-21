@@ -5,8 +5,6 @@ import os
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.header import Header
-from flask import render_template
-from models.deputados import DeputadosApp
 
 from_email = os.environ.get("GMAIL_USR", None)
 password = os.environ.get("GMAIL_PSW", None)

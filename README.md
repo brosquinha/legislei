@@ -70,3 +70,13 @@ Para rodar o container:
 ```Bash
 docker run -p 8080:8080 --env-file .env legislei
 ```
+
+## Gerar HTML de documentação
+
+Rodar o seguinte na pasta raíz:
+
+```Bash
+sphinx-apidoc -o docs/_modules .
+cd docs/
+make html
+```
