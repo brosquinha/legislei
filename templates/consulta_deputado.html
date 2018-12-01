@@ -129,7 +129,7 @@
                                         <p class="card-text">
                                             {% if 'error' in p['voto'] %}
                                                 Não foi possível obter voto do deputado
-                                            {% elif p['voto']['voto'] != None and 'null' not in p['voto']['voto'] %}
+                                            {% elif p['voto']['voto'] not in [None, False] and 'null' not in p['voto']['voto'] %}
                                                 Votou <b>{{ p['voto']['voto'] }}</b> em
                                             {% else %}
                                                 <b>Não votou</b> em

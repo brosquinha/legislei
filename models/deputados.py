@@ -99,7 +99,7 @@ class DeputadosApp(ParlamentaresApp):
             relatorio_deputado['presencaTotal'] = '{0:.2f}%'.format(
                 relatorio_deputado['presencaTotal'])
             relatorio_deputado['proposicoes'] = self.obterProposicoesDeputado(
-                relatorio_deputado['deputado']['id'], data_final)
+                relatorio_deputado['deputado'], data_final)
             print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
             
             return relatorio_deputado
@@ -224,17 +224,19 @@ class DeputadosApp(ParlamentaresApp):
                 e['controleAusencia'] = None
         return demais_eventos, ausencia, eventos_previstos
 
-    def obterProposicoesDeputado(self, dep_id, data_final):
+    def obterProposicoesDeputado(self, deputado, data_final):
         di, df = self.obterDataInicialEFinal(data_final)
         props = []
         try:
             for page in self.prop.obterTodasProposicoes(
-                idAutor=dep_id,
+                idAutor=deputado['id'],
                 dataApresentacaoInicio=di,
                 dataApresentacaoFim=df
             ):
                 for item in page:
-                    props.append(self.prop.obterProposicao(item['id']))
+                    if (deputado['ultimoStatus']['nome'].lower() in 
+                            [x['nome'].lower() for x in self.prop.obterAutoresProposicao(item['id'])]):
+                        props.append(self.prop.obterProposicao(item['id']))
             return props
         except CamaraDeputadosError:
             return [{'error': True}]

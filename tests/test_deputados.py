@@ -272,17 +272,24 @@ class TestDeputadosApp(unittest.TestCase):
             '123', datetime(2018, 10, 28))
 
     @patch("SDKs.CamaraDeputados.entidades.Proposicoes.obterProposicao")
+    @patch("SDKs.CamaraDeputados.entidades.Proposicoes.obterAutoresProposicao")
     @patch("SDKs.CamaraDeputados.entidades.Proposicoes.obterTodasProposicoes")
     @patch("models.parlamentares.ParlamentaresApp.obterDataInicialEFinal")
     def test_obterProposicoesDeputado(
         self,
         mock_obterDataInicialEFinal,
         mock_obterTodasProposicoes,
+        mock_obterAutoresProposicoes,
         mock_obterProposicao
     ):
         def fakeObterTodasProposicoes(*args, **kwargs):
             yield proposicoes[0:2]
             yield proposicoes[2:]
+
+        def fakeObterAutoresProposicoes(prop_id, *args, **kwargs):
+            if prop_id == '2':
+                return [{'nome': 'Sicrano'}]
+            return [{'nome': 'Fulano da Silva'}]
 
         def fakeObterProposicao(*arg, **kwargs):
             return proposicoes[int(arg[0]) - 1]
@@ -292,13 +299,18 @@ class TestDeputadosApp(unittest.TestCase):
             {'id': '2'},
             {'id': '3'},
         ]
+        deputado = {
+            'id': '123',
+            'ultimoStatus': {'nome': 'Fulano da Silva'}
+        }
         mock_obterTodasProposicoes.side_effect = fakeObterTodasProposicoes
+        mock_obterAutoresProposicoes.side_effect = fakeObterAutoresProposicoes
         mock_obterProposicao.side_effect = fakeObterProposicao
 
         actual_response = self.dep.obterProposicoesDeputado(
-            '123', datetime(2018, 10, 28))
+            deputado, datetime(2018, 10, 28))
 
-        self.assertEqual(actual_response, proposicoes)
+        self.assertEqual(actual_response, [{'id': '1'}, {'id': '3'}])
 
         mock_obterDataInicialEFinal.assert_called_once_with(
             datetime(2018, 10, 28))
