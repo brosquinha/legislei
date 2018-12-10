@@ -15,3 +15,6 @@ politica/
 #Sphinx docs
 _build
 _modules
+
+#ALESP package
+.ALESP

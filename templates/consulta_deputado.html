@@ -10,13 +10,13 @@
                 <a href="/">Consultar político</a>
             </li>
             <li class="breadcrumb-item">Deputado federal</li>
-            <li class="breadcrumb-item active" aria-current="page">{{ deputado['nome'] }}</li>
+            <li class="breadcrumb-item active text-uppercase" aria-current="page">{{ deputado['nome'] }}</li>
         </ol>
     </nav>
     <div class="container mb-3 bg-light rounded">
         <div class="media">
             <div class="media-body">
-                <h1>{{ deputado['nome'] }} ({{ deputado['siglaPartido'] }}-{{ deputado['siglaUf'] }})</h1>
+                <h1 class="text-uppercase">{{ deputado['nome'] }} ({{ deputado['siglaPartido'] }}-{{ deputado['siglaUf'] }})</h1>
                 <h5 class="mt-0">{{ relatorio['dataInicial'] }} - {{ relatorio['dataFinal'] }}</h5>
                 <p class="mb-0">
                     Presença: <span class="collapse multi-collapse">{{ relatorio['presencaTotal'] }}</span>
@@ -46,6 +46,18 @@
         </div>
     </div>
     <div class="container">
+        {% if relatorio['mensagem'] %}
+        <div class="row">
+            <div class="col">
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    {{ relatorio['mensagem'] }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         <div class="row">
             {% set orgaos = relatorio['orgaos'] %}
             {% if orgaos|length > 0 %}
@@ -119,7 +131,7 @@
                                 <a href="{{ item['evento']['uri'] }}" target="_blank" class="text-white">{{ item['evento']['titulo'] }}</a>
                             ({{ item['evento']['dataHoraInicio'] }}—{{ item['evento']['dataHoraFim'] }})
                             ({{ item['evento']['descricaoSituacao'] }})</div>
-                            <div class="card-body">
+                            <div class="card-body" data-test="{{ item['pautas']|length }}">
                                 {% if 'error' in item['pautas'] %}
                                     <p class="card-text bg-danger">
                                         Não foi possível obter pautas do evento.

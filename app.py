@@ -5,6 +5,7 @@ from time import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import timedelta, datetime
 from models.deputados import DeputadosApp
+from models.deputadosSP import DeputadosALESPApp
 from models.vereadoresSaoPaulo import VereadoresApp
 from exceptions import ModelError
 from send_reports import check_reports_to_send, send_email
@@ -113,6 +114,16 @@ def consultar_parlamentar():
     elif request.args.get('parlamentarTipo') == 'vereadores':
         ver = VereadoresApp()
         return ver.consultar_vereador()
+    elif request.args.get('parlamentarTipo') == 'deputadosSP':
+        depsp = DeputadosALESPApp()
+        return modelar_pagina_relatorio(obter_relatorio(
+            parlamentar=request.args.get('parlamentar'),
+            data=request.args.get('data'),
+            func=depsp.consultar_deputado,
+            dep_id=request.args.get('parlamentar'),
+            data_final=request.args.get('data'),
+            periodo=7
+        ))
     else:
         return 'Selecione um tipo de parlamentar, plz', 400
 
@@ -133,6 +144,12 @@ def consultar_deputado_api():
 @app.route('/deputados')
 def obterDeputados():
     dep = DeputadosApp()
+    return dep.obterDeputados()
+
+
+@app.route('/deputadosSP')
+def obterDeputadosAlesp():
+    dep = DeputadosALESPApp()
     return dep.obterDeputados()
 
 
