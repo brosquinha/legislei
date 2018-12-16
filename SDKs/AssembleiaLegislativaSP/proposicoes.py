@@ -34,7 +34,8 @@ class Proposicoes(Base):
                     'numero': self.get_child_inner_text(elem, 'NroLegislativo'),
                     'ano': self.get_child_inner_text(elem, 'AnoLegislativo'),
                     'dataEntrada': self.get_child_inner_text(elem, 'DtEntradaSistema'),
-                    'dataPublicacao': self.get_child_inner_text(elem, 'DtPublicacao')
+                    'dataPublicacao': self.get_child_inner_text(elem, 'DtPublicacao'),
+                    'idNatureza': self.get_child_inner_text(elem, 'IdNatureza')
                 }
 
     def obterTodosAutoresProposicoes(self):
@@ -62,3 +63,20 @@ class Proposicoes(Base):
                     'idAutor': self.get_child_inner_text(elem, 'IdAutor'),
                     'nomeAutor': self.get_child_inner_text(elem, 'NomeAutor')
                 }
+
+    def obterNaturezaDocumentos(self):
+        """
+        Obtém todos os tipos diferentes de documentos da ALESP
+
+        :return: Lista de tipos de documentos
+        :rtype: List
+        """
+        tipos = []
+        for child in self.get_XML("processo_legislativo/naturezasSpl.xml"):
+            if child.tag == 'natureza':
+                tipos.append({
+                    'id': self.get_child_inner_text(child, 'idNatureza'),
+                    'descricao': self.get_child_inner_text(child, 'nmNatureza'),
+                    'sigla': self.get_child_inner_text(child, 'sgNatureza')
+                })
+        return tipos

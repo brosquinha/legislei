@@ -4,6 +4,7 @@ from datetime import datetime
 from unittest.mock import patch
 from SDKs.CamaraDeputados.entidades import Deputados
 from models.deputados import DeputadosApp
+from models.relatorio import Relatorio, Proposicao, Evento, Orgao
 
 
 class TestDeputadosApp(unittest.TestCase):
@@ -295,9 +296,9 @@ class TestDeputadosApp(unittest.TestCase):
             return proposicoes[int(arg[0]) - 1]
         mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
         proposicoes = [
-            {'id': '1'},
-            {'id': '2'},
-            {'id': '3'},
+            {'id': '1', 'ementa': 'Teste1'},
+            {'id': '2', 'ementa': 'Teste2'},
+            {'id': '3', 'ementa': 'Teste3'},
         ]
         deputado = {
             'id': '123',
@@ -307,11 +308,13 @@ class TestDeputadosApp(unittest.TestCase):
         mock_obterAutoresProposicoes.side_effect = fakeObterAutoresProposicoes
         mock_obterProposicao.side_effect = fakeObterProposicao
 
-        actual_response = self.dep.obterProposicoesDeputado(
+        self.dep.obterProposicoesDeputado(
             deputado, datetime(2018, 10, 28))
+        actual_response = self.dep.relatorio.to_dict()['proposicoes']
 
-        self.assertEqual(actual_response, [{'id': '1'}, {'id': '3'}])
-
+        self.assertEqual(2, len(actual_response))
+        self.assertEqual('Teste1', actual_response[0]['ementa'])
+        self.assertEqual('Teste3', actual_response[1]['ementa'])
         mock_obterDataInicialEFinal.assert_called_once_with(
             datetime(2018, 10, 28))
         mock_obterTodasProposicoes.assert_called_with(

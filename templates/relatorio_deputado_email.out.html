@@ -54,15 +54,15 @@
                       </tbody>
                     </table>
     {% for relatorio in relatorios %}
-    {% set deputado = relatorio['deputado']['ultimoStatus'] %}
+    {% set deputado = relatorio['parlamentar'] %}
     <table class="card  p-2" border="0" cellpadding="0" cellspacing="0" style="font-family: Helvetica, Arial, sans-serif; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-spacing: 0px; border-collapse: separate !important; border-radius: 4px; width: 100%; overflow: hidden; border: 1px solid #dee2e6;" bgcolor="#ffffff">
   <tbody>
     <tr>
       <td style="border-spacing: 0px; border-collapse: collapse; line-height: 24px; font-size: 16px; width: 100%; margin: 0; padding: 8px;" align="left">
         <div>
             <div class="card-header">
-                <img style="border-radius: .25rem; height: auto; line-height: 100%; outline: none; text-decoration: none; border: 0 none;" src="{{ deputado['urlFoto'] }}" alt="{{ deputado['nome'] }}" align="right">
-                <h1 style="margin-top: 0; margin-bottom: 0; font-weight: 500; color: inherit; vertical-align: baseline; font-size: 36px; line-height: 43.2px;" align="left">{{ deputado['nome'] }} ({{ deputado['siglaPartido'] }}-{{ deputado['siglaUf'] }})</h1>
+                <img style="border-radius: .25rem; height: auto; line-height: 100%; outline: none; text-decoration: none; border: 0 none;" src="{{ deputado['foto'] }}" alt="{{ deputado['nome'] }}" align="right">
+                <h1 style="margin-top: 0; margin-bottom: 0; font-weight: 500; color: inherit; vertical-align: baseline; font-size: 36px; line-height: 43.2px;" align="left">{{ deputado['nome'] }} ({{ deputado['partido'] }}-{{ deputado['uf'] }})</h1>
                 <table class="pt-3" border="0" cellpadding="0" cellspacing="0" style="font-family: Helvetica, Arial, sans-serif; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-spacing: 0px; border-collapse: collapse;">
                   <tbody>
                     <tr>

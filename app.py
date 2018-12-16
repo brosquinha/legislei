@@ -4,9 +4,11 @@ import json
 from time import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import timedelta, datetime
+from pytz import timezone
 from models.deputados import DeputadosApp
 from models.deputadosSP import DeputadosALESPApp
 from models.vereadoresSaoPaulo import VereadoresApp
+from models.relatorio import Relatorio
 from exceptions import ModelError
 from send_reports import check_reports_to_send, send_email
 from flask import Flask, request, render_template
@@ -43,6 +45,7 @@ def send_reports(data):
 
 
 scheduler = BackgroundScheduler()
+scheduler.configure(timezone=timezone('America/Sao_Paulo'))
 scheduler.add_job(
     func=check_and_send_reports,
     trigger='cron',
@@ -68,6 +71,11 @@ def modelar_pagina_relatorio(relatorio, template='consulta_deputado.html'):
 
 
 def obter_relatorio(parlamentar, data, func, **kwargs):
+    """
+    Obtém o relatório da função fornecida
+
+    Espera-se que `func` retorne um objeto Relatorio.
+    """
     try:
         arquivo = open('reports/{}-{}.json'.format(
             parlamentar, data
@@ -84,9 +92,9 @@ def obter_relatorio(parlamentar, data, func, **kwargs):
                 'reports/{}-{}.json'.format(parlamentar, data),
                 'w+'
             )
-            arquivo.write(json.dumps(relatorio))
+            arquivo.write(relatorio.to_json())
             arquivo.close()
-            return relatorio
+            return relatorio.to_dict()
         except ModelError as e:
             return render_template(
                 'erro.html',
@@ -113,7 +121,14 @@ def consultar_parlamentar():
         ))
     elif request.args.get('parlamentarTipo') == 'vereadores':
         ver = VereadoresApp()
-        return ver.consultar_vereador()
+        return modelar_pagina_relatorio(obter_relatorio(
+            parlamentar=request.args.get('parlamentar'),
+            data=request.args.get('data'),
+            func=ver.consultar_vereador,
+            vereador_nome=request.args.get('parlamentar'),
+            data_final=request.args.get('data'),
+            periodo=request.args.get('dias')
+        ))
     elif request.args.get('parlamentarTipo') == 'deputadosSP':
         depsp = DeputadosALESPApp()
         return modelar_pagina_relatorio(obter_relatorio(

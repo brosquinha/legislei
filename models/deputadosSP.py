@@ -7,6 +7,7 @@ from SDKs.AssembleiaLegislativaSP.proposicoes import Proposicoes
 from SDKs.AssembleiaLegislativaSP.exceptions import ALESPError
 from models.parlamentares import ParlamentaresApp
 from exceptions import ModelError
+from models.relatorio import Relatorio, Evento, Orgao, Proposicao
 
 class DeputadosALESPApp(ParlamentaresApp):
 
@@ -15,80 +16,41 @@ class DeputadosALESPApp(ParlamentaresApp):
         self.dep = Deputados()
         self.com = Comissoes()
         self.prop = Proposicoes()
+        self.relatorio = Relatorio()
 
     def consultar_deputado(self, dep_id, data_final=datetime.now(), periodo=7):
         try:
             start_time = time()
-            relatorio = {}
+            self.relatorio = Relatorio()
+            self.relatorio.set_parlamentar_cargo('deputado estadual')
+            self.relatorio.set_aviso_dados(u'Dados de sessões plenárias não disponível.')
+            self.setPeriodoDias(periodo)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
-            relatorio['mensagem'] = u'Dados de sessões plenárias não disponível.'
             print('Iniciando...')
-            relatorio["deputado"] = {"ultimoStatus": self.obterDeputado(dep_id)}
-            relatorio["deputado"]["ultimoStatus"]["siglaUf"] = 'SP'
-            relatorio["dataInicial"] = data_inicial.strftime("%d/%m/%Y")
-            relatorio['dataFinal'] = data_final.strftime("%d/%m/%Y")
+            deputado_info = self.obterDeputado(dep_id)
+            self.relatorio.set_parlamentar_nome(deputado_info['nome'])
+            self.relatorio.set_parlamentar_partido(deputado_info['siglaPartido'])
+            self.relatorio.set_parlamentar_uf('SP')
+            self.relatorio.set_parlamentar_foto(deputado_info['urlFoto'])
+            self.relatorio.set_data_inicial(data_inicial)
+            self.relatorio.set_data_final(data_final)
             print('Deputado obtido em {0:.5f}'.format(time() - start_time))
             comissoes = self.obterComissoesPorId()
             print('Comissoes por id obtidas em {0:.5f}'.format(time() - start_time))
             votacoes = self.obterVotacoesPorReuniao(dep_id)
             print('Votos do deputado obtidos em {0:.5f}'.format(time() - start_time))
-            relatorio['orgaos'], orgaos_nomes = self.obterComissoesDeputado(
+            orgaos_nomes = self.obterComissoesDeputado(
                 comissoes, dep_id, data_inicial, data_final)
             print('Comissoes do deputado obtidas em {0:.5f}'.format(time() - start_time))
-            eventos_presentes, eventos_ausentes = self.obterEventosPresentes(
-                dep_id, data_inicial, data_final)
-            relatorio['eventosPresentes'] = []
-            for evento in eventos_presentes:
-                pautas = []
-                if evento['id'] in votacoes:
-                    for votacao in votacoes[evento['id']]:
-                        pautas.append({
-                            'voto': {
-                                'voto': votacao['voto'],
-                                'pauta': votacao['idDocumento']
-                            },
-                            'proposicao': {
-                                'siglaTipo': votacao['idDocumento'],
-                                'urlInteiroTeor': 'https://www.al.sp.gov.br/propositura/?id={}'.format(votacao['idDocumento'])
-                            }
-                        })
-                relatorio['eventosPresentes'].append({
-                    "evento": {
-                        'titulo': evento['convocacao'],
-                        'dataHoraInicio': evento['data'],
-                        'dataHoraFim': None,
-                        'descricaoSituacao': evento['situacao'],
-                        'orgaos': [{
-                            'nome': comissoes[evento["idComissao"]]["nome"],
-                            'apelido': comissoes[evento["idComissao"]]["sigla"]
-                        }],
-                    },
-                    'pautas': pautas
-                })
-            relatorio['eventosAusentes'] = []
-            relatorio['eventosPrevistos'] = []
-            for evento in eventos_ausentes:
-                evento_dict = {
-                    'titulo': evento['convocacao'],
-                    'dataHoraInicio': evento['data'],
-                    'dataHoraFim': None,
-                    'descricaoSituacao': evento['situacao'],
-                    'orgaos': [{
-                        'nome': comissoes[evento["idComissao"]]["nome"],
-                        'apelido': comissoes[evento["idComissao"]]["sigla"]
-                    }]
-                }
-                if (comissoes[evento["idComissao"]]["sigla"] in orgaos_nomes and
-                        evento['situacao'].lower() in ['em preparação', 'em preparacao', 'realizada', 'encerrada']):
-                    evento_dict['controleAusencia'] = 2
-                    relatorio['eventosPrevistos'].append(evento_dict)
-                relatorio['eventosAusentes'].append(evento_dict)
-            relatorio['eventosAusentesTotal'] = len(relatorio['eventosPrevistos'])
+            self.obterEventosPresentes(
+                dep_id, data_inicial, data_final, votacoes, comissoes, orgaos_nomes)
+            self.relatorio.set_eventos_ausentes_esperados_total(
+                len(self.relatorio.get_eventos_previstos()))
             print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
-            relatorio['proposicoes'] = self.obterProposicoesDeputado(dep_id, data_inicial, data_final)
+            self.obterProposicoesDeputado(dep_id, data_inicial, data_final)
             print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
-            return relatorio
+            return self.relatorio
         except ALESPError:
             raise ModelError('Erro')
     
@@ -122,41 +84,63 @@ class DeputadosALESPApp(ParlamentaresApp):
         return resultado
 
     def obterComissoesDeputado(self, comissoes, dep_id, data_inicial, data_final):
-        dep_comissoes = []
         dep_comissoes_nomes = []
         membros_comissoes = self.com.obterMembrosComissoes()
         for membro in membros_comissoes:
             if ((membro["idDeputado"] == dep_id) and 
                     (membro["dataFim"] == None or 
-                    self.obterDatetimeDeStr(membro["dataFim"]) > data_final) and
+                    self.obterDatetimeDeStr(membro["dataFim"]) > data_inicial) and
                     self.obterDatetimeDeStr(membro["dataInicio"]) < data_final):
-                membro["nomeComissao"] = comissoes[membro["idComissao"]]["nome"]
+                orgao = Orgao()
                 membro["siglaOrgao"] = comissoes[membro["idComissao"]]["sigla"]
-                membro["nomePapel"] = "Titular" if membro["efetivo"] else "Suplente"
-                membro["nomeOrgao"] = membro["nomeComissao"]
+                orgao.set_nome(comissoes[membro["idComissao"]]["nome"])
+                orgao.set_sigla(membro['siglaOrgao'])
+                orgao.set_cargo("Titular" if membro["efetivo"] else "Suplente")
+                self.relatorio.add_orgao(orgao)
                 dep_comissoes_nomes.append(membro["siglaOrgao"])
-                dep_comissoes.append(membro)
-        return dep_comissoes, dep_comissoes_nomes
+        return dep_comissoes_nomes
 
-    def obterEventosPresentes(self, dep_id, data_inicial, data_final):
+    def obterEventosPresentes(
+            self, dep_id, data_inicial, data_final, reunioes, comissoes, orgaos_nomes):
         eventos_todos = self.com.obterReunioesComissoes()
         presencas = self.com.obterPresencaReunioesComissoes()
-        eventos_ausentes = []
-        eventos_presentes = []
         presencas = [x for x in presencas if x["idDeputado"] == dep_id]
         presencas_reunioes_id = [x["idReuniao"] for x in presencas]
-        for evento in eventos_todos:
-            if (self.obterDatetimeDeStr(evento["data"]) > data_inicial and
-                    self.obterDatetimeDeStr(evento["data"]) < data_final):
-                if evento["id"] in presencas_reunioes_id:
-                    eventos_presentes.append(evento)
+        for e in eventos_todos:
+            if (self.obterDatetimeDeStr(e["data"]) > data_inicial and
+                    self.obterDatetimeDeStr(e["data"]) < data_final):
+                evento = Evento()
+                evento.set_data_inicial(e['data'])
+                evento.set_nome(e['convocacao'])
+                evento.set_situacao(e['situacao'])
+                if e['id'] in reunioes:
+                    for r in reunioes[e['id']]:
+                        proposicao = Proposicao()
+                        proposicao.set_pauta(r['idDocumento'])
+                        proposicao.set_url_documento(
+                            'https://www.al.sp.gov.br/propositura/?id={}'.format(r['idDocumento']))
+                        proposicao.set_voto(r['voto'])
+                        proposicao.set_tipo(r['idDocumento'])
+                        evento.add_pautas(proposicao)
+                orgao = Orgao()
+                orgao.set_nome(comissoes[e['idComissao']]['nome'])
+                orgao.set_apelido(comissoes[e['idComissao']]['sigla'])
+                evento.add_orgaos(orgao)
+                if e["id"] in presencas_reunioes_id:
+                    evento.set_presente()
+                    self.relatorio.add_evento_presente(evento)
                 else:
-                    eventos_ausentes.append(evento)
-        return eventos_presentes, eventos_ausentes
+                    evento.set_ausencia_evento_nao_esperado()
+                    if (comissoes[e["idComissao"]]["sigla"] in orgaos_nomes and
+                        e['situacao'].lower() in ['em preparação', 'em preparacao', 'realizada', 'encerrada']):
+                        evento.set_ausente_evento_previsto()
+                        self.relatorio.add_evento_previsto(evento)
+                    self.relatorio.add_evento_ausente(evento)
 
     def obterProposicoesDeputado(self, dep_id, data_inicial, data_final):
-        proposicoes = []
         proposicoes_deputado = []
+        print('Obtendo tipos de documentos...')
+        tipos_documentos = self.prop.obterNaturezaDocumentos()
         print('Obtendo autores...')
         for autor in self.prop.obterTodosAutoresProposicoes():
             if autor['idAutor'] == dep_id:
@@ -169,11 +153,17 @@ class DeputadosALESPApp(ParlamentaresApp):
             data_prop = self.obterDatetimeDeStr(propositura['dataEntrada'])
             if (data_prop > data_inicial and data_prop < data_final and
                     propositura['id'] in proposicoes_deputado):
-                propositura['urlInteiroTeor'] = 'https://www.al.sp.gov.br/propositura/?id={}'.format(
-                    propositura['id'])
-                propositura['dataApresentacao'] = propositura['dataEntrada']
-                proposicoes.append(propositura)
-        return proposicoes
+                proposicao = Proposicao()
+                proposicao.set_url_documento('https://www.al.sp.gov.br/propositura/?id={}'.format(
+                    propositura['id']))
+                proposicao.set_data_apresentacao(propositura['dataEntrada'])
+                proposicao.set_ementa(propositura['ementa'])
+                proposicao.set_numero(propositura['numero'])
+                if propositura['idNatureza']:
+                    for t in tipos_documentos:
+                        if t['id'] == propositura['idNatureza']:
+                            proposicao.set_tipo(t['sigla'])
+                self.relatorio.add_proposicao(proposicao)
 
     def obterDatetimeDeStr(self, txt):
         #Isso aqui deveria ser responsabilidade da SDK ALESP, não?

@@ -33,28 +33,30 @@ class TestMainAppMethods(unittest.TestCase):
         self.assertEqual(actual_response, 'TesteEmJson')
         
     @patch("builtins.open")
-    @patch("json.dumps")
     def test_obter_relatorio_json_inexistente_funcao_sem_erro(
         self,
-        mock_json_dumps,
         mock_open
     ):
-        class FakeOpen:
+        class FakeOpen():
             def __init__(self, file, mode=None):
                 if mode == None:
                     raise FileNotFoundError()
-            def write(self, *args):
-                pass
+            def write(self, txt):
+                if txt != 'jsonstr':
+                    raise Exception #Tem que ter uma maneira mais elegante de fazer essa verificação
             def close(self):
                 pass
+        class FakeRelatorio:
+            def to_json(self):
+                return 'jsonstr'
+            def to_dict(self):
+                return 'relatorio'
         def func(*args, **kwargs):
-            return 'relatorio'
+            return FakeRelatorio()
         mock_open.side_effect = FakeOpen
-        mock_json_dumps.return_value = 'jsonstr'
 
         actual_response = obter_relatorio('123', 'hj', func)
 
-        mock_json_dumps.assert_called_once_with('relatorio')
         mock_open.assert_has_calls([
             call('reports/123-hj.json'),
             call('reports/123-hj.json', 'w+')])

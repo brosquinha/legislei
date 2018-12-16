@@ -1,3 +1,4 @@
+import certifi
 import urllib3
 import xml.etree.ElementTree as ET
 import json
@@ -9,7 +10,10 @@ class CamaraMunicipal(object):
     """
 
     def __init__(self):
-        self.http = urllib3.PoolManager()
+        self.http = urllib3.PoolManager(
+            cert_reqs='CERT_REQUIRED',
+            ca_certs=certifi.where()
+        )
 
     def obterPresenca(self, data_inicio, data_fim):
         data_controle = data_inicio
@@ -74,7 +78,6 @@ class CamaraMunicipal(object):
         )
         for item in json.loads(r.data.decode('utf-8')):
             if nome in item['sessao']:
-                print(item['sessao'])
                 projetos.append(['{}{}'.format(x['tipo'], x['numero']) for x in item['projetos']])
         return projetos
 
@@ -190,6 +193,9 @@ class CamaraMunicipal(object):
                         if nome.lower() in gabinetes_nomes:
                             nome_vereador = nome
                             vereador_id = 'TODO'
+                            for gabinete in gabinetes:
+                                if gabinete['vereador'].lower() == nome.lower():
+                                    vereador_id = gabinete['codigo']
                 if nome_vereador == None:
                     nome_vereador = 'ERRO1'.join(tipos_nomes)
             else:

@@ -25,3 +25,11 @@ class ParlamentaresApp():
     def obterDataInicialEFinal(self, data_final):
         data_inicial = self.obterDataInicial(data_final, **self.periodo)
         return self.formatarDatasYMD(data_inicial, data_final)
+
+
+    def setPeriodoDias(self, periodo_dias):
+        try:
+            if int(periodo_dias) in range(7, 29):
+                self.periodo['days'] = int(periodo_dias)
+        except ValueError:
+            periodo_dias = 7
