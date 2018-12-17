@@ -1,0 +1,20 @@
+#Visua Studio Code
+.vscode
+
+#Python
+__pycache__
+*.pyc
+
+#Report files
+reports/
+
+#Virtualenv
+politica/
+.env
+
+#Sphinx docs
+_build
+_modules
+
+#ALESP package
+.ALESP

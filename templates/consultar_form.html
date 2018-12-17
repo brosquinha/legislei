@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Consultar político{% endblock %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item active" aria-current="page">Consultar político</li>
+        </ol>
+    </nav>
+    <div class="container text-center">
+        <form action="relatorio" name="form1">
+            <div class="form-row">
+                <div class="col-md">
+                    <select name="parlamentarTipo" class="form-control mb-1">
+                        <option value="">Escolher...</option>
+                        <option value="deputados">Deputado federal</option>
+                        <option value="deputadosSP">Deputado estadual</option>
+                        <option value="vereadores">Vereador</option>
+                    </select>
+                </div>
+                <div class="col-md">
+                    Estado: SP / Cidade: São Paulo
+                </div>
+                <div class="col-md">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text form-control d-none" id="loader">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </span>
+                        </div>
+                        <input
+                            name="parlamentar"
+                            list="listaPoliticos"
+                            placeholder="Político"
+                            class="form-control mb-1 rounded-left"
+                            required
+                            disabled />
+                    </div>
+                </div>
+                <div class="col-md">
+                    <input type="date" name="data" class="form-control mb-1" required />
+                </div>
+                <div class="col-md">
+                    <input
+                        type="number"
+                        min="7"
+                        max="28"
+                        name="dias"
+                        class="form-control mb-1"
+                        value="7"
+                        required />
+                </div>
+                <input type="submit" />
+                <datalist id="listaPoliticos"></datalist>
+            </div>
+        </form>
+    </div>
+    <script>
+        let preencherDatalist = (data) => {
+            data = JSON.parse(data);
+            document.getElementById("listaPoliticos").innerHTML = '';
+            for (let i=0; i<data.length; i++) {
+                deputadoOption = document.createElement("option");
+                deputadoOption.setAttribute("value", data[i].id);
+                deputadoOption.innerText = data[i].nome + " (" + data[i].siglaPartido +
+                ((document.form1.parlamentarTipo.value == 'deputados') ? "-" + data[i].siglaUf : '') + ")";
+                document.getElementById("listaPoliticos").appendChild(deputadoOption);
+                document.form1.parlamentar.removeAttribute('disabled');
+            }
+            $("#loader").addClass('d-none');
+            $(document.form1.parlamentar).addClass('rounded-left');
+        }
+        document.form1.parlamentarTipo.onchange = (e) => {
+            let parTipo = document.form1.parlamentarTipo.value;
+            if (parTipo == '')
+                return;
+            $("#loader").removeClass('d-none');
+            $(document.form1.parlamentar).removeClass('rounded-left');
+            document.form1.parlamentar.setAttribute('disabled', 'true');
+            if (localStorage[parTipo]) {
+                preencherDatalist(localStorage[parTipo]);
+            } else {
+                $.ajax({
+                    url: "/"+parTipo,
+                    method: "GET",
+                    error: (jqXHR, txtStatus) => {
+                        console.warn(txtStatus);
+                        $("#loader").addClass('d-none');
+                        $(document.form1.parlamentar).addClass('rounded-left');
+                    },
+                    success: (data) => {
+                        localStorage[parTipo] = data;
+                        preencherDatalist(data);
+                    }
+                });
+            }
+        }
+    </script>
+{% endblock %}

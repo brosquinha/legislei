@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Consulta ao {{ relatorio['parlamentar']['cargo'] }}{% endblock %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        {% set deputado = relatorio['parlamentar'] %}
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/">Consultar político</a>
+            </li>
+            <li class="breadcrumb-item">Deputado federal</li>
+            <li class="breadcrumb-item active text-uppercase" aria-current="page">{{ deputado['nome'] }}</li>
+        </ol>
+    </nav>
+    <div class="container mb-3 bg-light rounded">
+        <div class="media">
+            <div class="media-body">
+                <h1 class="text-uppercase">{{ deputado['nome'] }} ({{ deputado['partido'] }}-{{ deputado['uf'] }})</h1>
+                <h5 class="mt-0">{{ relatorio['dataInicial'] }} - {{ relatorio['dataFinal'] }}</h5>
+                <p class="mb-0">
+                    Presença: <span class="collapse multi-collapse">{{ relatorio['presencaTotal'] }}</span>
+                    <span class="collapse show multi-collapse">{{ relatorio['presencaRelativa'] }}</span>
+                </p>
+                <h4>
+                    <a
+                        href="data:text/json;charset=utf-8,"
+                        id="downloadLink"
+                        download="relatorio.json"
+                        class="fa fa-download text-dark icon-link"></a>
+                    <a
+                        href="#"
+                        class="fa fa-sync-alt text-dark ml-1 icon-link"></a>
+                </h4>
+                <span id="relatorioJSON" class="d-none">{{ relatorio | tojson | safe }}</span>
+                <script>
+                try {
+                    let relatorio = JSON.parse(document.getElementById("relatorioJSON").innerText);
+                    document.getElementById("downloadLink").href += encodeURIComponent(JSON.stringify(relatorio));
+                } catch {
+                    document.getElementById("downloadLink").classList.add('d-none');
+                }
+                </script>
+            </div>
+            <img class="align-self-start rounded" src="{{ deputado['foto'] }}" alt="{{ deputado['nome'] }}" />
+        </div>
+    </div>
+    <div class="container">
+        {% if relatorio['mensagem'] %}
+        <div class="row">
+            <div class="col">
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    {{ relatorio['mensagem'] }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="row">
+            {% set orgaos = relatorio['orgaos'] %}
+            {% if orgaos|length > 0 %}
+                <div class="col-sm">Órgãos dos quais faz parte ({{ orgaos|length }}):
+                    {% if orgaos == [{'nome': None}] %}
+                        <p class="text-danger">Não foi possível obter as comissões do deputado.</p>
+                    {% else %}
+                        <ul class="list-group mb-1">
+                        {% for item in orgaos if item['cargo'] == 'Titular' %}
+                            <li class="list-group-item">
+                                <span title="{{ item['nome'] }}">
+                                    {{ item['sigla'] }}
+                                </span><span class="badge badge-secondary">{{ item['cargo'] }}</span>
+                            </li>
+                        {% endfor %}
+                    {% endif %}
+                    </ul>
+                    <ul class="list-group">
+                    {% for item in orgaos if item['cargo'] != 'Titular' %}
+                        <li class="list-group-item">
+                            <span title="{{ item['nome'] }}">
+                                {{ item['sigla'] }}
+                            </span><span class="badge badge-secondary">{{ item['cargo'] }}</span>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            {% set proposicoes_deputado = relatorio['proposicoes'] %}
+            {% if proposicoes_deputado|length > 0 %}
+                <div class="col-sm">Proposições da semana
+                    ({{ proposicoes_deputado|length }}):
+                    {% for item in proposicoes_deputado %}
+                        {% set color_class = 'primary' if item['tipo'] in ['PL', 'PEC'] else 'info' %}
+                        <div class="card mb-1 text-white bg-{{ color_class }}">
+                            <div class="card-header">
+                                <a href="{{ item['uri'] }}" target="_blank" class="text-white">
+                                    {{ item['tipo'] }}{{ item['numero'] }}</a>
+                                ({{ item['dataApresentacao'] }})
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">{{ item['ementa'] }}</p>
+                                <p class="card-text">
+                                    <a href="{{ item['urlDocumento'] }}" target="_blank" class="text-white">Detalhes</a>
+                                </p>
+                            </div>
+                            <div class="card-footer text-center">
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Amei">
+                                    <span class="fa fa-heart"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Curti">
+                                    <span class="fa fa-thumbs-up"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Não curti">
+                                    <span class="fa fa-thumbs-down"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Detestei">
+                                    <span class="fa fa-skull"></span>
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% set eventos_presentes = relatorio['eventosPresentes'] %}
+            {% if eventos_presentes|length > 0 %}
+                <div class="col-sm">Eventos do parlamentar ({{ eventos_presentes|length }}):
+                    {% for item in eventos_presentes %}
+                        <div class="card mb-1 bg-success text-light">
+                            <div class="card-header">
+                                <a href="{{ item['url'] }}" target="_blank" class="text-white">{{ item['nome'] }}</a>
+                            ({{ item['dataInicial'] }}—{{ item['dataFinal'] }})
+                            ({{ item['situacao'] }})</div>
+                            <div class="card-body" data-test="{{ item['pautas']|length }}">
+                                {% if 'error' in item['pautas'] %}
+                                    <p class="card-text bg-danger">
+                                        Não foi possível obter pautas do evento.
+                                    </p>
+                                {% else %}
+                                    {% for p in item['pautas'] %}
+                                        <p class="card-text">
+                                            {% if 'error' == p['voto'] %}
+                                                Não foi possível obter voto do deputado
+                                            {% elif p['voto'] not in [None, False] and 'null' not in p['voto'] %}
+                                                Votou <b>{{ p['voto'] }}</b> em
+                                            {% else %}
+                                                <b>Não votou</b> em
+                                            {% endif %}
+                                            {% if 'error' == p %}
+                                                Não foi possível obter proposição da pauta
+                                            {% else %}
+                                                <b>{{ p['tipo'] }}</b>:
+                                                <a
+                                                    href="{{ p['urlDocumento'] }}"
+                                                    target="_blank"
+                                                    class="text-white">{{ p['pauta'] }}</a>
+                                                (<a
+                                                    href="{{ p['urlAutores'] }}"
+                                                    target="_blank"
+                                                    class="text-white">ver autores</a>)
+                                            {% endif %}
+                                        </p>
+                                    {% endfor %}
+                                {% endif %}
+                                {% if item['orgaos'] %}
+                                <p class="card-text">
+                                    Órgão: <span title="{{ item['orgaos'][0]['nome'] }}">
+                                        {{ item['orgaos'][0]['apelido'] }}
+                                    </span>
+                                </p>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer text-center">
+                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Amei">
+                                    <span class="fa fa-heart"></span>
+                                </button>
+                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Curti">
+                                    <span class="fa fa-thumbs-up"></span>
+                                </button>
+                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Não curti">
+                                    <span class="fa fa-thumbs-down"></span>
+                                </button>
+                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Detestei">
+                                    <span class="fa fa-skull"></span>
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% set eventos_ausentes = relatorio['eventosAusentes'] %}
+            {% set eventos_previstos = relatorio['eventosPrevistos'] %}
+            <div class="col-sm">Demais eventos da semana 
+                ({{ relatorio['eventosAusentesEsperadosTotal'] }}/{{ eventos_ausentes|length }}):
+                <a data-toggle="collapse" href=".multi-collapse">Filtrar</a>
+                {% if eventos_previstos == [{'id': None}] %}
+                    <p class="text-danger">Não foi possível obter eventos previstos do deputado.</p>
+                {% endif %}
+                {% for item in eventos_ausentes %}
+                    {% if item['presenca'] == 3 %}
+                    {% set color_class = 'danger' %}
+                    <div class="card mb-1 text-white bg-danger">
+                    {% elif item['presenca'] == 2 %}
+                    {% set color_class = 'warning' %}
+                    <div class="card mb-1 text-white bg-warning">
+                    {% else %}
+                    {% set color_class = 'light' %}
+                    <div class="card mb-1 collapse multi-collapse">
+                    {% endif %}
+                        <div class="card-header">
+                            <a href="{{ item['url'] }}" target="_blank" class="{{ 'text-white' if item['presenca'] > 1 }}">
+                                {{ item['nome'] }}</a>
+                        ({{ item['dataInicial'] }}—{{ item['dataFinal'] }})
+                        ({{ item['situacao'] }})</div>
+                        {% if item['orgaos'] %}
+                            <div class="card-body">
+                                <p class="card-text">Órgão:
+                                    <span title="{{ item['orgaos'][0]['nome'] }}">
+                                        {{ item['orgaos'][0]['apelido'] }}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="card-footer text-center">
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Amei">
+                                    <span class="fa fa-heart"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Curti">
+                                    <span class="fa fa-thumbs-up"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Não curti">
+                                    <span class="fa fa-thumbs-down"></span>
+                                </button>
+                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Detestei">
+                                    <span class="fa fa-skull"></span>
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <script>$(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });</script>
+{% endblock %}
