@@ -5,6 +5,7 @@ from time import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import timedelta, datetime
 from pytz import timezone
+from db import mongo_client
 from models.deputados import DeputadosApp
 from models.deputadosSP import DeputadosALESPApp
 from models.vereadoresSaoPaulo import VereadoresApp
@@ -23,7 +24,7 @@ def check_and_send_reports():
 
 def send_reports(data):
     dep = DeputadosApp()
-    for item in data["lista"]:
+    for item in data:
         reports = []
         for par in item["parlamentares"]:
             reports.append(obter_relatorio(
@@ -76,24 +77,23 @@ def obter_relatorio(parlamentar, data, func, **kwargs):
 
     Espera-se que `func` retorne um objeto Relatorio.
     """
-    try:
-        arquivo = open('reports/{}-{}.json'.format(
-            parlamentar, data
-        ))
-        relatorio = json.loads(arquivo.read())
+    app_db = mongo_client.legislei
+    relatorios_col = app_db.relatorios
+    relatorio = relatorios_col.find_one({'idTemp': '{}-{}'.format(parlamentar, data)})
+    if relatorio != None:
         print('Relatorio carregado!')
+        relatorio['_id'] = str(relatorio['_id'])
         return relatorio
-    except FileNotFoundError:
+    else:
         try:
             relatorio = func(**kwargs)
-            if not os.path.exists('reports'):
-                os.makedirs('reports')
-            arquivo = open(
-                'reports/{}-{}.json'.format(parlamentar, data),
-                'w+'
-            )
-            arquivo.write(relatorio.to_json())
-            arquivo.close()
+            relatorio_dict = relatorio.to_dict()
+            relatorio_id = relatorios_col.insert_one(
+                {
+                    **relatorio_dict,
+                    **{'idTemp': '{}-{}'.format(parlamentar, data)}
+                }
+            ).inserted_id
             return relatorio.to_dict()
         except ModelError as e:
             return render_template(
