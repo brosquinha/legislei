@@ -5,7 +5,7 @@ import smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.header import Header
-from db import mongo_client
+from db import mongo_db
 
 from_email = os.environ.get("GMAIL_USR", None)
 password = os.environ.get("GMAIL_PSW", None)
@@ -22,7 +22,6 @@ def send_email(email, report):
     s.quit()
 
 def check_reports_to_send():
-    app_db = mongo_client.legislei
-    subscription_col = app_db.inscricoes
+    subscription_col = mongo_db.inscricoes
     for inscricao in subscription_col.find():
         yield inscricao

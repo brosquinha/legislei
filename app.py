@@ -5,7 +5,7 @@ from time import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import timedelta, datetime
 from pytz import timezone
-from db import mongo_client
+from db import mongo_db
 from models.deputados import DeputadosApp
 from models.deputadosSP import DeputadosALESPApp
 from models.vereadoresSaoPaulo import VereadoresApp
@@ -77,8 +77,7 @@ def obter_relatorio(parlamentar, data, func, **kwargs):
 
     Espera-se que `func` retorne um objeto Relatorio.
     """
-    app_db = mongo_client.legislei
-    relatorios_col = app_db.relatorios
+    relatorios_col = mongo_db.relatorios
     relatorio = relatorios_col.find_one({'idTemp': '{}-{}'.format(parlamentar, data)})
     if relatorio != None:
         print('Relatorio carregado!')
