@@ -28,6 +28,10 @@ A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` com as seguint
 | GMAIL_USR | Endereço de email do gmail para envio de relatórios |
 | GMAIL_PSW | Senha do email do gmail para envio de relatórios |
 | PORT | Porta para expor a aplicação Flask |
+| MONGODB_URI | URI de conexão para o MongoDB (normalmente utilizado em produção) |
+| MONGODB_HOST | Host de conexão para o MongoDB (normalmente utilizado em desenvolvimento) |
+| MONGODB_PORT | Porta da conexão para o MongoDB (normalmente utilizado em desenvolvimento) |
+| MONGODB_DBNAME | Nome do banco de dados da aplicação no MongoDB |
 
 ## Instalar pacotes Python e virtualenv
 
