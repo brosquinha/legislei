@@ -75,6 +75,12 @@ Para rodar o container:
 docker run -p 8080:8080 --env-file .env legislei
 ```
 
+Para rodar o compose Docker:
+
+```Bash
+docker-compose up
+```
+
 ## Gerar HTML de documentação
 
 Rodar o seguinte na pasta raíz:
