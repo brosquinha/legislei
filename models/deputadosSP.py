@@ -22,13 +22,14 @@ class DeputadosALESPApp(ParlamentaresApp):
         try:
             start_time = time()
             self.relatorio = Relatorio()
-            self.relatorio.set_parlamentar_cargo('deputado estadual')
+            self.relatorio.set_parlamentar_cargo('SP')
             self.relatorio.set_aviso_dados(u'Dados de sessões plenárias não disponível.')
             self.setPeriodoDias(periodo)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
             print('Iniciando...')
             deputado_info = self.obterDeputado(dep_id)
+            self.relatorio.set_parlamentar_id(deputado_info['id'])
             self.relatorio.set_parlamentar_nome(deputado_info['nome'])
             self.relatorio.set_parlamentar_partido(deputado_info['siglaPartido'])
             self.relatorio.set_parlamentar_uf('SP')
@@ -110,12 +111,14 @@ class DeputadosALESPApp(ParlamentaresApp):
             if (self.obterDatetimeDeStr(e["data"]) > data_inicial and
                     self.obterDatetimeDeStr(e["data"]) < data_final):
                 evento = Evento()
+                evento.set_id(e['id'])
                 evento.set_data_inicial(e['data'])
                 evento.set_nome(e['convocacao'])
                 evento.set_situacao(e['situacao'])
                 if e['id'] in reunioes:
                     for r in reunioes[e['id']]:
                         proposicao = Proposicao()
+                        proposicao.set_id(r['idDocumento'])
                         proposicao.set_pauta(r['idDocumento'])
                         proposicao.set_url_documento(
                             'https://www.al.sp.gov.br/propositura/?id={}'.format(r['idDocumento']))
@@ -154,6 +157,7 @@ class DeputadosALESPApp(ParlamentaresApp):
             if (data_prop > data_inicial and data_prop < data_final and
                     propositura['id'] in proposicoes_deputado):
                 proposicao = Proposicao()
+                proposicao.set_id(propositura['id'])
                 proposicao.set_url_documento('https://www.al.sp.gov.br/propositura/?id={}'.format(
                     propositura['id']))
                 proposicao.set_data_apresentacao(propositura['dataEntrada'])

@@ -6,6 +6,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import timedelta, datetime
 from pytz import timezone
 from db import MongoDBClient
+from bson.objectid import ObjectId
 from models.deputados import DeputadosApp
 from models.deputadosSP import DeputadosALESPApp
 from models.vereadoresSaoPaulo import VereadoresApp
@@ -88,13 +89,13 @@ def obter_relatorio(parlamentar, data, func, **kwargs):
         try:
             relatorio = func(**kwargs)
             relatorio_dict = relatorio.to_dict()
-            relatorio_id = relatorios_col.insert_one(
+            relatorio_dict['_id'] = str(relatorios_col.insert_one(
                 {
                     **relatorio_dict,
                     **{'idTemp': '{}-{}'.format(parlamentar, data)}
                 }
-            ).inserted_id
-            return relatorio.to_dict()
+            ).inserted_id)
+            return relatorio_dict
         except ModelError as e:
             return render_template(
                 'erro.html',
@@ -143,6 +144,66 @@ def consultar_parlamentar():
         return 'Selecione um tipo de parlamentar, plz', 400
 
 
+@app.route('/avaliar', methods=['POST'])
+def avaliar():
+    #POC: melhorar modelagem disso, plz
+    relatorio = request.form.get('id')
+    avaliacao_valor = request.form.get('avaliacao')
+    avaliado = request.form.get('avaliado')
+    email = os.environ.get("GMAIL_USR")
+    avaliacao = {}
+    mongo_client = MongoDBClient()
+    avaliacoes_col = mongo_client.get_collection('avaliacoes')
+    relatorios_col = mongo_client.get_collection('relatorios')
+    relatorio = relatorios_col.find_one({'_id': ObjectId(relatorio)})
+    for tipo in ['eventosAusentes', 'eventosPresentes', 'proposicoes']:
+        for item in relatorio[tipo]:
+            if 'id' in item and str(item['id']) == avaliado:
+                avaliacao['avaliado'] = item
+                break
+    if not 'avaliado' in avaliacao:
+        return 'Item not found', 400
+    avaliacao['parlamentar'] = relatorio['parlamentar']
+    avaliacao['email'] = email
+    avaliacao['relatorioId'] = relatorio['_id']
+    avaliacao['avaliacao'] = avaliacao_valor
+    avaliacao_existente = avaliacoes_col.find_one({
+        'avaliado.id': avaliacao['avaliado']['id'],
+        'parlamentar.id': relatorio['parlamentar']['id'],
+        'parlamentar.cargo': relatorio['parlamentar']['cargo'],
+        'email': email,
+        'relatorioId': relatorio['_id']
+    })
+    if avaliacao_existente:
+        avaliacoes_col.update_one(
+            {'_id': avaliacao_existente['_id']}, {'$set': {'avaliacao': avaliacao_valor}})
+    else:
+        avaliacoes_col.insert_one(avaliacao)
+    mongo_client.close()
+    return 'Created', 201
+
+
+@app.route('/API/minhasAvaliacoes')
+def avaliacoes():
+    #POC
+    try:
+        cargo = request.args['parlamentarTipo']
+        parlamentar = request.args['parlamentar']
+    except KeyError:
+        return json.dumps({'error': 'Missing arguments'}), 400
+    mongo_client = MongoDBClient()
+    avaliacoes_col = mongo_client.get_collection('avaliacoes')
+    avaliacoes = [i for i in avaliacoes_col.find(
+        {
+            'parlamentar.id': parlamentar,
+            'parlamentar.cargo': cargo,
+            'email': os.environ.get('GMAIL_USR')
+        }
+    )]
+    mongo_client.close()
+    return json.dumps(avaliacoes, default=str), 200
+
+
 @app.route('/API/relatorioDeputado')
 def consultar_deputado_api():
     dep = DeputadosApp()
@@ -153,7 +214,7 @@ def consultar_deputado_api():
         deputado_id=request.args.get('parlamentar'),
         data_final=request.args.get('data'),
         periodo_dias=request.args.get('dias')
-    )), 200
+    ), default=str), 200
 
 
 @app.route('/deputados')

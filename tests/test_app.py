@@ -60,7 +60,7 @@ class TestMainAppMethods(unittest.TestCase):
 
         actual_response = obter_relatorio('123', 'hj', func)
 
-        self.assertEqual(actual_response, {'nome': 'relatorio'})
+        self.assertEqual(actual_response, {'nome': 'relatorio', '_id': 'Id'})
 
     @patch("builtins.open")
     @patch("app.render_template")

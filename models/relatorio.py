@@ -28,7 +28,7 @@ class Relatorio():
         return self._parlamentar_id
 
     def set_parlamentar_id(self, id):
-        self._parlamentar_id = id
+        self._parlamentar_id = str(id)
     
     def get_parlamentar_nome(self):
         return self._parlamentar_nome
@@ -58,8 +58,7 @@ class Relatorio():
         return self._parlamentar_cargo
 
     def set_parlamentar_cargo(self, cargo):
-        if cargo.lower() in ['vereador', 'deputado estadual', 'deputado federal']:
-            self._parlamentar_cargo = cargo.lower()
+        self._parlamentar_cargo = cargo.upper()
 
     def get_data_inicial(self):
         return self._data_inicial
@@ -215,6 +214,7 @@ class Orgao():
 class Proposicao():
 
     def __init__(self):
+        self._id = None
         self._tipo = None
         self._ementa = None
         self._numero = None
@@ -224,6 +224,12 @@ class Proposicao():
         self._voto = None
         self._pauta = None
 
+    def get_id(self):
+        return self._id
+
+    def set_id(self, id):
+        self._id = id
+    
     def get_tipo(self):
         return self._tipo
 
@@ -275,6 +281,7 @@ class Proposicao():
 
     def to_dict(self):
         return {
+            'id': self._id,
             'numero': self._numero,
             'tipo': self._tipo,
             'ementa': self._ementa,
@@ -288,6 +295,7 @@ class Proposicao():
 class Evento():
 
     def __init__(self):
+        self._id = None
         self._nome = None
         self._data_inicial = datetime.now()
         self._data_final = datetime.now()
@@ -297,6 +305,12 @@ class Evento():
         self._pautas = []
         self._orgaos = []
 
+    def get_id(self):
+        return self._id
+
+    def set_id(self, id):
+        self._id = id
+    
     def get_nome(self):
         return self._nome
 
@@ -360,6 +374,7 @@ class Evento():
 
     def to_dict(self):
         dicionario = {
+            'id': self._id,
             'nome': self._nome,
             'dataInicial': self._data_inicial,
             'dataFinal': self._data_final,

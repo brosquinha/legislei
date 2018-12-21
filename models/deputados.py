@@ -22,7 +22,7 @@ class DeputadosApp(ParlamentaresApp):
     def consultar_deputado(self, deputado_id, data_final=None, periodo_dias=7):
         try:
             self.relatorio = Relatorio()
-            self.relatorio.set_parlamentar_cargo('deputado federal')
+            self.relatorio.set_parlamentar_cargo('BR1')
             start_time = time()
             if data_final:
                 data_final = datetime.strptime(data_final, '%Y-%m-%d')
@@ -54,6 +54,7 @@ class DeputadosApp(ParlamentaresApp):
             orgaos_nomes = [orgao['nomeOrgao'] for orgao in orgaos]
             for e in eventos:
                 evento = Evento()
+                evento.set_id(e['id'])
                 evento.set_data_inicial(e['dataHoraInicio'])
                 evento.set_data_final(e['dataHoraFim'])
                 evento.set_situacao(e['descricaoSituacao'])
@@ -75,6 +76,7 @@ class DeputadosApp(ParlamentaresApp):
                             if pauta['proposicao_detalhes'] == [{'error': True}]:
                                 proposicao = None
                             else:
+                                proposicao.set_id(pauta['proposicao_detalhes']['id'])
                                 proposicao.set_tipo(pauta['proposicao_detalhes']['siglaTipo'])
                                 proposicao.set_url_documento(
                                     pauta['proposicao_detalhes']['urlInteiroTeor'])
@@ -104,6 +106,7 @@ class DeputadosApp(ParlamentaresApp):
             self.relatorio.set_eventos_ausentes_esperados_total(eventos_ausentes_total)
             for e in eventos_ausentes:
                 evento = Evento()
+                evento.set_id(e['id'])
                 if e['controleAusencia'] == 1:
                     evento.set_ausente_evento_previsto()
                 elif e['controleAusencia'] == 2:
@@ -269,6 +272,7 @@ class DeputadosApp(ParlamentaresApp):
                     if (deputado['ultimoStatus']['nome'].lower() in 
                             [x['nome'].lower() for x in self.prop.obterAutoresProposicao(item['id'])]):
                         proposicao = Proposicao()
+                        proposicao.set_id(item['id'])
                         p = self.prop.obterProposicao(item['id'])
                         if 'dataApresentacao' in p:
                             proposicao.set_data_apresentacao(p['dataApresentacao'])
