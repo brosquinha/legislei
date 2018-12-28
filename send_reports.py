@@ -1,10 +1,11 @@
 import json
+import os
 import settings
 import smtplib
-import os
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.header import Header
+from db import MongoDBClient
 
 from_email = os.environ.get("GMAIL_USR", None)
 password = os.environ.get("GMAIL_PSW", None)
@@ -21,6 +22,7 @@ def send_email(email, report):
     s.quit()
 
 def check_reports_to_send():
-    arq = open("reports/subscription-list.json")
-    subscription = json.loads(arq.read())
-    return subscription
+    mongo_db = MongoDBClient()
+    subscription_col = mongo_db.get_collection('inscricoes')
+    for inscricao in subscription_col.find():
+        yield inscricao

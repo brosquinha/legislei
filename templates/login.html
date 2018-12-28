@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+    {% if mensagem %}
+        <div class="alert alert-warning" role="alert">{{ mensagem }}</div>
+    {% endif %}
+    <div class="row justify-content-md-center">
+        <div class="col-sm-8 text-center">
+            <h3>Entrar</h3>
+            <form method="POST">
+                <input class="form-control mb-1" name="name" placeholder="Usuário" required />
+                <input type="password" class="form-control mb-1" name="password" placeholder="Senha" required />
+                <div><label>Manter-me conectado <input type="checkbox" name="rememberme" /></label></div>
+                <button class="btn btn-primary">Enviar</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

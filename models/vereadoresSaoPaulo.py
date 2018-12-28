@@ -21,9 +21,9 @@ class VereadoresApp(ParlamentaresApp):
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
             vereador = self.obterVereador(vereador_nome)
-            print(vereador['nome'])
-            self.relatorio.set_parlamentar_cargo('vereador')
+            self.relatorio.set_parlamentar_cargo('São Paulo')
             self.relatorio.set_parlamentar_nome(vereador['nome'])
+            self.relatorio.set_parlamentar_id(vereador['nome']) #Por ora
             self.relatorio.set_parlamentar_partido(vereador['siglaPartido'])
             self.relatorio.set_parlamentar_uf('SP')
             self.relatorio.set_parlamentar_foto(

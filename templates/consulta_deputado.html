@@ -1,6 +1,23 @@
 {% extends 'base.html' %}
 
-{% block title %}Consulta ao {{ relatorio['parlamentar']['cargo'] }}{% endblock %}
+{% block title %}Consulta ao parlamentar{% endblock %}
+
+{% macro ratingButtons(color_class, id) -%}
+<div class="card-footer text-center">
+    <button class="btn btn-{{ color_class }} rating" data-toggle="tooltip" data-placement="top" data-rating-value="2" data-rating-id="{{ id }}" title="Amei">
+        <span class="fa fa-heart"></span>
+    </button>
+    <button class="btn btn-{{ color_class }} rating" data-toggle="tooltip" data-placement="top" data-rating-value="1" data-rating-id="{{ id }}" title="Curti">
+        <span class="fa fa-thumbs-up"></span>
+    </button>
+    <button class="btn btn-{{ color_class }} rating" data-toggle="tooltip" data-placement="top" data-rating-value="-1" data-rating-id="{{ id }}" title="Não curti">
+        <span class="fa fa-thumbs-down"></span>
+    </button>
+    <button class="btn btn-{{ color_class }} rating" data-toggle="tooltip" data-placement="top" data-rating-value="-2" data-rating-id="{{ id }}" title="Detestei">
+        <span class="fa fa-skull"></span>
+    </button>
+</div>
+{%- endmacro %}
 
 {% block content %}
     <nav aria-label="breadcrumb">
@@ -33,6 +50,7 @@
                         class="fa fa-sync-alt text-dark ml-1 icon-link"></a>
                 </h4>
                 <span id="relatorioJSON" class="d-none">{{ relatorio | tojson | safe }}</span>
+                <span id="relatorioId" class="d-none">{{ relatorio['_id'] }}</span>
                 <script>
                 try {
                     let relatorio = JSON.parse(document.getElementById("relatorioJSON").innerText);
@@ -104,20 +122,7 @@
                                     <a href="{{ item['urlDocumento'] }}" target="_blank" class="text-white">Detalhes</a>
                                 </p>
                             </div>
-                            <div class="card-footer text-center">
-                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Amei">
-                                    <span class="fa fa-heart"></span>
-                                </button>
-                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Curti">
-                                    <span class="fa fa-thumbs-up"></span>
-                                </button>
-                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Não curti">
-                                    <span class="fa fa-thumbs-down"></span>
-                                </button>
-                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Detestei">
-                                    <span class="fa fa-skull"></span>
-                                </button>
-                            </div>
+                            {{ ratingButtons(color_class, item['id']) }}
                         </div>
                     {% endfor %}
                 </div>
@@ -170,20 +175,7 @@
                                 </p>
                                 {% endif %}
                             </div>
-                            <div class="card-footer text-center">
-                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Amei">
-                                    <span class="fa fa-heart"></span>
-                                </button>
-                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Curti">
-                                    <span class="fa fa-thumbs-up"></span>
-                                </button>
-                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Não curti">
-                                    <span class="fa fa-thumbs-down"></span>
-                                </button>
-                                <button class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Detestei">
-                                    <span class="fa fa-skull"></span>
-                                </button>
-                            </div>
+                            {{ ratingButtons('success', item['id']) }}
                         </div>
                     {% endfor %}
                 </div>
@@ -220,20 +212,7 @@
                                     </span>
                                 </p>
                             </div>
-                            <div class="card-footer text-center">
-                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Amei">
-                                    <span class="fa fa-heart"></span>
-                                </button>
-                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Curti">
-                                    <span class="fa fa-thumbs-up"></span>
-                                </button>
-                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Não curti">
-                                    <span class="fa fa-thumbs-down"></span>
-                                </button>
-                                <button class="btn btn-{{ color_class }}" data-toggle="tooltip" data-placement="top" title="Detestei">
-                                    <span class="fa fa-skull"></span>
-                                </button>
-                            </div>
+                            {{ ratingButtons(color_class, item['id']) }}
                         {% endif %}
                     </div>
                 {% endfor %}
@@ -242,5 +221,22 @@
     </div>
     <script>$(function () {
         $('[data-toggle="tooltip"]').tooltip();
+        $('.rating').click(function() {
+            let button = this;
+            let avaliacao = $(button).attr('data-rating-value');
+            let avaliado = $(button).attr('data-rating-id');
+            const relatorioId = $("#relatorioId").text();
+            $.post({
+                url: "/avaliar",
+                data: {id: relatorioId, avaliado: avaliado, avaliacao: avaliacao},
+                error: (jqXHR, txtStatus) => {
+                    console.warn(txtStatus);
+                },
+                success: (data) => {
+                    $(`button[data-rating-id=${avaliado}]`).removeClass('active');
+                    $(button).addClass('active');
+                }
+            });
+        });
     });</script>
 {% endblock %}

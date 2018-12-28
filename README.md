@@ -24,10 +24,15 @@ A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` com as seguint
 
 | Nome da variável | Descrição |
 | ---------------- | --------- |
+| APP_SECRET_KEY | Chave secreta para a aplicação Flask |
 | DEBUG | `True` para roda a aplicação no modo de debug do Flask |
 | GMAIL_USR | Endereço de email do gmail para envio de relatórios |
 | GMAIL_PSW | Senha do email do gmail para envio de relatórios |
 | PORT | Porta para expor a aplicação Flask |
+| MONGODB_URI | URI de conexão para o MongoDB (normalmente utilizado em produção) |
+| MONGODB_HOST | Host de conexão para o MongoDB (normalmente utilizado em desenvolvimento) |
+| MONGODB_PORT | Porta da conexão para o MongoDB (normalmente utilizado em desenvolvimento) |
+| MONGODB_DBNAME | Nome do banco de dados da aplicação no MongoDB |
 
 ## Instalar pacotes Python e virtualenv
 
@@ -69,6 +74,12 @@ Para rodar o container:
 
 ```Bash
 docker run -p 8080:8080 --env-file .env legislei
+```
+
+Para rodar o compose Docker:
+
+```Bash
+docker-compose up
 ```
 
 ## Gerar HTML de documentação

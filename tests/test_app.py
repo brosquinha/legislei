@@ -4,63 +4,63 @@ from unittest.mock import patch, call
 from app import obter_relatorio, send_reports, send_email, app
 from flask import render_template
 from exceptions import ModelError
+from db import MongoDBClient
+
+customAssertionMsg = '{} differs from expected {}'
 
 class TestMainAppMethods(unittest.TestCase):
 
     @patch("builtins.print")
-    @patch("builtins.open")
-    @patch("json.loads")
+    @patch("db.MongoDBClient.get_collection")
     def test_obter_relatorio_json_existente(
         self,
-        mock_json_loads,
-        mock_open,
+        mock_mongo_db,
         mock_print
     ):
-        class FakeOpen:
-            def __init__(self, *args, **kwargs):
-                pass
-            def read(self):
-                return 'Teste'
+        class FakeRelatorios:
+            def find_one(self, obj):
+                expected = {'idTemp': '123-hj'}
+                if obj == expected:
+                    return {'_id': 'TesteEmJson'}
+                else:
+                    raise AssertionError(customAssertionMsg.format(obj, expected))
         def func(**kwargs):
             pass
-        mock_open.side_effect = FakeOpen
-        mock_json_loads.return_value = 'TesteEmJson'
+        mock_mongo_db.return_value = FakeRelatorios()
         
         actual_response = obter_relatorio('123', 'hj', func)
 
-        mock_json_loads.assert_called_once_with('Teste')
-        mock_open.assert_called_once_with('reports/123-hj.json')
-        self.assertEqual(actual_response, 'TesteEmJson')
+        self.assertEqual(actual_response, {'_id': 'TesteEmJson'})
         
-    @patch("builtins.open")
+    @patch("db.MongoDBClient.get_collection")
     def test_obter_relatorio_json_inexistente_funcao_sem_erro(
         self,
-        mock_open
+        mock_get_collection
     ):
-        class FakeOpen():
-            def __init__(self, file, mode=None):
-                if mode == None:
-                    raise FileNotFoundError()
-            def write(self, txt):
-                if txt != 'jsonstr':
-                    raise Exception #Tem que ter uma maneira mais elegante de fazer essa verificação
-            def close(self):
-                pass
+        class FakeInsertOneResult:
+            def __init__(self):
+                self.inserted_id = 'Id'
+        class FakeRelatorios:
+            def find_one(self, obj):
+                return None
+            def insert_one(self, obj):
+                expected = {
+                    'nome': 'relatorio',
+                    'idTemp': '123-hj'
+                }
+                if obj == expected:
+                    return FakeInsertOneResult()
+                raise AssertionError(customAssertionMsg.format(obj, expected))
         class FakeRelatorio:
-            def to_json(self):
-                return 'jsonstr'
             def to_dict(self):
-                return 'relatorio'
+                return {'nome': 'relatorio'}
         def func(*args, **kwargs):
             return FakeRelatorio()
-        mock_open.side_effect = FakeOpen
+        mock_get_collection.return_value = FakeRelatorios()
 
         actual_response = obter_relatorio('123', 'hj', func)
 
-        mock_open.assert_has_calls([
-            call('reports/123-hj.json'),
-            call('reports/123-hj.json', 'w+')])
-        self.assertEqual(actual_response, 'relatorio')
+        self.assertEqual(actual_response, {'nome': 'relatorio', '_id': 'Id'})
 
     @patch("builtins.open")
     @patch("app.render_template")
@@ -112,15 +112,13 @@ class TestMainAppMethods(unittest.TestCase):
         mock_render_template.return_value = "<html>Nice</html>"
         mock_send_email.return_value = True
 
-        data = {
-            "lista": [
-                {
-                    "parlamentares": [1, 2, 3],
-                    "intervalo": 7,
-                    "email": "test@test.com"
-                }
-            ]
-        }
+        data = [
+            {
+                "parlamentares": [1, 2, 3],
+                "intervalo": 7,
+                "email": "test@test.com"
+            }
+        ]
         send_reports(data)
 
         self.assertEqual(mock_obter_relatorio.call_count, 3)
