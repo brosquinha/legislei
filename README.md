@@ -24,6 +24,7 @@ A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` com as seguint
 
 | Nome da variável | Descrição |
 | ---------------- | --------- |
+| APP_SECRET_KEY | Chave secreta para a aplicação Flask |
 | DEBUG | `True` para roda a aplicação no modo de debug do Flask |
 | GMAIL_USR | Endereço de email do gmail para envio de relatórios |
 | GMAIL_PSW | Senha do email do gmail para envio de relatórios |

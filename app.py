@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import json
+import settings
 from time import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import timedelta, datetime
@@ -11,12 +12,23 @@ from models.deputados import DeputadosApp
 from models.deputadosSP import DeputadosALESPApp
 from models.vereadoresSaoPaulo import VereadoresApp
 from models.relatorio import Relatorio
+from models.user import User
 from exceptions import ModelError
 from send_reports import check_reports_to_send, send_email
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from passlib.hash import pbkdf2_sha256
 
 
 app = Flask(__name__, static_url_path='/static')
+app.secret_key = os.environ.get('APP_SECRET_KEY')
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get_user(user_id)
 
 
 def check_and_send_reports():
@@ -145,12 +157,13 @@ def consultar_parlamentar():
 
 
 @app.route('/avaliar', methods=['POST'])
+@login_required
 def avaliar():
     #POC: melhorar modelagem disso, plz
     relatorio = request.form.get('id')
     avaliacao_valor = request.form.get('avaliacao')
     avaliado = request.form.get('avaliado')
-    email = os.environ.get("GMAIL_USR")
+    email = current_user.user_email
     avaliacao = {}
     mongo_client = MongoDBClient()
     avaliacoes_col = mongo_client.get_collection('avaliacoes')
@@ -184,8 +197,9 @@ def avaliar():
 
 
 @app.route('/API/minhasAvaliacoes')
+@login_required
 def avaliacoes():
-    #POC
+    #Por ser API, o método de autenticacao deve ser diferente deste por cookies
     try:
         cargo = request.args['parlamentarTipo']
         parlamentar = request.args['parlamentar']
@@ -197,7 +211,7 @@ def avaliacoes():
         {
             'parlamentar.id': parlamentar,
             'parlamentar.cargo': cargo,
-            'email': os.environ.get('GMAIL_USR')
+            'email': current_user.user_email
         }
     )]
     mongo_client.close()
@@ -235,6 +249,62 @@ def obterVereadores():
     return ver.obterVereadoresAtuais()
 
 
+@app.route('/registrar')
+def new_user_page():
+    return render_template('registrar.html')
+
+
+@app.route('/registrar', methods=['POST'])
+def new_user():
+    #Provavelmente é melhor usar MongoEngine para facilitar isso aqui
+    try:
+        user_name = request.form['name'].lower()
+        user_psw = request.form['password']
+        if not(len(user_name) > 3 and len(user_psw) and
+                user_psw == request.form['password_confirmed']):
+            return render_template('registrar.html', mensagem='Requisitos não atingidos')
+        mongo_client = MongoDBClient()
+        users_col = mongo_client.get_collection('users')
+        if users_col.find_one({'username': user_name}):
+            return render_template('registrar.html', mensagem='Usuário já existe')
+        users_col.insert_one({
+            'username': user_name,
+            'password': pbkdf2_sha256.encrypt(user_psw, rounds=16, salt_size=16),
+            'email': request.form['email']
+        })
+        return redirect('/login')
+    except KeyError:
+        return render_template('registrar.html', mensagem='Algo de errado não está certo')
+
+
+@app.route('/login')
+def login_page():
+    return render_template('login.html')
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    user_name = request.form.get('name').lower()
+    user_psw = request.form.get('password')
+    remember_me = True if request.form.get('rememberme') else False
+    mongo_client = MongoDBClient()
+    users_col = mongo_client.get_collection('users')
+    user_data = users_col.find_one({'username': user_name})
+    mongo_client.close()
+    if user_data and pbkdf2_sha256.verify(user_psw, user_data['password']):
+        user = User(str(user_data['_id']), user_data['username'], user_data['email'])
+        login_user(user, remember=remember_me)
+        return redirect('/')
+    return render_template('login.html', mensagem='Usuário/senha incorretos')
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect('/')
+
+
 @app.errorhandler(500)
 def server_error(e):
     return render_template(
@@ -257,8 +327,17 @@ def not_found(e):
 def client_error(e):
     return render_template(
         'erro.html',
-        erro_titulo="404 - Erro do cliente",
+        erro_titulo="400 - Erro do cliente",
         erro_descricao="Aeow, tu não estás fazendo a requisição do jeito certo."
+    ), 400
+
+
+@app.errorhandler(401)
+def auth_error(e):
+    return render_template(
+        'erro.html',
+        erro_titulo="401 - Não autorizado",
+        erro_descricao="Essa página requer usuário autenticado no sistema."
     ), 400
 
 
