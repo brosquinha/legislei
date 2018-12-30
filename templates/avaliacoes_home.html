@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Minhas avaliações{% endblock %}
+
+{% import 'parlamentar_componentes.html' as parlamentar_form %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item active">Minhas avaliações</li>
+        </ol>
+    </nav>
+    <div class="float-right">
+        <a href="/novaInscricao" class="btn btn-success"><span class="fas fa-plus"></span></a>
+        <button data-toggle="modal" data-target="#modalConfig" class="btn btn-secondary"><i class="fas fa-cog"></i></button>
+    </div>
+    <h3>Minhas inscrições</h3>
+    {% if not parlamentares %}
+        <div class="row justify-content-md-center bg-light rounded">
+            <div class="col-sm-8 text-center p-5">
+                <h4 class="mb-4">Você ainda não acompanha nenhum parlamentar.</h4>
+                <a href="/novaInscricao" class="btn btn-success btn-lg mb-4">Acompanhar parlamentar</a>
+                <p>Não encontrou a casa legislativa relevante para você?
+                    <a href="#">Saiba como proceder</a>.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+    <div class="list-group mb-3">
+        {% for parlamentar in parlamentares %}
+            <div class="list-group-item list-group-item-action d-flex w-100 justify-content-between">
+                <div>
+                    <h5 class="mb-4">
+                        <span class="text-uppercase">{{ parlamentar['nome'] }}</span>
+                        ({{ parlamentar['partido'] }})
+                        <span class="text-muted">{{ parlamentar_form.cargoCompleto(parlamentar['cargo']) }}</span>
+                    </h5>
+                    <ul class="list-unstyled">
+                        <li>
+                            <a
+                            href="/minhasAvaliacoes?parlamentarTipo={{ parlamentar['cargo'] }}&parlamentar={{ parlamentar['id'] }}"
+                            class="flex-column align-items-start">Ver minhas avaliações</a>
+                        </li>
+                        <li>
+                            <a href="javascript:carregarRelatorios('{{ parlamentar['cargo'] }}', '{{ parlamentar['id'] }}', '{{ parlamentar['nome'] }}')">Útimos relatórios</a>
+                        </li>
+                        <li>
+                            <a href="javascript:confirmarRemocao('{{ parlamentar['cargo'] }}', '{{ parlamentar['id'] }}')">Remover inscrição</a>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <img src="{{ parlamentar['foto'] }}" class="rounded w-100" />
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="modal" role="dialog" id="modalConfirmarRemocao">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Remover inscrição</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza de que pretende deixar de acompanhar esse parlamentar?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-danger">Remover inscrição</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" role="dialog" id="modalConfig">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Configurações</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <label>
+                        Período de relatórios (em dias)
+                        <input
+                            type="number"
+                            min="7"
+                            max="28"
+                            name="periodo"
+                            value="{{ periodo }}"
+                            id="configPeriodo"
+                            class="form-control" />
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" onclick="enviarConfig()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" role="dialog" id="modalRelatorios">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Últimos relatórios de <span id="parlamentarNome"></span></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="mensagemCarregando">Buscando... <i class="fa fa-spinner fa-spin"></i></p>
+                    <div class="d-flex flex-wrap" id="relatoriosContainer"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <h3>Outros parlamentares</h3>
+    <form>
+        <div class="container">
+            <div class="row mb-3">
+                <div class="col-sm">
+                    {{ parlamentar_form.selectNivelFederativo() }}
+                </div>
+                <div class="col-sm">
+                    {{ parlamentar_form.selectUF() }}
+                </div>
+                <div class="col-sm">
+                    {{ parlamentar_form.selectParlamentar() }}
+                </div>
+                <div class="col-sm-auto text-center">
+                    <button class="btn btn-primary">Consultar</button>
+                </div>
+            </div>
+        </div>
+    </form>
+    {{ parlamentar_form.script() }}
+    <script>
+    let confirmarRemocao = (cargo, parlamentar) => {
+        $("#modalConfirmarRemocao").modal('show');
+        $("#modalConfirmarRemocao button.btn-danger").one("click", () => {
+            $.ajax({
+                url: `/API/minhasInscricoes/${cargo}/${parlamentar}`,
+                method: "DELETE",
+                error: (jqXHr, txtStatus) => {
+                    alert(txtStatus);
+                    $("#modalConfirmarRemocao").modal('hide');
+                },
+                success: () => {
+                    window.location.reload();
+                }
+            });
+        });
+    }
+    let enviarConfig = () => {
+        $.ajax({
+            url: '/API/minhasInscricoes/config',
+            method: 'POST',
+            data: {periodo: document.getElementById("configPeriodo").value},
+            error: (jqXHR, txtStatus) => {
+                alert('Houve o seguinte erro ao salvar: '+txtStatus);
+            },
+            success: () => {
+                alert('Configurações atualizadas!');
+            }
+        });
+    }
+    let carregarRelatorios = (cargo, parlamentar, nome) => {
+        document.getElementById("parlamentarNome").innerText = nome;
+        document.getElementById("relatoriosContainer").innerHTML = '';
+        $("#mensagemCarregando").removeClass('d-none');
+        $("#modalRelatorios").modal('show');
+        $.ajax({
+            url: `/API/relatorios/${cargo}/${parlamentar}`,
+            method: "GET",
+            error: (jqXHr, txtStatus) => {
+                alert(txtStatus);
+                $("#modalRelatorios").modal('hide');
+            },
+            success: (data) => {
+                data = JSON.parse(data);
+                for (let i=0; i<data.length; i++) {
+                    let relatorioItem = document.createElement("div");
+                    relatorioItem.setAttribute("class", "p-2");
+                    let relatorioLink = document.createElement("a");
+                    relatorioLink.href = `/relatorio/${data[i]._id}`;
+                    relatorioLink.innerText = data[i].dataFinal;
+                    relatorioItem.appendChild(relatorioLink);
+                    document.getElementById("relatoriosContainer").appendChild(relatorioItem);
+                }
+                $("#mensagemCarregando").addClass('d-none');
+            }
+        });
+    }
+    </script>
+{% endblock %}

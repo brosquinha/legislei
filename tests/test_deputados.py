@@ -4,7 +4,7 @@ from datetime import datetime
 from unittest.mock import patch
 from SDKs.CamaraDeputados.entidades import Deputados
 from models.deputados import DeputadosApp
-from models.relatorio import Relatorio, Proposicao, Evento, Orgao
+from models.relatorio import Parlamentar, Relatorio, Proposicao, Evento, Orgao
 
 
 class TestDeputadosApp(unittest.TestCase):
@@ -13,18 +13,18 @@ class TestDeputadosApp(unittest.TestCase):
         self.dep = DeputadosApp()
 
     @patch("SDKs.CamaraDeputados.entidades.Deputados.obterTodosDeputados")
-    def test_obterDeputados(self, mock_obterTodosDeputados):
+    def test_obterParlamentares(self, mock_obterTodosDeputados):
         def fakeObterDeputados():
             yield [{'nome': 'CESAR DA SILVA'}, {'nome': 'FULANO PESSOA'}]
             yield [{'nome': 'SICRANO PINTO'}]
         mock_obterTodosDeputados.side_effect = fakeObterDeputados
-        actual_response = self.dep.obterDeputados()
+        actual_response = self.dep.obter_parlamentares()
         mock_obterTodosDeputados.assert_any_call()
-        self.assertEqual(actual_response[0], json.dumps([
+        self.assertEqual(actual_response, [
             {'nome': 'CESAR DA SILVA'},
             {'nome': 'FULANO PESSOA'},
             {'nome': 'SICRANO PINTO'}
-        ]))
+        ])
 
     @patch("SDKs.CamaraDeputados.entidades.Deputados.obterOrgaosDeputado")
     @patch("models.parlamentares.ParlamentaresApp.formatarDatasYMD")
@@ -300,10 +300,9 @@ class TestDeputadosApp(unittest.TestCase):
             {'id': '2', 'ementa': 'Teste2'},
             {'id': '3', 'ementa': 'Teste3'},
         ]
-        deputado = {
-            'id': '123',
-            'ultimoStatus': {'nome': 'Fulano da Silva'}
-        }
+        deputado = Parlamentar()
+        deputado.set_id(123)
+        deputado.set_nome('Fulano da Silva')
         mock_obterTodasProposicoes.side_effect = fakeObterTodasProposicoes
         mock_obterAutoresProposicoes.side_effect = fakeObterAutoresProposicoes
         mock_obterProposicao.side_effect = fakeObterProposicao

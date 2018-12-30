@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Nova inscrição{% endblock %}
+
+{% import 'parlamentar_componentes.html' as parlamentar_form %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/minhasAvaliacoes">Minhas avaliações</a></li>
+            <li class="breadcrumb-item active">Nova inscrição</li>
+        </ol>
+    </nav>
+    <h3>Nova inscrição</h3>
+    <form method="POST">
+        <div class="container">
+            <div class="row mb-2">
+                <div class="col-sm">
+                    {{ parlamentar_form.selectNivelFederativo() }}
+                </div>
+                <div class="col-sm">
+                    {{ parlamentar_form.selectUF() }}
+                </div>
+                <div class="col-sm">
+                    {{ parlamentar_form.selectParlamentar() }}
+                </div>
+            </div>
+            <div id="parlamentarCard" class="row mb-1 justify-content-center d-none">
+                <div class="col-sm-auto text-center">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <img src id="parlamentarImg" />
+                            <h5 id="parlamentarNome"></h5>
+                        </div>
+                        <div class="card-footer">
+                            <button id="parlamentarSubmit" class="btn btn-success" disabled>
+                                <i id="parlamentarSubmitSpinner" class="fa fa-spinner fa-spin"></i>
+                                Acompanhar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    {{ parlamentar_form.script() }}
+    <script>
+        document.getElementById("parlamentarIdInput").onchange = (e) => {
+            $("#parlamentarCard").removeClass("d-none");
+            $("#parlamentarSubmitSpinner").removeClass("d-none");
+            document.getElementById("parlamentarImg").removeAttribute("src");
+            document.getElementById("parlamentarNome").innerText = "Buscando...";
+            $.ajax({
+                url: `/API/parlamentares/${document.getElementById("parlamentarTipo").value}/${document.getElementById("parlamentarIdInput").value}`,
+                method: "GET",
+                error: (jqXHR, txtStatus) => {
+                    alert(txtStatus);
+                    $("#parlamentarCard").addClass("d-none");
+                    document.getElementById("parlamentarSubmit").setAttribute("disabled", "true");
+                },
+                success: (data) => {
+                    data = JSON.parse(data);
+                    $("#parlamentarSubmitSpinner").addClass("d-none");
+                    document.getElementById("parlamentarImg").setAttribute("src", data.foto);
+                    document.getElementById("parlamentarNome").innerText = data.nome;
+                    document.getElementById("parlamentarSubmit").removeAttribute("disabled");
+                }
+            })
+        }
+    </script>
+{% endblock %}

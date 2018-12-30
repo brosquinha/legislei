@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Minhas avaliações do parlamentar{% endblock %}
+
+{% macro teste(num) -%}
+    {% for avaliacao in avaliacoes[num] %}
+        {% set avaliado = avaliacao['avaliado'] %}
+        <div class="card mb-1 bg-light">
+            <div class="card-header">
+                {{ avaliado['nome'] }}
+                {{ avaliado['tipo'] }}{{ avaliado['numero'] }}
+            </div>
+            <div class="card-body">
+                {{ avaliado }}
+            </div>
+            <div class="card-footer">
+                <a href="/relatorio/{{ avaliacao['relatorioId'] }}">Ver relatório dessa atividade</a>
+            </div>
+        </div>
+    {% endfor %}
+{%- endmacro %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/minhasAvaliacoes">Minhas avaliações</a>
+            </li>
+            <li class="breadcrumb-item active text-uppercase" aria-current="page">{{ parlamentar['nome'] }}</li>
+        </ol>
+    </nav>
+    {% if parlamentar %}
+        <div class="container mb-3 bg-light rounded">
+            <div class="media">
+                <div class="media-body">
+                    <h1 class="text-uppercase">{{ parlamentar['nome'] }} ({{ parlamentar['partido'] }}-{{ parlamentar['uf'] }})</h1>
+                    <h4 class="mt-0">Saldo total: {{ nota }}</h4>
+                </div>
+                <img class="align-self-start rounded" src="{{ parlamentar['foto'] }}" alt="{{ parlamentar['nome'] }}" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-3">Atividades que amei
+                {{ teste('2') }}
+            </div>
+            <div class="col-sm-3">Atividades que aprovei
+                {{ teste('1') }}
+            </div>
+            <div class="col-sm-3">Atividades que desaprovei
+                {{ teste('-1') }}
+            </div>
+            <div class="col-sm-3">Atividades que detestei
+                {{ teste('-2') }}
+            </div>
+        </div>
+    {% else %}
+        <h5>Nenhuma avaliação para esse parlamentar</h5>
+    {% endif %}
+{% endblock %}

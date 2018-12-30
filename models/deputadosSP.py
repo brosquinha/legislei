@@ -7,7 +7,7 @@ from SDKs.AssembleiaLegislativaSP.proposicoes import Proposicoes
 from SDKs.AssembleiaLegislativaSP.exceptions import ALESPError
 from models.parlamentares import ParlamentaresApp
 from exceptions import ModelError
-from models.relatorio import Relatorio, Evento, Orgao, Proposicao
+from models.relatorio import Parlamentar, Relatorio, Evento, Orgao, Proposicao
 
 class DeputadosALESPApp(ParlamentaresApp):
 
@@ -18,51 +18,53 @@ class DeputadosALESPApp(ParlamentaresApp):
         self.prop = Proposicoes()
         self.relatorio = Relatorio()
 
-    def consultar_deputado(self, dep_id, data_final=datetime.now(), periodo=7):
+    def obter_relatorio(self, parlamentar_id, data_final=datetime.now(), periodo_dias=7):
         try:
             start_time = time()
             self.relatorio = Relatorio()
-            self.relatorio.set_parlamentar_cargo('SP')
             self.relatorio.set_aviso_dados(u'Dados de sessões plenárias não disponível.')
-            self.setPeriodoDias(periodo)
+            self.setPeriodoDias(periodo_dias)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
             print('Iniciando...')
-            deputado_info = self.obterDeputado(dep_id)
-            self.relatorio.set_parlamentar_id(deputado_info['id'])
-            self.relatorio.set_parlamentar_nome(deputado_info['nome'])
-            self.relatorio.set_parlamentar_partido(deputado_info['siglaPartido'])
-            self.relatorio.set_parlamentar_uf('SP')
-            self.relatorio.set_parlamentar_foto(deputado_info['urlFoto'])
+            self.obter_parlamentar(parlamentar_id)
             self.relatorio.set_data_inicial(data_inicial)
             self.relatorio.set_data_final(data_final)
             print('Deputado obtido em {0:.5f}'.format(time() - start_time))
             comissoes = self.obterComissoesPorId()
             print('Comissoes por id obtidas em {0:.5f}'.format(time() - start_time))
-            votacoes = self.obterVotacoesPorReuniao(dep_id)
+            votacoes = self.obterVotacoesPorReuniao(parlamentar_id)
             print('Votos do deputado obtidos em {0:.5f}'.format(time() - start_time))
             orgaos_nomes = self.obterComissoesDeputado(
-                comissoes, dep_id, data_inicial, data_final)
+                comissoes, parlamentar_id, data_inicial, data_final)
             print('Comissoes do deputado obtidas em {0:.5f}'.format(time() - start_time))
             self.obterEventosPresentes(
-                dep_id, data_inicial, data_final, votacoes, comissoes, orgaos_nomes)
+                parlamentar_id, data_inicial, data_final, votacoes, comissoes, orgaos_nomes)
             self.relatorio.set_eventos_ausentes_esperados_total(
                 len(self.relatorio.get_eventos_previstos()))
             print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
-            self.obterProposicoesDeputado(dep_id, data_inicial, data_final)
+            self.obterProposicoesDeputado(parlamentar_id, data_inicial, data_final)
             print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
             return self.relatorio
         except ALESPError:
             raise ModelError('Erro')
     
-    def obterDeputado(self, dep_id):
+    def obter_parlamentar(self, parlamentar_id):
         for deputado in self.dep.obterTodosDeputados():
-            if deputado["id"] == dep_id:
-                return deputado
+            if deputado["id"] == parlamentar_id:
+                parlamentar = Parlamentar()
+                parlamentar.set_cargo('SP')
+                parlamentar.set_id(deputado['id'])
+                parlamentar.set_nome(deputado['nome'])
+                parlamentar.set_partido(deputado['siglaPartido'])
+                parlamentar.set_uf('SP')
+                parlamentar.set_foto(deputado['urlFoto'])
+                self.relatorio.set_parlamentar(parlamentar)
+                return parlamentar
     
-    def obterDeputados(self):
+    def obter_parlamentares(self):
         try:
-            return json.dumps(self.dep.obterTodosDeputados()), 200
+            return self.dep.obterTodosDeputados()
         except ALESPError:
             raise ModelError("Erro da API da ALESP")
 

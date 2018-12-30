@@ -1,4 +1,5 @@
 from datetime import timedelta
+from exceptions import ModelError
 
 class ParlamentaresApp():
 
@@ -33,3 +34,21 @@ class ParlamentaresApp():
                 self.periodo['days'] = int(periodo_dias)
         except ValueError:
             periodo_dias = 7
+
+    def obter_relatorio(self, parlamentar_id, data_final, periodo_dias):
+        """
+        Deve ser implementado pelas classes herdeiras
+        """
+        raise ModelError("obter_relatorio deve ser implementado")
+
+    def obter_parlamentares(self):
+        """
+        Deve ser implementado pelas classes herdeiras
+        """
+        raise ModelError("obter_parlamentares deve ser implementado")
+
+    def obter_parlamentar(self, parlamentar_id):
+        """
+        Deve ser implementado pelas classes herdeiras
+        """
+        raise ModelError("obter_parlamentar deve ser implementado")

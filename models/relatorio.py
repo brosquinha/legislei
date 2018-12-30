@@ -1,19 +1,74 @@
 import json
 from datetime import datetime
 
+
+class Parlamentar():
+
+    def __init__(self):
+        self._id = None
+        self._nome = None
+        self._partido = None
+        self._uf = None
+        self._foto = None
+        self._cargo = None
+
+    def get_id(self):
+        return self._id
+
+    def set_id(self, id):
+        self._id = str(id)
+
+    def get_nome(self):
+        return self._nome
+
+    def set_nome(self, nome):
+        self._nome = nome
+
+    def get_partido(self):
+        return self._partido
+
+    def set_partido(self, partido):
+        self._partido = partido
+
+    def get_uf(self):
+        return self._uf
+
+    def set_uf(self, uf):
+        self._uf = uf
+
+    def get_foto(self):
+        return self._foto
+
+    def set_foto(self, foto):
+        self._foto = foto
+
+    def get_cargo(self):
+        return self._cargo
+
+    def set_cargo(self, cargo):
+        self._cargo = cargo.upper()
+
+    def to_dict(self):
+        return {
+            'id': self._id,
+            'nome': self._nome,
+            'partido': self._partido,
+            'uf': self._uf,
+            'cargo': self._cargo,
+            'foto': self._foto
+        }
+
+    def to_json(self):
+        return json.dumps(self.to_dict(), default=str)
+
+
 class Relatorio():
 
     def __init__(self):
-        self._parlamentar_id = None
-        self._parlamentar_nome = None
-        self._parlamentar_partido = None
-        self._parlamentar_uf = None
-        self._parlamentar_foto = None
-        self._parlamentar_cargo = None
-
+        self._parlamentar = Parlamentar()
         self._data_inicial = datetime.now()
         self._data_final = datetime.now()
-        self._aviso_dados = None #mensagem
+        self._aviso_dados = None
 
         self._orgaos = []
         self._proposicoes = []
@@ -24,41 +79,12 @@ class Relatorio():
         self._presenca_absoluta = None
         self._eventos_ausentes_esperados_total = None
 
-    def get_parlamentar_id(self):
-        return self._parlamentar_id
+    def get_parlamentar(self):
+        return self._parlamentar
 
-    def set_parlamentar_id(self, id):
-        self._parlamentar_id = str(id)
-    
-    def get_parlamentar_nome(self):
-        return self._parlamentar_nome
-    
-    def set_parlamentar_nome(self, nome):
-        self._parlamentar_nome = nome
-
-    def get_parlamentar_partido(self):
-        return self._parlamentar_partido
-
-    def set_parlamentar_partido(self, partido):
-        self._parlamentar_partido = partido
-
-    def get_parlamentar_uf(self):
-        return self._parlamentar_uf
-
-    def set_parlamentar_uf(self, uf):
-        self._parlamentar_uf = uf
-
-    def get_parlamentar_foto(self):
-        return self._parlamentar_foto
-
-    def set_parlamentar_foto(self, url):
-        self._parlamentar_foto = url
-
-    def get_parlamentar_cargo(self):
-        return self._parlamentar_cargo
-
-    def set_parlamentar_cargo(self, cargo):
-        self._parlamentar_cargo = cargo.upper()
+    def set_parlamentar(self, par):
+        if isinstance(par, Parlamentar):
+            self._parlamentar = par
 
     def get_data_inicial(self):
         return self._data_inicial
@@ -136,14 +162,7 @@ class Relatorio():
 
     def to_dict(self):
         relatorio = {
-            'parlamentar': {
-                'id': self._parlamentar_id,
-                'nome': self._parlamentar_nome,
-                'partido': self._parlamentar_partido,
-                'uf': self._parlamentar_uf,
-                'cargo': self._parlamentar_cargo,
-                'foto': self._parlamentar_foto
-            },
+            'parlamentar': self._parlamentar.to_dict(),
             'mensagem': self._aviso_dados,
             'dataInicial': self._data_inicial.strftime("%d/%m/%Y"),
             'dataFinal': self._data_final.strftime("%d/%m/%Y"),
@@ -170,6 +189,7 @@ class Relatorio():
     
     def to_json(self):
         return json.dumps(self.to_dict(), default=str)
+
 
 class Orgao():
 
@@ -210,6 +230,7 @@ class Orgao():
             'cargo': self._cargo,
             'apelido': self._apelido
         }
+
 
 class Proposicao():
 
@@ -291,6 +312,7 @@ class Proposicao():
             'voto': self._voto,
             'pauta': self._pauta
         }
+
 
 class Evento():
 

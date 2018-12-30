@@ -24,10 +24,12 @@
         {% set deputado = relatorio['parlamentar'] %}
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="/">Consultar político</a>
+                <a href="/minhasAvaliacoes">Minhas avaliações</a>
             </li>
-            <li class="breadcrumb-item">Deputado federal</li>
-            <li class="breadcrumb-item active text-uppercase" aria-current="page">{{ deputado['nome'] }}</li>
+            <li class="breadcrumb-item">
+                <a href="/minhasAvaliacoes?parlamentar={{ deputado['id'] }}&parlamentarTipo={{ deputado['cargo'] }}">{{ deputado['nome'] }}</a>
+            </li>
+            <li class="breadcrumb-item active text-uppercase" aria-current="page">Relatório {{ relatorio['dataFinal'] }}</li>
         </ol>
     </nav>
     <div class="container mb-3 bg-light rounded">
@@ -49,7 +51,7 @@
                         href="#"
                         class="fa fa-sync-alt text-dark ml-1 icon-link"></a>
                 </h4>
-                <span id="relatorioJSON" class="d-none">{{ relatorio | tojson | safe }}</span>
+                <span id="relatorioJSON" class="d-none">{{ relatorio | tojsonforced | safe }}</span>
                 <span id="relatorioId" class="d-none">{{ relatorio['_id'] }}</span>
                 <script>
                 try {

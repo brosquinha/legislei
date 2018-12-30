@@ -6,7 +6,7 @@ from SDKs.CamaraDeputados.entidades import Deputados, Eventos, Proposicoes, Vota
 from SDKs.CamaraDeputados.exceptions import CamaraDeputadosError
 from models.parlamentares import ParlamentaresApp
 from exceptions import ModelError
-from models.relatorio import Relatorio, Orgao, Proposicao, Evento
+from models.relatorio import Parlamentar, Relatorio, Orgao, Proposicao, Evento
 
 
 class DeputadosApp(ParlamentaresApp):
@@ -19,10 +19,9 @@ class DeputadosApp(ParlamentaresApp):
         self.vot = Votacoes()
         self.relatorio = Relatorio()
 
-    def consultar_deputado(self, deputado_id, data_final=None, periodo_dias=7):
+    def obter_relatorio(self, parlamentar_id, data_final=None, periodo_dias=7):
         try:
             self.relatorio = Relatorio()
-            self.relatorio.set_parlamentar_cargo('BR1')
             start_time = time()
             if data_final:
                 data_final = datetime.strptime(data_final, '%Y-%m-%d')
@@ -30,12 +29,7 @@ class DeputadosApp(ParlamentaresApp):
             else:
                 data_final = datetime.now()
             self.setPeriodoDias(periodo_dias)
-            deputado_info = self.dep.obterDeputado(deputado_id)
-            self.relatorio.set_parlamentar_id(deputado_info['id'])
-            self.relatorio.set_parlamentar_nome(deputado_info['ultimoStatus']['nome'])
-            self.relatorio.set_parlamentar_partido(deputado_info['ultimoStatus']['siglaPartido'])
-            self.relatorio.set_parlamentar_uf(deputado_info['ultimoStatus']['siglaUf'])
-            self.relatorio.set_parlamentar_foto(deputado_info['ultimoStatus']['urlFoto'])
+            deputado_info = self.obter_parlamentar(parlamentar_id)
             self.relatorio.set_data_inicial(self.obterDataInicial(
                 data_final, **self.periodo))
             self.relatorio.set_data_final(data_final)
@@ -45,11 +39,11 @@ class DeputadosApp(ParlamentaresApp):
                 presenca_total,
                 todos_eventos
             ) = self.procurarEventosComDeputado(
-                deputado_info['id'],
+                deputado_info.get_id(),
                 data_final
             )
             print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
-            orgaos = self.obterOrgaosDeputado(deputado_info['id'], data_final)
+            orgaos = self.obterOrgaosDeputado(deputado_info.get_id(), data_final)
             print('Orgaos obtidos em {0:.5f}'.format(time() - start_time))
             orgaos_nomes = [orgao['nomeOrgao'] for orgao in orgaos]
             for e in eventos:
@@ -86,7 +80,7 @@ class DeputadosApp(ParlamentaresApp):
                                 proposicao.set_voto('ERROR')
                             else:
                                 voto = self.obterVotoDeputado(
-                                    pauta['votacao'][0]['id'], deputado_info['id'])
+                                    pauta['votacao'][0]['id'], deputado_info.get_id())
                                 proposicao.set_pauta(pauta['proposicao_detalhes']['ementa'])
                                 proposicao.set_voto(voto)
                             evento.add_pautas(proposicao)
@@ -97,7 +91,7 @@ class DeputadosApp(ParlamentaresApp):
                 eventos_ausentes_total,
                 eventos_previstos
             ) = self.obterEventosAusentes(
-                deputado_info['id'],
+                deputado_info.get_id(),
                 data_final,
                 eventos,
                 orgaos_nomes,
@@ -174,7 +168,7 @@ class DeputadosApp(ParlamentaresApp):
             for item in page:
                 eventos_totais.append(item)
                 for dep in self.ev.obterDeputadosEvento(item['id']):
-                    if dep['id'] == deputado_id:
+                    if str(dep['id']) == deputado_id:
                         eventos_com_deputado.append(item)
         if len(eventos_totais) == 0:
             presenca = 0
@@ -227,7 +221,7 @@ class DeputadosApp(ParlamentaresApp):
         try:
             for page in self.vot.obterVotos(vot_id):
                 for v in page:
-                    if v['parlamentar']['id'] == dep_id:
+                    if str(v['parlamentar']['id']) == dep_id:
                         return v['voto']
         except CamaraDeputadosError:
             return False
@@ -264,12 +258,12 @@ class DeputadosApp(ParlamentaresApp):
         di, df = self.obterDataInicialEFinal(data_final)
         try:
             for page in self.prop.obterTodasProposicoes(
-                idAutor=deputado['id'],
+                idAutor=deputado.get_id(),
                 dataApresentacaoInicio=di,
                 dataApresentacaoFim=df
             ):
                 for item in page:
-                    if (deputado['ultimoStatus']['nome'].lower() in 
+                    if (deputado.get_nome().lower() in 
                             [x['nome'].lower() for x in self.prop.obterAutoresProposicao(item['id'])]):
                         proposicao = Proposicao()
                         proposicao.set_id(item['id'])
@@ -301,9 +295,22 @@ class DeputadosApp(ParlamentaresApp):
                 props.append(item)
         return props
 
-    def obterDeputados(self):
+    def obter_parlamentares(self):
         deputados = []
         for page in self.dep.obterTodosDeputados():
             for item in page:
                 deputados.append(item)
-        return json.dumps(deputados), 200
+        return deputados
+
+    def obter_parlamentar(self, parlamentar_id):
+        #TODO separar parlamentar em uma classe separada para fazer essa parte de inscrição
+        deputado_info = self.dep.obterDeputado(parlamentar_id)
+        parlamentar = Parlamentar()
+        parlamentar.set_cargo('BR1')
+        parlamentar.set_id(deputado_info['id'])
+        parlamentar.set_nome(deputado_info['ultimoStatus']['nome'])
+        parlamentar.set_partido(deputado_info['ultimoStatus']['siglaPartido'])
+        parlamentar.set_uf(deputado_info['ultimoStatus']['siglaUf'])
+        parlamentar.set_foto(deputado_info['ultimoStatus']['urlFoto'])
+        self.relatorio.set_parlamentar(parlamentar)
+        return parlamentar

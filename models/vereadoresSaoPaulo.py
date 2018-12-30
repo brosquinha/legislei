@@ -4,7 +4,7 @@ from flask import render_template, request
 from SDKs.CamaraMunicipalSaoPaulo.base import CamaraMunicipal
 from models.parlamentares import ParlamentaresApp
 from exceptions import ModelError
-from models.relatorio import Relatorio, Proposicao, Evento, Orgao
+from models.relatorio import Parlamentar, Relatorio, Proposicao, Evento, Orgao
 
 class VereadoresApp(ParlamentaresApp):
 
@@ -13,21 +13,14 @@ class VereadoresApp(ParlamentaresApp):
         self.ver = CamaraMunicipal()
         self.relatorio = Relatorio()
     
-    def consultar_vereador(self, vereador_nome, data_final=datetime.now(), periodo=7):
+    def obter_relatorio(self, parlamentar_id, data_final=datetime.now(), periodo_dias=7):
         try:
             self.relatorio = Relatorio()
             self.relatorio.set_aviso_dados(u'Apenas dados de pautas de sessões plenárias estão implementados.')
-            self.setPeriodoDias(periodo)
+            self.setPeriodoDias(periodo_dias)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
-            vereador = self.obterVereador(vereador_nome)
-            self.relatorio.set_parlamentar_cargo('São Paulo')
-            self.relatorio.set_parlamentar_nome(vereador['nome'])
-            self.relatorio.set_parlamentar_id(vereador['nome']) #Por ora
-            self.relatorio.set_parlamentar_partido(vereador['siglaPartido'])
-            self.relatorio.set_parlamentar_uf('SP')
-            self.relatorio.set_parlamentar_foto(
-                'https://www.99luca11.com/Users/usuario_sem_foto.png')
+            vereador = self.obter_parlamentar(parlamentar_id)
             self.relatorio.set_data_inicial(data_inicial)
             self.relatorio.set_data_final(data_final)
             presenca = []
@@ -36,7 +29,7 @@ class VereadoresApp(ParlamentaresApp):
             for dia in self.ver.obterPresenca(data_inicial, data_final):
                 if dia:
                     for v in dia['vereadores']:
-                        if v['nome'].lower() == vereador['nome'].lower():
+                        if v['nome'].lower() == vereador.get_nome().lower():
                             for s in v['sessoes']:
                                 if s['presenca'] == 'Presente':
                                     presenca.append(s['nome'])
@@ -61,13 +54,22 @@ class VereadoresApp(ParlamentaresApp):
             # raise ModelError(str(e))
 
 
-    def obterVereador(self, nome):
+    def obter_parlamentar(self, parlamentar_id):
         for item in self.ver.obterVereadores():
-            if item['nome'].lower() == nome.lower():
-                return item
+            if item['nome'].lower() == parlamentar_id.lower():
+                parlamentar = Parlamentar()
+                parlamentar.set_cargo('São Paulo')
+                parlamentar.set_nome(item['nome'])
+                parlamentar.set_id(item['nome']) #Por ora
+                parlamentar.set_partido(item['siglaPartido'])
+                parlamentar.set_uf('SP')
+                parlamentar.set_foto(
+                    'https://www.99luca11.com/Users/usuario_sem_foto.png')
+                self.relatorio.set_parlamentar(parlamentar)
+                return parlamentar
 
 
-    def obterVereadoresAtuais(self):
+    def obter_parlamentares(self):
         vereadores = self.ver.obterVereadores()
         atual = self.ver.obterAtualLegislatura()
         lista = []
@@ -81,4 +83,4 @@ class VereadoresApp(ParlamentaresApp):
                         'siglaPartido': v['siglaPartido']
                     }
                 )
-        return json.dumps(lista), 200
+        return lista

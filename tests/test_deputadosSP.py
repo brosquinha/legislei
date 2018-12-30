@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 from datetime import datetime
 from models.deputadosSP import DeputadosALESPApp
+from models.relatorio import Parlamentar
 
 class TestDeputadosSPApp(unittest.TestCase):
 
@@ -13,28 +14,32 @@ class TestDeputadosSPApp(unittest.TestCase):
         mock_obterTodosDeputados.return_value = [
             {'id': '12'},
             {'id': '11'},
-            {'id': '14', 'nome': 'Teste'},
+            {'id': '14', 'nome': 'Teste', 'siglaPartido': 'PPP', 'urlFoto': 'foto'},
         ]
+        expected_response = {
+            'id': '14',
+            'nome': 'Teste',
+            'partido': 'PPP',
+            'uf': 'SP',
+            'cargo': 'SP',
+            'foto': 'foto'
+        }
 
-        actual_response = self.dep.obterDeputado('14')
+        actual_response = self.dep.obter_parlamentar('14')
 
-        self.assertEqual({'id': '14', 'nome': 'Teste'}, actual_response)
+        self.assertEqual(expected_response, actual_response.to_dict())
 
     @patch("SDKs.AssembleiaLegislativaSP.deputados.Deputados.obterTodosDeputados")
-    @patch("json.dumps")
-    def test_obterDeputados(self, mock_json_dumps, mock_obterTodosDeputados):
+    def test_obterParlamentares(self, mock_obterTodosDeputados):
         mock_obterTodosDeputados.return_value = [
             {'id': '12'},
             {'id': '11'},
             {'id': '14', 'nome': 'Teste'},
         ]
-        mock_json_dumps.return_value = 'jsonstr'
 
-        actual_response = self.dep.obterDeputados()
+        actual_response = self.dep.obter_parlamentares()
 
-        self.assertEqual('jsonstr', actual_response[0])
-        self.assertEqual(200, actual_response[1])
-        mock_json_dumps.assert_called_once_with(mock_obterTodosDeputados.return_value)
+        self.assertEqual(mock_obterTodosDeputados.return_value, actual_response)
 
     @patch("SDKs.AssembleiaLegislativaSP.comissoes.Comissoes.obterComissoes")
     def test_obterComissoesPorId(self, mock_obterComissoes):

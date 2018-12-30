@@ -28,7 +28,7 @@ class TestMainAppMethods(unittest.TestCase):
             pass
         mock_mongo_db.return_value = FakeRelatorios()
         
-        actual_response = obter_relatorio('123', 'hj', func)
+        actual_response = obter_relatorio('123', 'hj', func, periodo=7)
 
         self.assertEqual(actual_response, {'_id': 'TesteEmJson'})
         
@@ -58,7 +58,7 @@ class TestMainAppMethods(unittest.TestCase):
             return FakeRelatorio()
         mock_get_collection.return_value = FakeRelatorios()
 
-        actual_response = obter_relatorio('123', 'hj', func)
+        actual_response = obter_relatorio('123', 'hj', func, periodo=7)
 
         self.assertEqual(actual_response, {'nome': 'relatorio', '_id': 'Id'})
 
@@ -83,7 +83,7 @@ class TestMainAppMethods(unittest.TestCase):
         mock_render_template.return_value = True
 
         with app.app_context():
-            actual_response = obter_relatorio('123', 'hj', func)
+            actual_response = obter_relatorio('123', 'hj', func, periodo=7)
         
         self.assertEqual(actual_response, (True, 500))
         mock_render_template.assert_called_once_with(
@@ -114,7 +114,20 @@ class TestMainAppMethods(unittest.TestCase):
 
         data = [
             {
-                "parlamentares": [1, 2, 3],
+                "parlamentares": [
+                    {
+                        'id': 1,
+                        'cargo': 'BR1'
+                    },
+                    {
+                        'id': 2,
+                        'cargo': 'SP'
+                    },
+                    {
+                        'id': 3,
+                        'cargo': 'BR1'
+                    }
+                ],
                 "intervalo": 7,
                 "email": "test@test.com"
             }
