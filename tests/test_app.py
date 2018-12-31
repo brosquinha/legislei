@@ -32,10 +32,12 @@ class TestMainAppMethods(unittest.TestCase):
 
         self.assertEqual(actual_response, {'_id': 'TesteEmJson'})
         
+    @patch("model_selector.model_selector")
     @patch("db.MongoDBClient.get_collection")
     def test_obter_relatorio_json_inexistente_funcao_sem_erro(
         self,
-        mock_get_collection
+        mock_get_collection,
+        mock_model_selector
     ):
         class FakeInsertOneResult:
             def __init__(self):
@@ -54,43 +56,29 @@ class TestMainAppMethods(unittest.TestCase):
         class FakeRelatorio:
             def to_dict(self):
                 return {'nome': 'relatorio'}
-        def func(*args, **kwargs):
-            return FakeRelatorio()
+        class FakeModel:
+            def obter_relatorio(self, *args, **kwargs):
+                return FakeRelatorio()
         mock_get_collection.return_value = FakeRelatorios()
+        mock_model_selector.return_value = FakeModel
 
-        actual_response = obter_relatorio('123', 'hj', func, periodo=7)
+        actual_response = obter_relatorio('123', 'hj', 'modelTeste', periodo=7)
 
         self.assertEqual(actual_response, {'nome': 'relatorio', '_id': 'Id'})
 
-    @patch("builtins.open")
-    @patch("app.render_template")
+    @patch("model_selector.model_selector")
     def test_obter_relatorio_json_inexistente_funcao_com_erro(
         self,
-        mock_render_template,
-        mock_open
+        mock_model_selector
     ):
-        class FakeOpen:
-            def __init__(self, file, mode=None):
-                raise FileNotFoundError()
-            def write(self, *args):
-                pass
-            def close(self):
-                pass
-        def func(*args, **kwargs):
-            raise ModelError("Erro")
+        class FakeModel:
+            def obter_relatorio(self, *args, **kwargs):
+                raise ModelError('Erro')
 
-        mock_open.side_effect = FakeOpen
-        mock_render_template.return_value = True
+        mock_model_selector.return_value = FakeModel
 
-        with app.app_context():
-            actual_response = obter_relatorio('123', 'hj', func, periodo=7)
-        
-        self.assertEqual(actual_response, (True, 500))
-        mock_render_template.assert_called_once_with(
-            'erro.html',
-            erro_titulo='500 - Serviço indisponível',
-            erro_descricao="Erro"
-        )
+        with self.assertRaises(ModelError):
+            obter_relatorio('123', 'hj', 'model', periodo=7)
 
     @patch("app.send_email")
     @patch("app.render_template")

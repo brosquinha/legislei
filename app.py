@@ -8,10 +8,11 @@ from datetime import timedelta, datetime
 from pytz import timezone
 from db import MongoDBClient
 from bson.objectid import ObjectId
-from model_selector import model_selector, modelos_estaduais, modelos_municipais
+from model_selector import (modelos_estaduais,modelos_municipais, obter_relatorio,
+    check_if_model_exists, obter_parlamentar, obter_parlamentares)
 from models.relatorio import Relatorio
 from models.user import User
-from exceptions import ModelError
+from exceptions import AppError, ModelError, InvalidModelId
 from send_reports import check_reports_to_send, send_email
 from flask import Flask, request, render_template, redirect
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -40,7 +41,7 @@ def send_reports(data):
             reports.append(obter_relatorio(
                 parlamentar=par['id'],
                 data_final=datetime.now().strftime('%Y-%m-%d'),
-                func=model_selector(par['cargo'])().obter_relatorio,
+                model=par['cargo'],
                 periodo=item["intervalo"]
             ))
         with app.app_context():
@@ -87,59 +88,14 @@ def modelar_pagina_relatorio(relatorio, template='consulta_deputado.html'):
     ), 200
 
 
-def obter_relatorio(parlamentar, data_final, func, periodo):
-    """
-    Obtém o relatório da função fornecida
-
-    Espera-se que `func` retorne um objeto Relatorio.
-    """
-    mongo_db = MongoDBClient()
-    relatorios_col = mongo_db.get_collection('relatorios')
-    relatorio = relatorios_col.find_one({'idTemp': '{}-{}'.format(parlamentar, data_final)})
-    if relatorio != None:
-        print('Relatorio carregado!')
-        relatorio['_id'] = str(relatorio['_id'])
-        return relatorio
-    else:
-        try:
-            relatorio = func(
-                parlamentar_id=parlamentar,
-                data_final=data_final,
-                periodo_dias=periodo
-            )
-            relatorio_dict = relatorio.to_dict()
-            relatorio_dict['_id'] = str(relatorios_col.insert_one(
-                {
-                    **relatorio_dict,
-                    **{'idTemp': '{}-{}'.format(parlamentar, data_final)}
-                }
-            ).inserted_id)
-            return relatorio_dict
-        except ModelError as e:
-            return render_template(
-                'erro.html',
-                erro_titulo='500 - Serviço indisponível',
-                erro_descricao=e.message
-            ), 500
-        except TypeError as e:
-            return render_template(
-                'erro.html',
-                erro_titulo='500 - Serviço indisponível',
-                erro_descricao=str(e)
-            ), 500
-
 @app.route('/relatorio')
 def consultar_parlamentar():
-    modelClass = model_selector(request.args.get('parlamentarTipo'))
-    if modelClass:
-        return modelar_pagina_relatorio(obter_relatorio(
-            parlamentar=request.args.get('parlamentar'),
-            data_final=request.args.get('data'),
-            func=modelClass().obter_relatorio,
-            periodo=request.args.get('dias')
-        ))
-    else:
-        return 'Selecione um tipo de parlamentar, plz', 400
+    return modelar_pagina_relatorio(obter_relatorio(
+        parlamentar=request.args.get('parlamentar'),
+        data_final=request.args.get('data'),
+        model=request.args.get('parlamentarTipo'),
+        periodo=request.args.get('dias')
+    ))
 
 
 @app.route('/relatorio/<id>')
@@ -262,13 +218,13 @@ def nova_inscricao():
 @app.route('/novaInscricao', methods=['POST'])
 @login_required
 def nova_inscricao_post():
-    modelClass = model_selector(request.form.get('parlamentarTipo'))
-    if modelClass == None:
-        return 'Selecione um modelo, plz', 400
     try:
         mongo_client = MongoDBClient()
         inscricoes_col = mongo_client.get_collection('inscricoes')
-        parlamentar = modelClass().obter_parlamentar(request.form.get('parlamentar')).to_dict()
+        parlamentar = obter_parlamentar(
+            request.form.get('parlamentarTipo'),
+            request.form.get('parlamentar')
+        ).to_dict()
         resultado_update = inscricoes_col.update_one(
             {'email': current_user.user_email},
             {'$push': {"parlamentares": parlamentar}}
@@ -286,6 +242,16 @@ def nova_inscricao_post():
         return 'Erro do modelo', 500
 
 
+def api_error_handler(func):
+    def treat_error(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            return json.dumps({'error': str(e)}), 500
+    return treat_error
+
+
+@api_error_handler
 @app.route('/API/minhasAvaliacoes')
 @login_required
 def avaliacoes_api():
@@ -298,25 +264,23 @@ def avaliacoes_api():
     return json.dumps(minhas_avaliacoes(cargo, parlamentar, current_user.user_email), default=str), 200
 
 
+@api_error_handler
 @app.route('/API/relatorio')
 def consultar_deputado_api():
-    modelClass = model_selector(request.args.get('parlamentarTipo'))
-    if modelClass:
-        return json.dumps(obter_relatorio(
-            parlamentar=request.args.get('parlamentar'),
-            data_final=request.args.get('data'),
-            func=modelClass().obter_relatorio,
-            periodo=request.args.get('dias')
-        ))
-    else:
-        return '{"error": "Cargo não existe"}', 400
+    #Melhorar obter_relatorio para poder apresentar o erro em JSON, não em template
+    return json.dumps(obter_relatorio(
+        parlamentar=request.args.get('parlamentar'),
+        data_final=request.args.get('data'),
+        model=request.args.get('parlamentarTipo'),
+        periodo=request.args.get('dias')
+    ))
 
 
+@api_error_handler
 @app.route('/API/minhasInscricoes/<model>/<par_id>', methods=['DELETE'])
 @login_required
 def remover_inscricao(model, par_id):
-    modelClass = model_selector(model)
-    if modelClass == None:
+    if not check_if_model_exists(model):
         return '{"error": "Cargo não existe"}', 400
     try:
         mongo_client = MongoDBClient()
@@ -331,6 +295,7 @@ def remover_inscricao(model, par_id):
         return '{"error": "Erro de modelo"}', 500
 
 
+@api_error_handler
 @app.route('/API/minhasInscricoes/config', methods=['POST'])
 @login_required
 def alterar_inscricoes_config():
@@ -345,42 +310,44 @@ def alterar_inscricoes_config():
         return '{"error": "Periodo deve ser int"}', 400
 
 
+@api_error_handler
 @app.route('/API/models/estaduais')
 def obter_modelos_estaduais():
     return json.dumps({'models': modelos_estaduais()}), 200
 
 
+@api_error_handler
 @app.route('/API/models/municipais')
 def obter_modelos_municipais():
     return json.dumps({'models': modelos_municipais()}), 200
 
 
+@api_error_handler
 @app.route('/API/parlamentares/<model>')
-def obter_parlamentares(model):
-    modelClass = model_selector(model)
-    if modelClass == None:
-        return '{"error": "Cargo não existe"}', 400
+def obter_parlamentares_api(model):
     try:
-        return json.dumps(modelClass().obter_parlamentares()), 200
-    except AttributeError:
-        return '{"error": "Erro de configuração de dados desse cargo"}', 500
+        return json.dumps(obter_parlamentares(model)), 200
+    except InvalidModelId:
+        return '{"error": "Cargo não existe"}', 400
+    except AppError as e:
+        return '{"error": "{}"}'.format(e), 500
 
 
+@api_error_handler
 @app.route('/API/parlamentares/<model>/<par_id>')
-def obter_parlamentar(model, par_id):
-    modelClass = model_selector(model)
-    if modelClass == None:
-        return '{"error": "Cargo não existe"}', 400
+def obter_parlamentar_api(model, par_id):
     try:
-        return modelClass().obter_parlamentar(par_id).to_json(), 200
-    except AttributeError:
-        return '{"error": "Erro de configuração de dados desse cargo"}', 500
+        return obter_parlamentar(model, par_id).to_json(), 200
+    except InvalidModelId:
+        return '{"error": "Cargo não existe"}', 400
+    except AppError as e:
+        return '{"error": "{}"}'.format(e), 500
 
 
+@api_error_handler
 @app.route('/API/relatorios/<model>/<par_id>')
 def buscar_relatorios_parlamentar(model, par_id):
-    modelClass= model_selector(model)
-    if modelClass == None:
+    if not check_if_model_exists(model):
         return '{"error": "Cargo não existe"}', 400
     try:
         mongo_client = MongoDBClient()
