@@ -27,8 +27,12 @@ A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` com as seguint
 | APP_SECRET_KEY | Chave secreta para a aplicação Flask |
 | HOST_ENDPOINT | Endpoint do host |
 | DEBUG | `True` para roda a aplicação no modo de debug do Flask |
-| GMAIL_USR | Endereço de email do gmail para envio de relatórios |
-| GMAIL_PSW | Senha do email do gmail para envio de relatórios |
+| EMAIL_ENDPOINT | Endpoint para o server SMTP |
+| EMAIL_PORT | Porta para o server SMTP |
+| EMAIL_SSL | `True` se o server SMTP trabalha com SSL |
+| EMAIL_TLS | `True` se o server SMTP trabalha com TLS |
+| EMAIL_USR | Endereço de email do gmail para envio de relatórios |
+| EMAIL_PSW | Senha do email do gmail para envio de relatórios |
 | PORT | Porta para expor a aplicação Flask |
 | MONGODB_URI | URI de conexão para o MongoDB (normalmente utilizado em produção) |
 | MONGODB_HOST | Host de conexão para o MongoDB (normalmente utilizado em desenvolvimento) |

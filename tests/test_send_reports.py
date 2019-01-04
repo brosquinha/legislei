@@ -1,14 +1,16 @@
 import smtplib
 import unittest
-from send_reports import send_email
+from send_reports import send_email, uses_ssl
 from unittest.mock import patch
 
 class TestSendReports(unittest.TestCase):
 
-    @patch("smtplib.SMTP")
+    @patch("builtins.print")
+    @patch("smtplib.SMTP_SSL" if uses_ssl else "smtplib.SMTP")
     def test_send_email(
             self,
             mock_SMTP,
+            mock_print
     ):
         #Não consegui nem encontrei como mockar Header e MIMEText...
         class FakeSMTP():
@@ -16,6 +18,8 @@ class TestSendReports(unittest.TestCase):
                 pass
             def starttls(self):
                 self.starttls_called = True
+            def ehlo(self):
+                pass
             def login(self, *args):
                 self.login_args = args
             def sendmail(self, *args):
@@ -27,4 +31,4 @@ class TestSendReports(unittest.TestCase):
 
         send_email("test@test.com", "<html>Report</html>")
 
-        mock_SMTP.assert_called_once_with('smtp.gmail.com', 587)
+        self.assertEqual(1, mock_SMTP.call_count)
