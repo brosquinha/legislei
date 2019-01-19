@@ -1,0 +1,11 @@
+[run]
+omit =
+    politica/*
+    tests/*
+    run_tests.py
+    settings.py
+    */__init__.py
+[report]
+exclude_lines = 
+        pragma: no cover
+        if __name__ == .__main__.:

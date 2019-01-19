@@ -66,6 +66,27 @@ Para desativar o ambiente virtual atual:
 deactivate
 ```
 
+## Testando
+
+Para rodar os testes de unidade:
+
+```Bash
+python3 -m unittest discover -s tests/unit
+```
+
+Para rodar os testes de integração:
+
+```Bash
+python3 -m unittest discover -s tests/integration
+```
+
+Para gerar o relatório de cobertura de testes:
+
+```Bash
+coverage run run_tests.py
+coverage html
+```
+
 ## Docker
 
 Para construir a imagem:

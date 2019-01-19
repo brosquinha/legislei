@@ -77,7 +77,6 @@ def obter_relatorio(parlamentar, data_final, model, periodo):
     relatorios_col = mongo_db.get_collection('relatorios')
     relatorio = relatorios_col.find_one({'idTemp': '{}-{}'.format(parlamentar, data_final)})
     if relatorio != None:
-        print('Relatorio carregado!')
         relatorio['_id'] = str(relatorio['_id'])
         return relatorio
     else:

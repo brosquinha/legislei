@@ -8,8 +8,8 @@ from datetime import timedelta, datetime
 from pytz import timezone
 from db import MongoDBClient
 from bson.objectid import ObjectId
-from model_selector import (modelos_estaduais,modelos_municipais, obter_relatorio,
-    check_if_model_exists, obter_parlamentar, obter_parlamentares)
+from model_selector import (modelos_estaduais, modelos_municipais, obter_relatorio,
+    check_if_model_exists)
 from models.relatorio import Relatorio
 from models.user import User
 from exceptions import AppError, ModelError, InvalidModelId
@@ -23,6 +23,27 @@ app = Flask(__name__, static_url_path='/static')
 app.secret_key = os.environ.get('APP_SECRET_KEY')
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
+def obter_parlamentar(*args, **kwargs):
+    """
+    Obtém parlamentar identificado por `par_id` do modelo `model`
+    
+    Isso foi necessário para mockar esse cara nos testes de integração
+    """
+    # TODO: pensar numa alternativa melhor
+    from model_selector import obter_parlamentar
+    return obter_parlamentar(*args, **kwargs)
+
+
+def obter_parlamentares(*args, **kwargs):
+    """
+    Obtém todos os parlamentares do modelo `model`
+
+    Isso foi necessário para mockar esse cara nos testes de integração
+    """
+    from model_selector import obter_parlamentares
+    return obter_parlamentares(*args, **kwargs)
 
 
 @login_manager.user_loader
@@ -90,12 +111,19 @@ def modelar_pagina_relatorio(relatorio, template='consulta_deputado.html'):
 
 @app.route('/relatorio')
 def consultar_parlamentar():
-    return modelar_pagina_relatorio(obter_relatorio(
-        parlamentar=request.args.get('parlamentar'),
-        data_final=request.args.get('data'),
-        model=request.args.get('parlamentarTipo'),
-        periodo=request.args.get('dias')
-    ))
+    try:
+        return modelar_pagina_relatorio(obter_relatorio(
+            parlamentar=request.args.get('parlamentar'),
+            data_final=request.args.get('data'),
+            model=request.args.get('parlamentarTipo'),
+            periodo=request.args.get('dias')
+        ))
+    except AppError:
+        return render_template(
+            'erro.html',
+            erro_titulo="400 - Requisição incompleta",
+            erro_descricao="Ae, faltaram parâmetros."
+        ), 400
 
 
 @app.route('/relatorio/<id>')
@@ -127,6 +155,8 @@ def avaliar():
     avaliacoes_col = mongo_client.get_collection('avaliacoes')
     relatorios_col = mongo_client.get_collection('relatorios')
     relatorio = relatorios_col.find_one({'_id': ObjectId(relatorio)})
+    if relatorio == None:
+        return 'Report not found', 400
     for tipo in ['eventosAusentes', 'eventosPresentes', 'proposicoes']:
         for item in relatorio[tipo]:
             if 'id' in item and str(item['id']) == avaliado:
@@ -237,7 +267,7 @@ def nova_inscricao_post():
             })
         mongo_client.close()
         return redirect('/minhasAvaliacoes')
-    except AttributeError as e:
+    except AppError as e:
         print(e)
         return 'Erro do modelo', 500
 
@@ -267,13 +297,16 @@ def avaliacoes_api():
 @api_error_handler
 @app.route('/API/relatorio')
 def consultar_deputado_api():
-    #Melhorar obter_relatorio para poder apresentar o erro em JSON, não em template
-    return json.dumps(obter_relatorio(
-        parlamentar=request.args.get('parlamentar'),
-        data_final=request.args.get('data'),
-        model=request.args.get('parlamentarTipo'),
-        periodo=request.args.get('dias')
-    ))
+    # TODO Melhorar obter_relatorio para poder apresentar o erro em JSON, não em template
+    try:
+        return json.dumps(obter_relatorio(
+            parlamentar=request.args.get('parlamentar'),
+            data_final=request.args.get('data'),
+            model=request.args.get('parlamentarTipo'),
+            periodo=request.args.get('dias')
+        ))
+    except AppError:
+        return json.dumps({'error': 'Missing parameters'}), 400
 
 
 @api_error_handler
@@ -290,7 +323,7 @@ def remover_inscricao(model, par_id):
             {'$pull': {'parlamentares': {'cargo': model, 'id': par_id}}}
         )
         mongo_client.close()
-        return "Ok", 200
+        return '{"message": "Ok"}', 200
     except AttributeError:
         return '{"error": "Erro de modelo"}', 500
 
@@ -305,8 +338,8 @@ def alterar_inscricoes_config():
             mongo_client = MongoDBClient()
             inscricoes_col = mongo_client.get_collection('inscricoes')
             inscricoes_col.update_one({'email': current_user.user_email}, {'$set': {'intervalo': periodo}})
-            return "Ok", 200
-    except TypeError:
+            return json.dumps({"message": "Ok {}".format(periodo)}), 200
+    except (TypeError, ValueError):
         return '{"error": "Periodo deve ser int"}', 400
 
 
@@ -330,7 +363,7 @@ def obter_parlamentares_api(model):
     except InvalidModelId:
         return '{"error": "Cargo não existe"}', 400
     except AppError as e:
-        return '{"error": "{}"}'.format(e), 500
+        return json.dumps({"error": str(e)}), 500
 
 
 @api_error_handler
@@ -341,7 +374,7 @@ def obter_parlamentar_api(model, par_id):
     except InvalidModelId:
         return '{"error": "Cargo não existe"}', 400
     except AppError as e:
-        return '{"error": "{}"}'.format(e), 500
+        return json.dumps({"error": str(e)}), 500
 
 
 @api_error_handler
@@ -387,7 +420,7 @@ def new_user():
             return render_template('registrar.html', mensagem='Email já cadastrado')
         users_col.insert_one({
             'username': user_name,
-            'password': pbkdf2_sha256.encrypt(user_psw, rounds=16, salt_size=16),
+            'password': pbkdf2_sha256.using(rounds=16, salt_size=16).hash(user_psw),
             'email': user_email
         })
         mongo_client.close()
@@ -457,7 +490,7 @@ def auth_error(e):
         'erro.html',
         erro_titulo="401 - Não autorizado",
         erro_descricao="Essa página requer usuário autenticado no sistema."
-    ), 400
+    ), 401
 
 
 @app.template_filter('cargoNome')
