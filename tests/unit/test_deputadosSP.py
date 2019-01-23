@@ -2,20 +2,26 @@ import unittest
 from unittest.mock import patch
 from datetime import datetime
 from models.deputadosSP import DeputadosALESPApp
+from exceptions import ModelError
 from models.relatorio import Parlamentar
+from SDKs.AssembleiaLegislativaSP.exceptions import ALESPError
+from SDKs.AssembleiaLegislativaSP.mock import Mocker
 
 class TestDeputadosSPApp(unittest.TestCase):
 
     def setUp(self):
         self.dep = DeputadosALESPApp()
 
-    @patch("SDKs.AssembleiaLegislativaSP.deputados.Deputados.obterTodosDeputados")
-    def test_obterDeputado(self, mock_obterTodosDeputados):
-        mock_obterTodosDeputados.return_value = [
-            {'id': '12'},
-            {'id': '11'},
-            {'id': '14', 'nome': 'Teste', 'siglaPartido': 'PPP', 'urlFoto': 'foto'},
-        ]
+    def test_obterDeputado(self):
+        mock = Mocker(self.dep.dep)
+        mock.add_response(
+            "obterTodosDeputados",
+            [
+                {'id': '12'},
+                {'id': '11'},
+                {'id': '14', 'nome': 'Teste', 'siglaPartido': 'PPP', 'urlFoto': 'foto'},
+            ]
+        )
         expected_response = {
             'id': '14',
             'nome': 'Teste',
@@ -28,26 +34,41 @@ class TestDeputadosSPApp(unittest.TestCase):
         actual_response = self.dep.obter_parlamentar('14')
 
         self.assertEqual(expected_response, actual_response.to_dict())
+        mock.assert_no_pending_responses()
 
-    @patch("SDKs.AssembleiaLegislativaSP.deputados.Deputados.obterTodosDeputados")
-    def test_obterParlamentares(self, mock_obterTodosDeputados):
-        mock_obterTodosDeputados.return_value = [
+    def test_obterParlamentares(self):
+        mock = Mocker(self.dep.dep)
+        expected_response = [
             {'id': '12'},
             {'id': '11'},
             {'id': '14', 'nome': 'Teste'},
         ]
+        mock.add_response("obterTodosDeputados", expected_response)
 
         actual_response = self.dep.obter_parlamentares()
 
-        self.assertEqual(mock_obterTodosDeputados.return_value, actual_response)
+        self.assertEqual(expected_response, actual_response)
+        mock.assert_no_pending_responses()
 
-    @patch("SDKs.AssembleiaLegislativaSP.comissoes.Comissoes.obterComissoes")
-    def test_obterComissoesPorId(self, mock_obterComissoes):
-        mock_obterComissoes.return_value = [
-            {'id': '1', 'nome': 'Comissão1'},
-            {'id': '2', 'nome': 'Comissão2'},
-            {'id': '3', 'nome': 'Comissão3'},
-        ]
+    def test_obterParlamentares_fail_case(self):
+        mock = Mocker(self.dep.dep)
+        mock.add_exception("obterTodosDeputados", ALESPError)
+
+        with self.assertRaises(ModelError):
+            self.dep.obter_parlamentares()
+
+        mock.assert_no_pending_responses()
+
+    def test_obterComissoesPorId(self):
+        mock = Mocker(self.dep.com)
+        mock.add_response(
+            "obterComissoes",
+            [
+                {'id': '1', 'nome': 'Comissão1'},
+                {'id': '2', 'nome': 'Comissão2'},
+                {'id': '3', 'nome': 'Comissão3'},
+            ]
+        )
 
         actual_response = self.dep.obterComissoesPorId()
 
@@ -56,17 +77,21 @@ class TestDeputadosSPApp(unittest.TestCase):
             '2': {'id': '2', 'nome': 'Comissão2'},
             '3': {'id': '3', 'nome': 'Comissão3'}
             }, actual_response)
+        mock.assert_no_pending_responses()
 
-    @patch("SDKs.AssembleiaLegislativaSP.comissoes.Comissoes.obterVotacoesComissoes")
-    def test_obterVotacoesPorReuniao(self, mock_obterVotacoesComissoes):
-        mock_obterVotacoesComissoes.return_value = [
-            {'idDeputado': '1', 'idReuniao': '1', 'voto': 'F'},
-            {'idDeputado': '1', 'idReuniao': '2', 'voto': 'F'},
-            {'idDeputado': '2', 'idReuniao': '3', 'voto': 'S'},
-            {'idDeputado': '3', 'idReuniao': '4', 'voto': 'F'},
-            {'idDeputado': '1', 'idReuniao': '1', 'voto': 'C'},
-            {'idDeputado': '4', 'idReuniao': '5', 'voto': 'C'},
-        ]
+    def test_obterVotacoesPorReuniao(self):
+        mock = Mocker(self.dep.com)
+        mock.add_response(
+            "obterVotacoesComissoes",
+            [
+                {'idDeputado': '1', 'idReuniao': '1', 'voto': 'F'},
+                {'idDeputado': '1', 'idReuniao': '2', 'voto': 'F'},
+                {'idDeputado': '2', 'idReuniao': '3', 'voto': 'S'},
+                {'idDeputado': '3', 'idReuniao': '4', 'voto': 'F'},
+                {'idDeputado': '1', 'idReuniao': '1', 'voto': 'C'},
+                {'idDeputado': '4', 'idReuniao': '5', 'voto': 'C'},
+            ]
+        )
 
         actual_response = self.dep.obterVotacoesPorReuniao('1')
 
@@ -77,47 +102,50 @@ class TestDeputadosSPApp(unittest.TestCase):
             ],
             '2': [{'idDeputado': '1', 'idReuniao': '2', 'voto': 'F'}]
         }, actual_response)
+        mock.assert_no_pending_responses()
 
     @patch("models.deputadosSP.DeputadosALESPApp.obterDatetimeDeStr")
-    @patch("SDKs.AssembleiaLegislativaSP.comissoes.Comissoes.obterMembrosComissoes")
     def test_obterComissoesDeputado(
         self,
-        mock_obterMembrosComissoes,
         mock_obterDatetimeDeStr
     ):
         def fakeObterDatetimeDeStr(txt):
             return txt
         mock_obterDatetimeDeStr.side_effect = fakeObterDatetimeDeStr
-        mock_obterMembrosComissoes.return_value = [
-            {
-                'idDeputado': '1',
-                'idComissao': '1',
-                'dataInicio': datetime(2018, 12, 1),
-                'dataFim': datetime(2018, 12, 30),
-                'efetivo': True
-            },
-            {
-                'idDeputado': '1',
-                'idComissao': '2',
-                'dataInicio': datetime(2018, 12, 1),
-                'dataFim': None,
-                'efetivo': True
-            },
-            {
-                'idDeputado': '1',
-                'idComissao': '3',
-                'dataInicio': datetime(2018, 12, 1),
-                'dataFim': datetime(2018, 12, 30),
-                'efetivo': False
-            },
-            {
-                'idDeputado': '2',
-                'idComissao': '4',
-                'dataFim': datetime(2018, 11, 30),
-                'dataInicio': datetime(2018, 11, 1),
-                'efetivo': True
-            }
-        ]
+        mock = Mocker(self.dep.com)
+        mock.add_response(
+            "obterMembrosComissoes",
+            [
+                {
+                    'idDeputado': '1',
+                    'idComissao': '1',
+                    'dataInicio': datetime(2018, 12, 1),
+                    'dataFim': datetime(2018, 12, 30),
+                    'efetivo': True
+                },
+                {
+                    'idDeputado': '1',
+                    'idComissao': '2',
+                    'dataInicio': datetime(2018, 12, 1),
+                    'dataFim': None,
+                    'efetivo': True
+                },
+                {
+                    'idDeputado': '1',
+                    'idComissao': '3',
+                    'dataInicio': datetime(2018, 12, 1),
+                    'dataFim': datetime(2018, 12, 30),
+                    'efetivo': False
+                },
+                {
+                    'idDeputado': '2',
+                    'idComissao': '4',
+                    'dataFim': datetime(2018, 11, 30),
+                    'dataInicio': datetime(2018, 11, 1),
+                    'efetivo': True
+                }
+            ]
+        )
         comissoes = {
             '1': {'nome': 'Comissão1', 'sigla': 'C1'},
             '2': {'nome': 'Comissão2', 'sigla': 'C2'},
@@ -134,76 +162,80 @@ class TestDeputadosSPApp(unittest.TestCase):
             len(self.dep.relatorio.get_orgaos()), 3
         )
         self.assertTrue(mock_obterDatetimeDeStr.called)
+        mock.assert_no_pending_responses()
 
     @patch("models.deputadosSP.DeputadosALESPApp.obterDatetimeDeStr")
-    @patch("SDKs.AssembleiaLegislativaSP.comissoes.Comissoes.obterPresencaReunioesComissoes")
-    @patch("SDKs.AssembleiaLegislativaSP.comissoes.Comissoes.obterReunioesComissoes")
     def test_obterEventosPresentes(
         self,
-        mock_obterReunioesComissoes,
-        mock_obterPresencaReunioes,
         mock_obterDatetimeDeStr
     ):
         def fakeObterDatetimeDeStr(txt):
             return txt
         mock_obterDatetimeDeStr.side_effect = fakeObterDatetimeDeStr
-        mock_obterReunioesComissoes.return_value = [
-            {
-                'id': '1',
-                'idComissao': '1',
-                'convocacao': 'Reunião1',
-                'situacao': 'Realizada',
-                'data': datetime(2018, 12, 15),
-            },
-            {
-                'id': '2',
-                'idComissao': '1',
-                'convocacao': 'Reunião2',
-                'situacao': 'Realizada',
-                'data': datetime(2018, 12, 1),
-            },
-            {
-                'id': '3',
-                'idComissao': '1',
-                'convocacao': 'Reunião3',
-                'situacao': 'Em preparação',
-                'data': datetime(2018, 12, 30),
-            },
-            {
-                'id': '4',
-                'idComissao': '1',
-                'convocacao': 'Reunião4',
-                'situacao': 'Cancelada',
-                'data': datetime(2018, 12, 15),
-            },
-            {
-                'id': '5',
-                'idComissao': '2',
-                'convocacao': 'Reunião1',
-                'situacao': 'Realizada',
-                'data': datetime(2018, 12, 15),
-            },
-            {
-                'id': '6',
-                'idComissao': '2',
-                'convocacao': 'Reunião2',
-                'situacao': 'Realizada',
-                'data': datetime(2018, 12, 15),
-            },
-            {
-                'id': '7',
-                'idComissao': '1',
-                'convocacao': 'Reunião5',
-                'situacao': 'Realizada',
-                'data': datetime(2018, 12, 15),
-            },
-        ]
-        mock_obterPresencaReunioes.return_value = [
-            {'idDeputado': '1', 'idReuniao': '1'},
-            {'idDeputado': '1', 'idReuniao': '2'},
-            {'idDeputado': '1', 'idReuniao': '3'},
-            {'idDeputado': '2', 'idReuniao': '6'},
-        ]
+        mock = Mocker(self.dep.com)
+        mock.add_response(
+            "obterReunioesComissoes",
+            [
+                {
+                    'id': '1',
+                    'idComissao': '1',
+                    'convocacao': 'Reunião1',
+                    'situacao': 'Realizada',
+                    'data': datetime(2018, 12, 15),
+                },
+                {
+                    'id': '2',
+                    'idComissao': '1',
+                    'convocacao': 'Reunião2',
+                    'situacao': 'Realizada',
+                    'data': datetime(2018, 12, 1),
+                },
+                {
+                    'id': '3',
+                    'idComissao': '1',
+                    'convocacao': 'Reunião3',
+                    'situacao': 'Em preparação',
+                    'data': datetime(2018, 12, 30),
+                },
+                {
+                    'id': '4',
+                    'idComissao': '1',
+                    'convocacao': 'Reunião4',
+                    'situacao': 'Cancelada',
+                    'data': datetime(2018, 12, 15),
+                },
+                {
+                    'id': '5',
+                    'idComissao': '2',
+                    'convocacao': 'Reunião1',
+                    'situacao': 'Realizada',
+                    'data': datetime(2018, 12, 15),
+                },
+                {
+                    'id': '6',
+                    'idComissao': '2',
+                    'convocacao': 'Reunião2',
+                    'situacao': 'Realizada',
+                    'data': datetime(2018, 12, 15),
+                },
+                {
+                    'id': '7',
+                    'idComissao': '1',
+                    'convocacao': 'Reunião5',
+                    'situacao': 'Realizada',
+                    'data': datetime(2018, 12, 15),
+                },
+            ]
+        )
+        mock.add_response(
+            "obterPresencaReunioesComissoes",
+            [
+                {'idDeputado': '1', 'idReuniao': '1'},
+                {'idDeputado': '1', 'idReuniao': '2'},
+                {'idDeputado': '1', 'idReuniao': '3'},
+                {'idDeputado': '2', 'idReuniao': '6'},
+            ]
+        )
         reunioes = {
             '1': [{'idDocumento': '1', 'voto': 'F'}],
         }
@@ -224,6 +256,7 @@ class TestDeputadosSPApp(unittest.TestCase):
         self.assertEqual(len(self.dep.relatorio.get_eventos_presentes()), 1)
         self.assertEqual(len(self.dep.relatorio.get_eventos_ausentes()), 4)
         self.assertEqual(len(self.dep.relatorio.get_eventos_previstos()), 1)
+        mock.assert_no_pending_responses()
 
     @patch("builtins.print")
     @patch("models.deputadosSP.DeputadosALESPApp.obterDatetimeDeStr")
@@ -241,61 +274,72 @@ class TestDeputadosSPApp(unittest.TestCase):
         def fakeObterDatetimeDeStr(txt):
             return txt
         mock_obterDatetimeDeStr.side_effect = fakeObterDatetimeDeStr
-        mock_obterNaturezaDocumentos.return_value = [
-            {'id': '1', 'sigla': 'PL'},
-            {'id': '2', 'sigla': 'PEC'},
-            {'id': '3', 'sigla': 'REQ'},
-        ]
-        mock_obterTodosAutoresProposicoes.return_value = [
-            {'idAutor': '1', 'idDocumento': '1'},
-            {'idAutor': '2', 'idDocumento': '2'},
-            {'idAutor': '1', 'idDocumento': '3'},
-            {'idAutor': '1', 'idDocumento': '4'},
-            {'idAutor': '1', 'idDocumento': '5'},
-        ]
-        mock_obterTodasProposicoes.return_value = [
-            {
-                'id': '1',
-                'ementa': 'Faz coisas boas',
-                'numero': '001',
-                'dataEntrada': datetime(2018, 12, 15),
-                'idNatureza': '1'
-            },
-            {
-                'id': '2',
-                'ementa': 'Faz outras coisas boas',
-                'numero': '002',
-                'dataEntrada': datetime(2018, 12, 15),
-                'idNatureza': '1'
-            },
-            {
-                'id': '3',
-                'ementa': 'Não tenho data de entrada',
-                'numero': '002',
-                'dataEntrada': None,
-                'idNatureza': '1'
-            },
-            {
-                'id': '4',
-                'ementa': 'Não tenho natureza',
-                'numero': '003',
-                'dataEntrada': datetime(2018, 12, 15),
-                'idNatureza': None
-            },
-            {
-                'id': '5',
-                'ementa': 'Não faço parte do perído do relatório',
-                'numero': '005',
-                'dataEntrada': datetime(2018, 12, 1),
-                'idNatureza': '1'
-            },
-        ]
+        mock = Mocker(self.dep.prop)
+        mock.add_response(
+            "obterNaturezaDocumentos",
+            [
+                {'id': '1', 'sigla': 'PL'},
+                {'id': '2', 'sigla': 'PEC'},
+                {'id': '3', 'sigla': 'REQ'},
+            ]
+        )
+        mock.add_response(
+            "obterTodosAutoresProposicoes",
+            [
+                {'idAutor': '1', 'idDocumento': '1'},
+                {'idAutor': '2', 'idDocumento': '2'},
+                {'idAutor': '1', 'idDocumento': '3'},
+                {'idAutor': '1', 'idDocumento': '4'},
+                {'idAutor': '1', 'idDocumento': '5'},
+            ]
+        )
+        mock.add_response(
+            "obterTodasProposicoes",
+            [
+                {
+                    'id': '1',
+                    'ementa': 'Faz coisas boas',
+                    'numero': '001',
+                    'dataEntrada': datetime(2018, 12, 15),
+                    'idNatureza': '1'
+                },
+                {
+                    'id': '2',
+                    'ementa': 'Faz outras coisas boas',
+                    'numero': '002',
+                    'dataEntrada': datetime(2018, 12, 15),
+                    'idNatureza': '1'
+                },
+                {
+                    'id': '3',
+                    'ementa': 'Não tenho data de entrada',
+                    'numero': '002',
+                    'dataEntrada': None,
+                    'idNatureza': '1'
+                },
+                {
+                    'id': '4',
+                    'ementa': 'Não tenho natureza',
+                    'numero': '003',
+                    'dataEntrada': datetime(2018, 12, 15),
+                    'idNatureza': None
+                },
+                {
+                    'id': '5',
+                    'ementa': 'Não faço parte do perído do relatório',
+                    'numero': '005',
+                    'dataEntrada': datetime(2018, 12, 1),
+                    'idNatureza': '1'
+                },
+            ]
+        )
 
         self.dep.obterProposicoesDeputado(
             '1', datetime(2018, 12, 10), datetime(2018, 12, 16)
         )
 
         self.assertEqual(len(self.dep.relatorio.get_proposicoes()), 2)
+        mock.assert_no_pending_responses()
 
     def test_obterDatetimeDeStr(self):
         actual_response = self.dep.obterDatetimeDeStr('2018-12-15T00:00:00')

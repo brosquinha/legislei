@@ -1,13 +1,14 @@
 from unittest.mock import Mock, call
 
+
 class Mocker():
     """
     Mocker para testar aplicações com a lib CâmaraDeputados
 
     Exemplo::
 
-        from CamaraDeputados.entidades import Deputados
-        from CamaraDeputados.mock import Mocker
+        from AssembleiaLegislativaSP.deputados import Deputados
+        from AssembleiaLegislativaSP.mock import Mocker
         import unittest
 
         class TestUnit(unittest.TestCase):
@@ -31,7 +32,7 @@ class Mocker():
     def __init__(self, stub):
         self.obj = stub
         self._methods = {}
-    
+
     def add_response(self, method_name, response, *args, **kwargs):
         """
         Adiciona um valor de retorno para uma chamada do método `method_name` do objeto mockado.
@@ -54,7 +55,8 @@ class Mocker():
                 "calls": [{"response": response, "args": this_args}]
             }
         else:
-            self._methods[method_name]["calls"].append({"response": response, "args": this_args})
+            self._methods[method_name]["calls"].append(
+                {"response": response, "args": this_args})
             self._methods[method_name]["mock"].side_effect = [
                 x["response"] for x in self._methods[method_name]["calls"]
             ]
@@ -87,9 +89,12 @@ class Mocker():
                 m_args = calls["args"]
                 # print(method_info["mock"].mock_calls)
                 if m_args:
-                    self.obj.__getattribute__(method_name).assert_any_call(*m_args[0], **m_args[1])
+                    self.obj.__getattribute__(method_name).assert_any_call(
+                        *m_args[0], **m_args[1])
                 else:
-                    assert self.obj.__getattribute__(method_name).called == True, "{} not called".format(method_name)
+                    assert self.obj.__getattribute__(
+                        method_name).called == True, "{} not called".format(method_name)
             assert self.obj.__getattribute__(method_name).call_count == len(method_info["calls"]), "Expected {} to be called {} times; called {} times only".format(
-                method_name, len(method_info["calls"]), self.obj.__getattribute__(method_name).call_count
+                method_name, len(method_info["calls"]), self.obj.__getattribute__(
+                    method_name).call_count
             )

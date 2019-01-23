@@ -8,14 +8,12 @@ Links de refência:
 * [ALESP](https://www.al.sp.gov.br/dados-abertos/)
 * [Câmara dos Deputados](https://dadosabertos.camara.leg.br/swagger/api.html)
 
-**ATENÇÃO**: as instruções a seguir ainda são referentes ao meu setup pessoal (RPi3). Antes de publicar, fazer as alterações adequadas (como trocar `python3` e `pip3` para `python` e `pip` e trocar a URL do repositório git).
-
 ## Clonar repositório git
 
 Para obter o código-fonte da aplicação Legislei, clone o repositório git com o seguinte comando:
 
 ```Bash
-git clone pi@192.168.1.72:/home/pi/Projects/Politica
+git clone https://github.com/brosquinha/politica.git
 ```
 
 ## Definir as variáveis de ambiente em \.env
@@ -44,7 +42,7 @@ A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` com as seguint
 Para instalar o pacote `virtualenv`:
 
 ```Bash
-pip3 install virtualenv
+pip install virtualenv
 ```
 
 Criar o ambiente virtual para a aplicação Legislei, rode o seguinte na pasta raíz do projeto:
@@ -54,10 +52,16 @@ virtualenv politica
 source politica/bin/activate
 ```
 
+Para instalar as dependências do projeto, rode:
+
+```Bash
+pip install -r requirements.txt
+```
+
 Por fim, crie o arquivo `.env` na pasta raíz do projeto com as variáveis de ambiente necessárias e rode:
 
 ```Bash
-python3 app.py
+python app.py
 ```
 
 Para desativar o ambiente virtual atual:
@@ -71,14 +75,16 @@ deactivate
 Para rodar os testes de unidade:
 
 ```Bash
-python3 -m unittest discover -s tests/unit
+python -m unittest discover -s tests/unit
 ```
 
-Para rodar os testes de integração:
+Para rodar os testes de integração, certifique-se de que você configurou as [variávies de ambiente](#definir-as-variáveis-de-ambiente-em-env) relacionadas ao banco de dado MongoDB e que sua conexão com a internet está funcionando, porque esses testes fazem uso desses recursos. Uma vez que tudo isso esteja funcionando, rode:
 
 ```Bash
-python3 -m unittest discover -s tests/integration
+python -m unittest discover -s tests/integration
 ```
+
+Note que esses testes podem demorar até 6 minutos, dependendo de sua conexão com a internet e da velocidade de conexão ao banco de dados.
 
 Para gerar o relatório de cobertura de testes:
 
