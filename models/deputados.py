@@ -189,7 +189,7 @@ class DeputadosApp(ParlamentaresApp):
                     eventos.append(item)
             return eventos
         except CamaraDeputadosError:
-            eventos = [{'id': None}]
+            return [{'id': None}]
 
     def obterPautaEvento(self, ev_id):
         try:
@@ -280,20 +280,7 @@ class DeputadosApp(ParlamentaresApp):
                             proposicao.set_url_documento(p['urlInteiroTeor'])
                         self.relatorio.add_proposicao(proposicao)
         except CamaraDeputadosError:
-            #TODO
-            pass
-
-    def obterTramitacoesDeputado(self, dep_id, data_final):
-        di, df = self.obterDataInicialEFinal(data_final)
-        props = []
-        for page in self.prop.obterTodasProposicoes(
-            idAutor=dep_id,
-            dataInicio=di,
-            dataFim=df
-        ):
-            for item in page:
-                props.append(item)
-        return props
+            self.relatorio.set_aviso_dados('Não foi possível obter proposições do parlamentar.')
 
     def obter_parlamentares(self):
         deputados = []
@@ -303,7 +290,6 @@ class DeputadosApp(ParlamentaresApp):
         return deputados
 
     def obter_parlamentar(self, parlamentar_id):
-        #TODO separar parlamentar em uma classe separada para fazer essa parte de inscrição
         deputado_info = self.dep.obterDeputado(parlamentar_id)
         parlamentar = Parlamentar()
         parlamentar.set_cargo('BR1')

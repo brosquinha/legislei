@@ -10,6 +10,12 @@ from app import app
 
 class TestApp(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        db = MongoDBClient()
+        db._mongo_client.drop_database("legislei-testing")
+        db.close()
+    
     def setUp(self):
         app.config['TESTING'] = True
         app.config['DEBUG'] = False

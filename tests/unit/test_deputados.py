@@ -2,9 +2,12 @@ import json
 import unittest
 from datetime import datetime
 from unittest.mock import patch
-from SDKs.CamaraDeputados.entidades import Deputados
+
 from models.deputados import DeputadosApp
-from models.relatorio import Parlamentar, Relatorio, Proposicao, Evento, Orgao
+from models.relatorio import Evento, Orgao, Parlamentar, Proposicao, Relatorio
+from SDKs.CamaraDeputados.entidades import Deputados
+from SDKs.CamaraDeputados.mock import Mocker
+from SDKs.CamaraDeputados.exceptions import CamaraDeputadosError
 
 
 class TestDeputadosApp(unittest.TestCase):
@@ -12,75 +15,92 @@ class TestDeputadosApp(unittest.TestCase):
     def setUp(self):
         self.dep = DeputadosApp()
 
-    @patch("SDKs.CamaraDeputados.entidades.Deputados.obterTodosDeputados")
-    def test_obterParlamentares(self, mock_obterTodosDeputados):
+    def test_obterParlamentares(self):
         def fakeObterDeputados():
             yield [{'nome': 'CESAR DA SILVA'}, {'nome': 'FULANO PESSOA'}]
             yield [{'nome': 'SICRANO PINTO'}]
-        mock_obterTodosDeputados.side_effect = fakeObterDeputados
+        mock = Mocker(self.dep.dep)
+        mock.add_response('obterTodosDeputados', fakeObterDeputados())
         actual_response = self.dep.obter_parlamentares()
-        mock_obterTodosDeputados.assert_any_call()
         self.assertEqual(actual_response, [
             {'nome': 'CESAR DA SILVA'},
             {'nome': 'FULANO PESSOA'},
             {'nome': 'SICRANO PINTO'}
         ])
 
-    @patch("SDKs.CamaraDeputados.entidades.Deputados.obterOrgaosDeputado")
     @patch("models.parlamentares.ParlamentaresApp.formatarDatasYMD")
     @patch("models.parlamentares.ParlamentaresApp.obterDataInicial")
     def test_obterOrgaosDeputado(
             self,
             mock_obterDataInicial,
-            mock_formatarDatasYMD,
-            mock_obterOrgaosDeputado
+            mock_formatarDatasYMD
     ):
-        def fakeObterOrgaosDeputado(*args, **kwargs):
-            yield [
-                {'nome': 'Comissão A', 'dataFim': None},
-                {'nome': 'Comissão B', 'dataFim': '2018-08-31'}
-            ]
-            yield [
-                {'nome': 'Comissão C', 'dataFim': '2018-12-31'}
-            ]
+        mock = Mocker(self.dep.dep)
+        mock.add_response(
+            "obterOrgaosDeputado",
+            [[
+                {'nomeOrgao': 'Comissão A', 'dataFim': None},
+                {'nomeOrgao': 'Comissão B', 'dataFim': '2018-08-31'},
+                {'nomeOrgao': 'Comissão C', 'dataFim': '2018-12-31'}
+            ]],
+            '1234',
+            dataInicial='2018-10-21'
+        )
         mock_obterDataInicial.return_value = datetime(2018, 10, 21)
         mock_formatarDatasYMD.return_value = ('2018-10-21')
-        mock_obterOrgaosDeputado.side_effect = fakeObterOrgaosDeputado
 
         actual_response = self.dep.obterOrgaosDeputado(
             '1234', datetime(2018, 10, 28))
 
-        self.assertIn({'nome': 'Comissão A', 'dataFim': None}, actual_response)
+        self.assertIn({'nomeOrgao': 'Comissão A', 'dataFim': None}, actual_response)
         self.assertIn(
-            {'nome': 'Comissão C', 'dataFim': '2018-12-31'}, actual_response)
+            {'nomeOrgao': 'Comissão C', 'dataFim': '2018-12-31'}, actual_response)
         self.assertEqual(len(actual_response), 2)
 
+        mock.assert_no_pending_responses()
         mock_obterDataInicial.assert_called_once_with(
             datetime(2018, 10, 28), days=7)
-        mock_obterOrgaosDeputado.assert_called_with(
-            '1234', dataInicial='2018-10-21')
         mock_formatarDatasYMD.assert_called_once_with(datetime(2018, 10, 21))
 
-    @patch("SDKs.CamaraDeputados.entidades.Eventos.obterDeputadosEvento")
-    @patch("SDKs.CamaraDeputados.entidades.Eventos.obterTodosEventos")
+    def test_obterOrgaosDeputado_fail_case(self):
+        mock = Mocker(self.dep.dep)
+        mock.add_exception('obterOrgaosDeputado', CamaraDeputadosError)
+
+        actual_response = self.dep.obterOrgaosDeputado('1234', datetime(2018, 10, 28))
+
+        self.assertEqual(actual_response, [{'nomeOrgao': None}])
+        mock.assert_no_pending_responses()
+
     @patch("models.parlamentares.ParlamentaresApp.obterDataInicialEFinal")
     def test_procurarEventosComDeputado(
             self,
-            mock_obterDataInicialEFinal,
-            mock_obterTodosEventos,
-            mock_obterDeputadosEvento
+            mock_obterDataInicialEFinal
     ):
-        def fakeObterTodosEventos(**kwargs):
-            yield [{'id': '123'}, {'id': '1234'}]
-            yield [{'id': '12345'}]
-
-        def fakeObterDeputadosEvento(id):
-            if id != '1234':
-                return [{'id': '12345'}, {'id': '98765'}]
-            return [{'id': '98765'}, {'id': '34567'}]
+        mock = Mocker(self.dep.ev)
+        mock.add_response(
+            "obterTodosEventos",
+            [
+                [{'id': '123'}, {'id': '1234'}],
+                [{'id': '12345'}]
+            ],
+            dataInicio='2018-10-21', dataFim='2018-10-28'
+        )
+        mock.add_response(
+            "obterDeputadosEvento",
+            [{'id': '12345'}, {'id': '98765'}],
+            "123"
+        )
+        mock.add_response(
+            "obterDeputadosEvento",
+            [{'id': '98765'}, {'id': '34567'}],
+            "1234"
+        )
+        mock.add_response(
+            "obterDeputadosEvento",
+            [{'id': '12345'}, {'id': '98765'}],
+            "12345"
+        )
         mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
-        mock_obterTodosEventos.side_effect = fakeObterTodosEventos
-        mock_obterDeputadosEvento.side_effect = fakeObterDeputadosEvento
         dep_id = '12345'
 
         actual_response = self.dep.procurarEventosComDeputado(
@@ -98,16 +118,21 @@ class TestDeputadosApp(unittest.TestCase):
 
         mock_obterDataInicialEFinal.assert_called_once_with(
             datetime(2018, 10, 28))
-        mock_obterTodosEventos.assert_called_with(
-            dataInicio='2018-10-21', dataFim='2018-10-28')
-        mock_obterDeputadosEvento.assert_called_with(dep_id)
+        mock.assert_no_pending_responses()
 
-    @patch("SDKs.CamaraDeputados.entidades.Deputados.obterEventosDeputado")
+    def test_procurarEventosComDeputado_fail_case(self):
+        mock = Mocker(self.dep.dep)
+        mock.add_exception("obterEventosDeputado", CamaraDeputadosError)
+
+        actual_response = self.dep.obterEventosPrevistosDeputado("123", datetime(2018, 10, 28))
+
+        self.assertEqual(actual_response, [{'id': None}])
+        mock.assert_no_pending_responses()
+
     @patch("models.parlamentares.ParlamentaresApp.obterDataInicialEFinal")
     def test_obterEventosPrevistosDeputado(
             self,
             mock_obterDataInicialEFinal,
-            mock_obterEventosDeputado
     ):
         eventos = [
             {'nome': 'Evento 1'},
@@ -115,12 +140,16 @@ class TestDeputadosApp(unittest.TestCase):
             {'nome': 'Evento 3'}
         ]
         dep_id = '12345'
+        mock = Mocker(self.dep.dep)
+        mock.add_response(
+            "obterEventosDeputado",
+            [eventos],
+            dep_id,
+            dataInicio='2018-10-21',
+            dataFim='2018-10-28'
+        )
 
-        def fakeObterEventosDeputado(*args, **kwargs):
-            yield eventos[0:2]
-            yield eventos[2:]
         mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
-        mock_obterEventosDeputado.side_effect = fakeObterEventosDeputado
 
         actual_response = self.dep.obterEventosPrevistosDeputado(
             dep_id, datetime(2018, 10, 28))
@@ -129,48 +158,66 @@ class TestDeputadosApp(unittest.TestCase):
 
         mock_obterDataInicialEFinal.assert_called_once_with(
             datetime(2018, 10, 28))
-        mock_obterEventosDeputado.assert_called_with(
-            dep_id,
-            dataInicio='2018-10-21',
-            dataFim='2018-10-28'
-        )
+        mock.assert_no_pending_responses()
 
-    @patch("SDKs.CamaraDeputados.entidades.Proposicoes.obterVotacoesProposicao")
-    @patch("SDKs.CamaraDeputados.entidades.Proposicoes.obterProposicao")
-    @patch("SDKs.CamaraDeputados.entidades.Eventos.obterPautaEvento")
     def test_obterPautaEvento(
             self,
-            mock_obterPautaEvento,
-            mock_obterProposicao,
-            mock_obterVotacoesProposicao
     ):
-        def fakeObterProposicao(id):
-            if id == '12345':
-                return {'nome': 'Proposição I'}
-            return {'nome': 'Proposição II'}
         ev_id = '1234'
-        mock_obterPautaEvento.return_value = [
-            {
-                'codRegime': '123',
-                'proposicao_': {
-                    'id': '12345'
-                }
-            },
-            {
-                'codRegime': '123',
-                'proposicao_': {
-                    'id': '12345'
-                }
-            },
-            {
-                'codRegime': '987',
-                'proposicao_': {
-                    'id': '98765'
-                }
-            },
-        ]
-        mock_obterProposicao.side_effect = fakeObterProposicao
-        mock_obterVotacoesProposicao.return_value = {'votos': '512'}
+        mock_ev = Mocker(self.dep.ev)
+        mock_ev.add_response(
+            "obterPautaEvento",
+            [
+                {
+                    'codRegime': '123',
+                    'proposicao_': {
+                        'id': '12345'
+                    }
+                },
+                {
+                    'codRegime': '123',
+                    'proposicao_': {
+                        'id': '12345'
+                    }
+                },
+                {
+                    'codRegime': '987',
+                    'proposicao_': {
+                        'id': '98765'
+                    }
+                },
+                {
+                    'codRegime': '987',
+                    'proposicao_': {
+                        'id': '56789'
+                    }
+                },
+            ],
+            ev_id
+        )
+        mock_prop = Mocker(self.dep.prop)
+        mock_prop.add_response(
+            "obterProposicao",
+            {'nome': 'Proposição I'},
+            "12345"
+        )
+        mock_prop.add_response(
+            "obterProposicao",
+            {'nome': 'Proposição II'},
+            "98765"
+        )
+        mock_prop.add_exception("obterProposicao", CamaraDeputadosError, "56789")
+        mock_prop.add_response(
+            "obterVotacoesProposicao",
+            {'votos': '512'},
+            "12345"
+        )
+        mock_prop.add_response(
+            "obterVotacoesProposicao",
+            {'votos': '256'},
+            "98765"
+        )
+        mock_prop.add_exception("obterVotacoesProposicao", CamaraDeputadosError, "56789")
 
         actual_response = self.dep.obterPautaEvento(ev_id)
 
@@ -189,16 +236,32 @@ class TestDeputadosApp(unittest.TestCase):
                     'id': '98765'
                 },
                 'proposicao_detalhes': {'nome': 'Proposição II'},
-                'votacao': {'votos': '512'}
+                'votacao': {'votos': '256'}
+            },
+            {
+                'codRegime': '987',
+                'proposicao_': {
+                    'id': '56789'
+                },
+                'proposicao_detalhes': [{'error': True}],
+                'votacao': [{'error': True}]
             },
         ])
 
-        mock_obterPautaEvento.assert_called_once_with(ev_id)
+        mock_ev.assert_no_pending_responses()
+        mock_prop.assert_no_pending_responses()
 
-    @patch("SDKs.CamaraDeputados.entidades.Votacoes.obterVotos")
+    def test_obterPautaEvento_error_case(self):
+        mock = Mocker(self.dep.ev)
+        mock.add_exception("obterPautaEvento", CamaraDeputadosError, "12345")
+
+        actual_response = self.dep.obterPautaEvento("12345")
+
+        self.assertEqual(actual_response, [{'error': True}])
+        mock.assert_no_pending_responses()
+
     def test_obterVotoDeputado(
             self,
-            mock_obterVotos
     ):
         votos = [
             {
@@ -214,15 +277,25 @@ class TestDeputadosApp(unittest.TestCase):
                 'voto': 'Abstenção'
             }
         ]
-
-        def fakeObterVotos(*args, **kwargs):
-            yield votos[0:2]
-            yield votos[2:]
-        mock_obterVotos.side_effect = fakeObterVotos
+        mock = Mocker(self.dep.vot)
+        mock.add_response(
+            "obterVotos",
+            [votos]
+        )
 
         actual_response = self.dep.obterVotoDeputado('', '12345')
 
         self.assertEqual('Sim', actual_response)
+        mock.assert_no_pending_responses()
+
+    def test_obterVotoDeputado_fail_case(self):
+        mock = Mocker(self.dep.vot)
+        mock.add_exception("obterVotos", CamaraDeputadosError, "12345")
+
+        actual_response = self.dep.obterVotoDeputado("12345", "67890")
+
+        self.assertEqual(actual_response, False)
+        mock.assert_no_pending_responses()
 
     @patch("models.deputados.DeputadosApp.obterEventosPrevistosDeputado")
     def test_obterEventosAusentes(
@@ -272,40 +345,53 @@ class TestDeputadosApp(unittest.TestCase):
         mock_obterEventosPrevistosDeputado.assert_called_once_with(
             '123', datetime(2018, 10, 28))
 
-    @patch("SDKs.CamaraDeputados.entidades.Proposicoes.obterProposicao")
-    @patch("SDKs.CamaraDeputados.entidades.Proposicoes.obterAutoresProposicao")
-    @patch("SDKs.CamaraDeputados.entidades.Proposicoes.obterTodasProposicoes")
     @patch("models.parlamentares.ParlamentaresApp.obterDataInicialEFinal")
     def test_obterProposicoesDeputado(
         self,
         mock_obterDataInicialEFinal,
-        mock_obterTodasProposicoes,
-        mock_obterAutoresProposicoes,
-        mock_obterProposicao
     ):
-        def fakeObterTodasProposicoes(*args, **kwargs):
-            yield proposicoes[0:2]
-            yield proposicoes[2:]
-
-        def fakeObterAutoresProposicoes(prop_id, *args, **kwargs):
-            if prop_id == '2':
-                return [{'nome': 'Sicrano'}]
-            return [{'nome': 'Fulano da Silva'}]
-
-        def fakeObterProposicao(*arg, **kwargs):
-            return proposicoes[int(arg[0]) - 1]
-        mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
         proposicoes = [
             {'id': '1', 'ementa': 'Teste1'},
             {'id': '2', 'ementa': 'Teste2'},
             {'id': '3', 'ementa': 'Teste3'},
         ]
+        mock = Mocker(self.dep.prop)
+        mock.add_response(
+            "obterTodasProposicoes",
+            [proposicoes],
+            idAutor='123',
+            dataApresentacaoInicio='2018-10-21',
+            dataApresentacaoFim='2018-10-28'
+        )
+        mock.add_response(
+            "obterAutoresProposicao",
+            [{'nome': 'Fulano da Silva'}],
+            "1"
+        )
+        mock.add_response(
+            "obterAutoresProposicao",
+            [{'nome': 'Sicrano'}],
+            "2"
+        )
+        mock.add_response(
+            "obterAutoresProposicao",
+            [{'nome': 'Fulano da Silva'}],
+            "3"
+        )
+        mock.add_response(
+            "obterProposicao",
+            proposicoes[0],
+            "1"
+        )
+        mock.add_response(
+            "obterProposicao",
+            proposicoes[2],
+            "3"
+        )
+        mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
         deputado = Parlamentar()
         deputado.set_id(123)
         deputado.set_nome('Fulano da Silva')
-        mock_obterTodasProposicoes.side_effect = fakeObterTodasProposicoes
-        mock_obterAutoresProposicoes.side_effect = fakeObterAutoresProposicoes
-        mock_obterProposicao.side_effect = fakeObterProposicao
 
         self.dep.obterProposicoesDeputado(
             deputado, datetime(2018, 10, 28))
@@ -316,8 +402,24 @@ class TestDeputadosApp(unittest.TestCase):
         self.assertEqual('Teste3', actual_response[1]['ementa'])
         mock_obterDataInicialEFinal.assert_called_once_with(
             datetime(2018, 10, 28))
-        mock_obterTodasProposicoes.assert_called_with(
-            idAutor='123',
-            dataApresentacaoInicio='2018-10-21',
-            dataApresentacaoFim='2018-10-28'
+        mock.assert_no_pending_responses()
+
+    def test_obterProposicoesDeputado_fail_case(self):
+        mock = Mocker(self.dep.prop)
+        mock.add_exception(
+            "obterTodasProposicoes",
+            CamaraDeputadosError,
+            idAutor="12345",
+            dataApresentacaoInicio="2018-10-21",
+            dataApresentacaoFim="2018-10-28"
         )
+        deputado = Parlamentar()
+        deputado.set_id("12345")
+
+        self.dep.obterProposicoesDeputado(
+            deputado,
+            datetime(2018, 10, 28)
+        )
+
+        self.assertEqual(self.dep.relatorio.get_aviso_dados(), "Não foi possível obter proposições do parlamentar.")
+        mock.assert_no_pending_responses()
