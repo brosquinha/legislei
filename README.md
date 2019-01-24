@@ -1,8 +1,6 @@
 # Legislei
 
-Projeto pessoal de constante monitoramento das atividades de políticas na Câmara Municipal de São Paulo, Assembleia Legislativa de SP e Câmara dos Deputados.
-
-Links de refência:
+Projeto de constante monitoramento das atividades de parlamentares de todas as três esferas federativas. As casas legislativas cadastradas até o momento são:
 
 * [Câmara Municipal de São Paulo](http://www.saopaulo.sp.leg.br/transparencia/dados-abertos/dados-disponibilizados-em-formato-aberto/)
 * [ALESP](https://www.al.sp.gov.br/dados-abertos/)
@@ -16,7 +14,7 @@ Para obter o código-fonte da aplicação Legislei, clone o repositório git com
 git clone https://github.com/brosquinha/politica.git
 ```
 
-## Definir as variáveis de ambiente em \.env
+## Definir as variaveis de ambiente em \.env
 
 A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` com as seguintes variáveis de ambiente:
 
@@ -37,7 +35,7 @@ A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` com as seguint
 | MONGODB_PORT | Porta da conexão para o MongoDB (normalmente utilizado em desenvolvimento) |
 | MONGODB_DBNAME | Nome do banco de dados da aplicação no MongoDB |
 
-## Instalar pacotes Python e virtualenv
+## Instalar pacotes Python 3.5+ e virtualenv
 
 Para instalar o pacote `virtualenv`:
 
@@ -78,7 +76,7 @@ Para rodar os testes de unidade:
 python -m unittest discover -s tests/unit
 ```
 
-Para rodar os testes de integração, certifique-se de que você configurou as [variávies de ambiente](#definir-as-variáveis-de-ambiente-em-env) relacionadas ao banco de dado MongoDB e que sua conexão com a internet está funcionando, porque esses testes fazem uso desses recursos. Uma vez que tudo isso esteja funcionando, rode:
+Para rodar os testes de integração, certifique-se de que você configurou as [variávies de ambiente](#definir-as-variaveis-de-ambiente-em-env) relacionadas ao banco de dado MongoDB e que sua conexão com a internet está funcionando, porque esses testes fazem uso desses recursos. Uma vez que tudo isso esteja funcionando, rode:
 
 ```Bash
 python -m unittest discover -s tests/integration

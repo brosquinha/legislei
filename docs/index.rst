@@ -11,10 +11,4 @@ Documentação do projeto Legislei
 
    _modules/modules
 
-
-Índices
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. mdinclude:: ../README.md
