@@ -1,23 +1,25 @@
 # -*- coding: utf-8 -*-
-import os
 import json
-import settings
+import os
+from datetime import datetime, timedelta
 from time import time
-from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import timedelta, datetime
-from pytz import timezone
-from db import MongoDBClient
-from bson.objectid import ObjectId
-from model_selector import (modelos_estaduais, modelos_municipais, obter_relatorio,
-    check_if_model_exists)
-from models.relatorio import Relatorio
-from models.user import User
-from exceptions import AppError, ModelError, InvalidModelId
-from send_reports import check_reports_to_send, send_email
-from flask import Flask, request, render_template, redirect
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from passlib.hash import pbkdf2_sha256
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from bson.objectid import ObjectId
+from flask import Flask, redirect, render_template, request
+from flask_login import (LoginManager, current_user, login_required,
+                         login_user, logout_user)
+from passlib.hash import pbkdf2_sha256
+from pytz import timezone
+
+from legislei import settings
+from legislei.db import MongoDBClient
+from legislei.exceptions import AppError, InvalidModelId, ModelError
+from legislei.model_selector import (check_if_model_exists, modelos_estaduais,
+                                     modelos_municipais, obter_relatorio)
+from legislei.models.relatorio import Relatorio
+from legislei.models.user import User
+from legislei.send_reports import check_reports_to_send, send_email
 
 app = Flask(__name__, static_url_path='/static')
 app.secret_key = os.environ.get('APP_SECRET_KEY')
@@ -32,7 +34,7 @@ def obter_parlamentar(*args, **kwargs):
     Isso foi necessário para mockar esse cara nos testes de integração
     """
     # TODO: pensar numa alternativa melhor
-    from model_selector import obter_parlamentar
+    from legislei.model_selector import obter_parlamentar
     return obter_parlamentar(*args, **kwargs)
 
 
@@ -42,7 +44,7 @@ def obter_parlamentares(*args, **kwargs):
 
     Isso foi necessário para mockar esse cara nos testes de integração
     """
-    from model_selector import obter_parlamentares
+    from legislei.model_selector import obter_parlamentares
     return obter_parlamentares(*args, **kwargs)
 
 
@@ -510,10 +512,3 @@ def nome_cidade_filter(model):
 @app.template_filter('tojsonforced')
 def tojson_filter(obj):
     return json.dumps(obj, default=str)
-
-
-if __name__ == '__main__':
-    app.debug = os.environ.get('DEBUG', 'True') in ['True', 'true']
-    port = int(os.environ.get('PORT', 5000))
-    scheduler.start()
-    app.run(host='0.0.0.0', port=port, threaded=True)

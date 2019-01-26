@@ -1,3 +1,6 @@
+![build](https://img.shields.io/travis/com/brosquinha/politica.svg)
+![Python 3.5+](https://img.shields.io/badge/python-3.5^-blue.svg)
+![glp](https://img.shields.io/github/license/brosquinha/politica.svg)
 # Legislei
 
 Projeto de constante monitoramento das atividades de parlamentares de todas as três esferas federativas. As casas legislativas cadastradas até o momento são:
@@ -16,7 +19,7 @@ git clone https://github.com/brosquinha/politica.git
 
 ## Definir as variaveis de ambiente em \.env
 
-A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` com as seguintes variáveis de ambiente:
+A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` dentro da pasta `legislei` com as seguintes variáveis de ambiente:
 
 | Nome da variável | Descrição |
 | ---------------- | --------- |
@@ -56,7 +59,7 @@ Para instalar as dependências do projeto, rode:
 pip install -r requirements.txt
 ```
 
-Por fim, crie o arquivo `.env` na pasta raíz do projeto com as variáveis de ambiente necessárias e rode:
+Por fim, crie o arquivo `.env` na pasta `legislei` do projeto com as variáveis de ambiente necessárias e rode:
 
 ```Bash
 python app.py
@@ -103,7 +106,7 @@ docker build -t legislei .
 Para rodar o container:
 
 ```Bash
-docker run -p 8080:8080 --env-file .env legislei
+docker run -p 8080:8080 --env-file legislei/.env legislei
 ```
 
 Para rodar o compose Docker:

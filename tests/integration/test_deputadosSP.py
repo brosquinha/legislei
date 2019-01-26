@@ -2,7 +2,9 @@ import json
 import unittest
 import warnings
 from unittest.mock import patch
-from models.deputadosSP import DeputadosALESPApp
+
+from legislei.models.deputadosSP import DeputadosALESPApp
+
 
 class TestDeputadosSP(unittest.TestCase):
 

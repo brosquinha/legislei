@@ -7,7 +7,7 @@ Documentação do projeto Legislei
 ====================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    _modules/modules
 

@@ -1,13 +1,16 @@
 import json
 from datetime import datetime
 from time import time
-from SDKs.AssembleiaLegislativaSP.deputados import Deputados
-from SDKs.AssembleiaLegislativaSP.comissoes import Comissoes
-from SDKs.AssembleiaLegislativaSP.proposicoes import Proposicoes
-from SDKs.AssembleiaLegislativaSP.exceptions import ALESPError
-from models.parlamentares import ParlamentaresApp
-from exceptions import ModelError
-from models.relatorio import Parlamentar, Relatorio, Evento, Orgao, Proposicao
+
+from legislei.exceptions import ModelError
+from legislei.models.parlamentares import ParlamentaresApp
+from legislei.models.relatorio import (Evento, Orgao, Parlamentar, Proposicao,
+                                       Relatorio)
+from legislei.SDKs.AssembleiaLegislativaSP.comissoes import Comissoes
+from legislei.SDKs.AssembleiaLegislativaSP.deputados import Deputados
+from legislei.SDKs.AssembleiaLegislativaSP.exceptions import ALESPError
+from legislei.SDKs.AssembleiaLegislativaSP.proposicoes import Proposicoes
+
 
 class DeputadosALESPApp(ParlamentaresApp):
 

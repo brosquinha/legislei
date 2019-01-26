@@ -1,10 +1,14 @@
 import json
 from datetime import datetime
+
 from flask import render_template, request
-from SDKs.CamaraMunicipalSaoPaulo.base import CamaraMunicipal
-from models.parlamentares import ParlamentaresApp
-from exceptions import ModelError
-from models.relatorio import Parlamentar, Relatorio, Proposicao, Evento, Orgao
+
+from legislei.exceptions import ModelError
+from legislei.models.parlamentares import ParlamentaresApp
+from legislei.models.relatorio import (Evento, Orgao, Parlamentar, Proposicao,
+                                       Relatorio)
+from legislei.SDKs.CamaraMunicipalSaoPaulo.base import CamaraMunicipal
+
 
 class VereadoresApp(ParlamentaresApp):
 

@@ -1,17 +1,19 @@
 import json
 import unittest
-from unittest.mock import patch, call
-from app import obter_relatorio, send_reports, send_email, app
+from unittest.mock import call, patch
+
 from flask import render_template
-from exceptions import ModelError
-from db import MongoDBClient
+
+from legislei.app import app, obter_relatorio, send_email, send_reports
+from legislei.db import MongoDBClient
+from legislei.exceptions import ModelError
 
 customAssertionMsg = '{} differs from expected {}'
 
 class TestMainAppMethods(unittest.TestCase):
 
     @patch("builtins.print")
-    @patch("db.MongoDBClient.get_collection")
+    @patch("legislei.db.MongoDBClient.get_collection")
     def test_obter_relatorio_json_existente(
         self,
         mock_mongo_db,
@@ -32,8 +34,8 @@ class TestMainAppMethods(unittest.TestCase):
 
         self.assertEqual(actual_response, {'_id': 'TesteEmJson'})
         
-    @patch("model_selector.model_selector")
-    @patch("db.MongoDBClient.get_collection")
+    @patch("legislei.model_selector.model_selector")
+    @patch("legislei.db.MongoDBClient.get_collection")
     def test_obter_relatorio_json_inexistente_funcao_sem_erro(
         self,
         mock_get_collection,
@@ -66,7 +68,7 @@ class TestMainAppMethods(unittest.TestCase):
 
         self.assertEqual(actual_response, {'nome': 'relatorio', '_id': 'Id'})
 
-    @patch("model_selector.model_selector")
+    @patch("legislei.model_selector.model_selector")
     def test_obter_relatorio_json_inexistente_funcao_com_erro(
         self,
         mock_model_selector
@@ -80,10 +82,10 @@ class TestMainAppMethods(unittest.TestCase):
         with self.assertRaises(ModelError):
             obter_relatorio('123', 'hj', 'model', periodo=7)
 
-    @patch("app.send_email")
-    @patch("app.render_template")
-    @patch("app.obter_relatorio")
-    @patch("models.deputados.DeputadosApp")
+    @patch("legislei.app.send_email")
+    @patch("legislei.app.render_template")
+    @patch("legislei.app.obter_relatorio")
+    @patch("legislei.models.deputados.DeputadosApp")
     def test_send_reports(
             self,
             mock_deputadosApp,

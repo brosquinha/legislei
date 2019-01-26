@@ -1,11 +1,13 @@
 import unittest
-from unittest.mock import patch
 from datetime import datetime
-from models.deputadosSP import DeputadosALESPApp
-from exceptions import ModelError
-from models.relatorio import Parlamentar
-from SDKs.AssembleiaLegislativaSP.exceptions import ALESPError
-from SDKs.AssembleiaLegislativaSP.mock import Mocker
+from unittest.mock import patch
+
+from legislei.exceptions import ModelError
+from legislei.models.deputadosSP import DeputadosALESPApp
+from legislei.models.relatorio import Parlamentar
+from legislei.SDKs.AssembleiaLegislativaSP.exceptions import ALESPError
+from legislei.SDKs.AssembleiaLegislativaSP.mock import Mocker
+
 
 class TestDeputadosSPApp(unittest.TestCase):
 
@@ -104,7 +106,7 @@ class TestDeputadosSPApp(unittest.TestCase):
         }, actual_response)
         mock.assert_no_pending_responses()
 
-    @patch("models.deputadosSP.DeputadosALESPApp.obterDatetimeDeStr")
+    @patch("legislei.models.deputadosSP.DeputadosALESPApp.obterDatetimeDeStr")
     def test_obterComissoesDeputado(
         self,
         mock_obterDatetimeDeStr
@@ -164,7 +166,7 @@ class TestDeputadosSPApp(unittest.TestCase):
         self.assertTrue(mock_obterDatetimeDeStr.called)
         mock.assert_no_pending_responses()
 
-    @patch("models.deputadosSP.DeputadosALESPApp.obterDatetimeDeStr")
+    @patch("legislei.models.deputadosSP.DeputadosALESPApp.obterDatetimeDeStr")
     def test_obterEventosPresentes(
         self,
         mock_obterDatetimeDeStr
@@ -259,10 +261,10 @@ class TestDeputadosSPApp(unittest.TestCase):
         mock.assert_no_pending_responses()
 
     @patch("builtins.print")
-    @patch("models.deputadosSP.DeputadosALESPApp.obterDatetimeDeStr")
-    @patch("SDKs.AssembleiaLegislativaSP.proposicoes.Proposicoes.obterTodasProposicoes")
-    @patch("SDKs.AssembleiaLegislativaSP.proposicoes.Proposicoes.obterTodosAutoresProposicoes")
-    @patch("SDKs.AssembleiaLegislativaSP.proposicoes.Proposicoes.obterNaturezaDocumentos")
+    @patch("legislei.models.deputadosSP.DeputadosALESPApp.obterDatetimeDeStr")
+    @patch("legislei.SDKs.AssembleiaLegislativaSP.proposicoes.Proposicoes.obterTodasProposicoes")
+    @patch("legislei.SDKs.AssembleiaLegislativaSP.proposicoes.Proposicoes.obterTodosAutoresProposicoes")
+    @patch("legislei.SDKs.AssembleiaLegislativaSP.proposicoes.Proposicoes.obterNaturezaDocumentos")
     def test_obterProposicoesDeputado(
         self,
         mock_obterNaturezaDocumentos,

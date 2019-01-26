@@ -1,7 +1,9 @@
 import smtplib
 import unittest
-from send_reports import send_email, uses_ssl
 from unittest.mock import patch
+
+from legislei.send_reports import send_email, uses_ssl
+
 
 class TestSendReports(unittest.TestCase):
 

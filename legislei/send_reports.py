@@ -1,12 +1,12 @@
 import json
 import os
-import settings
 import smtplib
 from datetime import datetime
-from email.mime.text import MIMEText
 from email.header import Header
-from db import MongoDBClient
+from email.mime.text import MIMEText
 
+from legislei import settings
+from legislei.db import MongoDBClient
 
 smtp_server = os.environ.get("EMAIL_ENDPOINT", "smtp.gmail.com")
 smtp_server_port = os.environ.get("EMAIL_PORT", "587")

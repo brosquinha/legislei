@@ -1,6 +1,9 @@
 import os
-import settings
+
 import pymongo
+
+from legislei import settings
+
 
 class MongoDBClient():
     """

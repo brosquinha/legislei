@@ -1,9 +1,11 @@
-from datetime import date
 import json
-from models.deputados import DeputadosApp
-from unittest.mock import patch
 import unittest
 import warnings
+from datetime import date
+from unittest.mock import patch
+
+from legislei.models.deputados import DeputadosApp
+
 
 class TestDeputados(unittest.TestCase):
 

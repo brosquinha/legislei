@@ -1,12 +1,16 @@
 import json
-from time import time
 from datetime import datetime
+from time import time
+
 from flask import render_template, request
-from SDKs.CamaraDeputados.entidades import Deputados, Eventos, Proposicoes, Votacoes
-from SDKs.CamaraDeputados.exceptions import CamaraDeputadosError
-from models.parlamentares import ParlamentaresApp
-from exceptions import ModelError
-from models.relatorio import Parlamentar, Relatorio, Orgao, Proposicao, Evento
+
+from legislei.exceptions import ModelError
+from legislei.models.parlamentares import ParlamentaresApp
+from legislei.models.relatorio import (Evento, Orgao, Parlamentar, Proposicao,
+                                       Relatorio)
+from legislei.SDKs.CamaraDeputados.entidades import (Deputados, Eventos,
+                                                     Proposicoes, Votacoes)
+from legislei.SDKs.CamaraDeputados.exceptions import CamaraDeputadosError
 
 
 class DeputadosApp(ParlamentaresApp):

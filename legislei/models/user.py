@@ -1,5 +1,7 @@
 from bson.objectid import ObjectId
-from db import MongoDBClient
+
+from legislei.db import MongoDBClient
+
 
 class User():
     """

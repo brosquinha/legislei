@@ -1,5 +1,7 @@
 from datetime import timedelta
-from exceptions import ModelError
+
+from legislei.exceptions import ModelError
+
 
 class ParlamentaresApp():
 

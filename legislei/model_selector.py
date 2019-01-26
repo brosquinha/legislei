@@ -1,10 +1,10 @@
 from flask import render_template
-from db import MongoDBClient
-from exceptions import ModelError, AppError, InvalidModelId
-from models.deputados import DeputadosApp
-from models.deputadosSP import DeputadosALESPApp
-from models.vereadoresSaoPaulo import VereadoresApp
 
+from legislei.db import MongoDBClient
+from legislei.exceptions import AppError, InvalidModelId, ModelError
+from legislei.models.deputados import DeputadosApp
+from legislei.models.deputadosSP import DeputadosALESPApp
+from legislei.models.vereadoresSaoPaulo import VereadoresApp
 
 model_selector_ref = {
     'BR1': DeputadosApp,

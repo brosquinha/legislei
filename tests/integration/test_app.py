@@ -2,11 +2,14 @@ import json
 import os
 import unittest
 from unittest.mock import patch
-from models.relatorio import Parlamentar
-from exceptions import AppError, InvalidModelId
-from db import MongoDBClient
+
 from bson import ObjectId
-from app import app
+
+from legislei.app import app
+from legislei.db import MongoDBClient
+from legislei.exceptions import AppError, InvalidModelId
+from legislei.models.relatorio import Parlamentar
+
 
 class TestApp(unittest.TestCase):
 
@@ -147,7 +150,7 @@ class TestApp(unittest.TestCase):
         self.assertEqual(actual.status_code, 200)
         self.assertIn(u"Nova inscrição".encode('utf-8'), actual.data)
 
-    @patch("model_selector.obter_parlamentar")
+    @patch("legislei.model_selector.obter_parlamentar")
     def test_nova_inscricao_primeira_inscricao(
             self, mock_obter_parlamentar):
         mock_obter_parlamentar.return_value = set_up_parlamentar()
@@ -165,7 +168,7 @@ class TestApp(unittest.TestCase):
         self.assertIn(u"Minhas avaliações".encode("utf-8"), actual.data)
         self.assertIn(b"ParlamentarTeste", actual.data)
 
-    @patch("model_selector.obter_parlamentar")
+    @patch("legislei.model_selector.obter_parlamentar")
     def test_nova_inscricao_mais_uma(
             self, mock_obter_parlamentar):
         par = Parlamentar()
@@ -187,7 +190,7 @@ class TestApp(unittest.TestCase):
         self.assertIn(b"Parlamentar2Teste", actual.data)
 
     @patch("builtins.print")
-    @patch("model_selector.obter_parlamentar")
+    @patch("legislei.model_selector.obter_parlamentar")
     def test_nova_inscricao_erro_modelo(
             self, mock_obter_parlamentar, mock_print):
         def fake(*args):
@@ -284,7 +287,7 @@ class TestApp(unittest.TestCase):
         self.assertIn("PAULO", actual_data)
         json.loads(actual_data)
 
-    @patch("model_selector.obter_parlamentares")
+    @patch("legislei.model_selector.obter_parlamentares")
     def test_obter_parlamentares_api(
             self, mock_obter_parlamentares):
         mock_obter_parlamentares.return_value = [
@@ -298,7 +301,7 @@ class TestApp(unittest.TestCase):
         self.assertIn("Parlamentar2Teste", actual_data)
         json.loads(actual_data)
 
-    @patch("model_selector.obter_parlamentares")
+    @patch("legislei.model_selector.obter_parlamentares")
     def test_obter_parlamentares_api_model_error(
             self, mock_obter_parlamentares):
         def fake(*args, **kwargs):
@@ -310,7 +313,7 @@ class TestApp(unittest.TestCase):
         self.assertIn("Erro", actual_data)
         json.loads(actual_data)
 
-    @patch("model_selector.obter_parlamentares")
+    @patch("legislei.model_selector.obter_parlamentares")
     def test_obter_parlamentares_api_invalid_model(
             self, mock_obter_parlamentares):
         def fake(*args, **kwargs):
@@ -322,7 +325,7 @@ class TestApp(unittest.TestCase):
         self.assertIn(u"Cargo não existe", actual_data)
         json.loads(actual_data)
 
-    @patch("model_selector.obter_parlamentar")
+    @patch("legislei.model_selector.obter_parlamentar")
     def test_obter_parlamentar_api(
             self, mock_obter_parlamentar):
         par = Parlamentar()
@@ -336,7 +339,7 @@ class TestApp(unittest.TestCase):
         self.assertIn("ParlamentarTeste", actual_data)
         json.loads(actual_data)
 
-    @patch("model_selector.obter_parlamentar")
+    @patch("legislei.model_selector.obter_parlamentar")
     def test_obter_parlamentar_api_model_error(
             self, mock_obter_parlamentar):
         def fake(*args, **kwargs):
@@ -348,7 +351,7 @@ class TestApp(unittest.TestCase):
         self.assertIn("Erro", actual_data)
         json.loads(actual_data)
 
-    @patch("model_selector.obter_parlamentar")
+    @patch("legislei.model_selector.obter_parlamentar")
     def test_obter_parlamentar_api_invalid_model(
             self, mock_obter_parlamentar):
         def fake(*args, **kwargs):
