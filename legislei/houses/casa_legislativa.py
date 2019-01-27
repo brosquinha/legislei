@@ -3,7 +3,7 @@ from datetime import timedelta
 from legislei.exceptions import ModelError
 
 
-class ParlamentaresApp():
+class CasaLegislativa():
 
     def __init__(self):
         self.periodo = {'days': 7}

@@ -4,10 +4,10 @@ import warnings
 from datetime import date
 from unittest.mock import patch
 
-from legislei.models.deputados import DeputadosApp
+from legislei.houses.camara_deputados import CamaraDeputadosHandler
 
 
-class TestDeputados(unittest.TestCase):
+class TestCamaraDeputadosHandlerIntegration(unittest.TestCase):
 
     def setUp(self):
         warnings.simplefilter("ignore")
@@ -22,7 +22,7 @@ class TestDeputados(unittest.TestCase):
             "nome" : "CHICO ALENCAR",
             "id" : "74171"
         }""")
-        actual = DeputadosApp().obter_relatorio(
+        actual = CamaraDeputadosHandler().obter_relatorio(
             "74171",
             "2018-06-29",
             7
@@ -42,7 +42,7 @@ class TestDeputados(unittest.TestCase):
 
     def test_obter_parlamentares(self):
         expected = 512
-        actual = DeputadosApp().obter_parlamentares()
+        actual = CamaraDeputadosHandler().obter_parlamentares()
         self.assertEqual(len(actual), expected)
 
     def test_obter_parlamentar(self):
@@ -54,5 +54,5 @@ class TestDeputados(unittest.TestCase):
             "nome" : "CHICO ALENCAR",
             "id" : "74171"
         }""")
-        actual = DeputadosApp().obter_parlamentar("74171").to_dict()
+        actual = CamaraDeputadosHandler().obter_parlamentar("74171").to_dict()
         self.assertDictEqual(actual, expected)

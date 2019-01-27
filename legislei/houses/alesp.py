@@ -3,7 +3,7 @@ from datetime import datetime
 from time import time
 
 from legislei.exceptions import ModelError
-from legislei.models.parlamentares import ParlamentaresApp
+from legislei.houses.casa_legislativa import CasaLegislativa
 from legislei.models.relatorio import (Evento, Orgao, Parlamentar, Proposicao,
                                        Relatorio)
 from legislei.SDKs.AssembleiaLegislativaSP.comissoes import Comissoes
@@ -12,7 +12,7 @@ from legislei.SDKs.AssembleiaLegislativaSP.exceptions import ALESPError
 from legislei.SDKs.AssembleiaLegislativaSP.proposicoes import Proposicoes
 
 
-class DeputadosALESPApp(ParlamentaresApp):
+class ALESPHandler(CasaLegislativa):
 
     def __init__(self):
         super().__init__()

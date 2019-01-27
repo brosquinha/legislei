@@ -3,17 +3,17 @@ import unittest
 from datetime import datetime
 from unittest.mock import patch
 
-from legislei.models.deputados import DeputadosApp
+from legislei.houses.camara_deputados import CamaraDeputadosHandler
 from legislei.models.relatorio import Evento, Orgao, Parlamentar, Proposicao, Relatorio
 from legislei.SDKs.CamaraDeputados.entidades import Deputados
 from legislei.SDKs.CamaraDeputados.mock import Mocker
 from legislei.SDKs.CamaraDeputados.exceptions import CamaraDeputadosError
 
 
-class TestDeputadosApp(unittest.TestCase):
+class TestCamaraDeputadosHandler(unittest.TestCase):
 
     def setUp(self):
-        self.dep = DeputadosApp()
+        self.dep = CamaraDeputadosHandler()
 
     def test_obterParlamentares(self):
         def fakeObterDeputados():
@@ -28,8 +28,8 @@ class TestDeputadosApp(unittest.TestCase):
             {'nome': 'SICRANO PINTO'}
         ])
 
-    @patch("legislei.models.parlamentares.ParlamentaresApp.formatarDatasYMD")
-    @patch("legislei.models.parlamentares.ParlamentaresApp.obterDataInicial")
+    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.formatarDatasYMD")
+    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicial")
     def test_obterOrgaosDeputado(
             self,
             mock_obterDataInicial,
@@ -71,7 +71,7 @@ class TestDeputadosApp(unittest.TestCase):
         self.assertEqual(actual_response, [{'nomeOrgao': None}])
         mock.assert_no_pending_responses()
 
-    @patch("legislei.models.parlamentares.ParlamentaresApp.obterDataInicialEFinal")
+    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicialEFinal")
     def test_procurarEventosComDeputado(
             self,
             mock_obterDataInicialEFinal
@@ -129,7 +129,7 @@ class TestDeputadosApp(unittest.TestCase):
         self.assertEqual(actual_response, [{'id': None}])
         mock.assert_no_pending_responses()
 
-    @patch("legislei.models.parlamentares.ParlamentaresApp.obterDataInicialEFinal")
+    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicialEFinal")
     def test_obterEventosPrevistosDeputado(
             self,
             mock_obterDataInicialEFinal,
@@ -297,7 +297,7 @@ class TestDeputadosApp(unittest.TestCase):
         self.assertEqual(actual_response, False)
         mock.assert_no_pending_responses()
 
-    @patch("legislei.models.deputados.DeputadosApp.obterEventosPrevistosDeputado")
+    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterEventosPrevistosDeputado")
     def test_obterEventosAusentes(
         self,
         mock_obterEventosPrevistosDeputado
@@ -345,7 +345,7 @@ class TestDeputadosApp(unittest.TestCase):
         mock_obterEventosPrevistosDeputado.assert_called_once_with(
             '123', datetime(2018, 10, 28))
 
-    @patch("legislei.models.parlamentares.ParlamentaresApp.obterDataInicialEFinal")
+    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicialEFinal")
     def test_obterProposicoesDeputado(
         self,
         mock_obterDataInicialEFinal,

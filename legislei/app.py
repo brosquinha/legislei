@@ -15,8 +15,9 @@ from pytz import timezone
 from legislei import settings
 from legislei.db import MongoDBClient
 from legislei.exceptions import AppError, InvalidModelId, ModelError
-from legislei.model_selector import (check_if_model_exists, modelos_estaduais,
-                                     modelos_municipais, obter_relatorio)
+from legislei.house_selector import (casas_estaduais, casas_municipais,
+                                     check_if_house_exists, obter_parlamentar,
+                                     obter_parlamentares, obter_relatorio)
 from legislei.models.relatorio import Relatorio
 from legislei.models.user import User
 from legislei.send_reports import check_reports_to_send, send_email
@@ -27,69 +28,9 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-def obter_parlamentar(*args, **kwargs):
-    """
-    Obtém parlamentar identificado por `par_id` do modelo `model`
-    
-    Isso foi necessário para mockar esse cara nos testes de integração
-    """
-    # TODO: pensar numa alternativa melhor
-    from legislei.model_selector import obter_parlamentar
-    return obter_parlamentar(*args, **kwargs)
-
-
-def obter_parlamentares(*args, **kwargs):
-    """
-    Obtém todos os parlamentares do modelo `model`
-
-    Isso foi necessário para mockar esse cara nos testes de integração
-    """
-    from legislei.model_selector import obter_parlamentares
-    return obter_parlamentares(*args, **kwargs)
-
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.get_user(user_id)
-
-
-def check_and_send_reports():
-    return send_reports(check_reports_to_send())
-
-
-def send_reports(data):
-    for item in data:
-        reports = []
-        for par in item["parlamentares"]:
-            reports.append(obter_relatorio(
-                parlamentar=par['id'],
-                data_final=datetime.now().strftime('%Y-%m-%d'),
-                model=par['cargo'],
-                periodo=item["intervalo"]
-            ))
-        with app.app_context():
-            html_report = render_template(
-                'relatorio_deputado_email.out.html',
-                relatorios=reports,
-                data_final=datetime.now().strftime('%Y-%m-%d'),
-                intervalo=item["intervalo"],
-                host=os.environ.get('HOST_ENDPOINT')
-            )
-        send_email(item["email"], html_report)
-
-
-scheduler = BackgroundScheduler()
-scheduler.configure(timezone=timezone('America/Sao_Paulo'))
-scheduler.add_job(
-    func=check_and_send_reports,
-    trigger='cron',
-    day_of_week='sat',
-    hour='12',
-    minute='0',
-    second=0,
-    day='*',
-    month='*'
-)
 
 
 @app.route('/')
@@ -315,7 +256,7 @@ def consultar_deputado_api():
 @app.route('/API/minhasInscricoes/<model>/<par_id>', methods=['DELETE'])
 @login_required
 def remover_inscricao(model, par_id):
-    if not check_if_model_exists(model):
+    if not check_if_house_exists(model):
         return '{"error": "Cargo não existe"}', 400
     try:
         mongo_client = MongoDBClient()
@@ -348,13 +289,13 @@ def alterar_inscricoes_config():
 @api_error_handler
 @app.route('/API/models/estaduais')
 def obter_modelos_estaduais():
-    return json.dumps({'models': modelos_estaduais()}), 200
+    return json.dumps({'models': casas_estaduais()}), 200
 
 
 @api_error_handler
 @app.route('/API/models/municipais')
 def obter_modelos_municipais():
-    return json.dumps({'models': modelos_municipais()}), 200
+    return json.dumps({'models': casas_municipais()}), 200
 
 
 @api_error_handler
@@ -382,7 +323,7 @@ def obter_parlamentar_api(model, par_id):
 @api_error_handler
 @app.route('/API/relatorios/<model>/<par_id>')
 def buscar_relatorios_parlamentar(model, par_id):
-    if not check_if_model_exists(model):
+    if not check_if_house_exists(model):
         return '{"error": "Cargo não existe"}', 400
     try:
         mongo_client = MongoDBClient()

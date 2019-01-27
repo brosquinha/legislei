@@ -2,18 +2,18 @@ from flask import render_template
 
 from legislei.db import MongoDBClient
 from legislei.exceptions import AppError, InvalidModelId, ModelError
-from legislei.models.deputados import DeputadosApp
-from legislei.models.deputadosSP import DeputadosALESPApp
-from legislei.models.vereadoresSaoPaulo import VereadoresApp
+from legislei.houses.camara_deputados import CamaraDeputadosHandler
+from legislei.houses.alesp import ALESPHandler
+from legislei.houses.camara_municipal_sao_paulo import CamaraMunicipalSaoPauloHandler
 
-model_selector_ref = {
-    'BR1': DeputadosApp,
-    'SP': DeputadosALESPApp,
-    'SÃO PAULO': VereadoresApp
+house_selector_ref = {
+    'BR1': CamaraDeputadosHandler,
+    'SP': ALESPHandler,
+    'SÃO PAULO': CamaraMunicipalSaoPauloHandler
 }
 
 
-def model_selector(selector):
+def house_selector(selector):
         """
         Obtém o modelo de dados legislativos com base no identificador fornecido
 
@@ -28,30 +28,30 @@ def model_selector(selector):
         :rtype: ParlamentarApp
         """
         
-        return model_selector_ref[selector] if selector in model_selector_ref else None
+        return house_selector_ref[selector] if selector in house_selector_ref else None
 
 
-def check_if_model_exists(model):
-    return model in model_selector_ref
+def check_if_house_exists(model):
+    return model in house_selector_ref
 
 
-def modelos_estaduais():
+def casas_estaduais():
     """
     Obtém as chaves dos modelos de dados legislativos estaduais
     """
     resultado = []
-    for k, v in model_selector_ref.items():
+    for k, v in house_selector_ref.items():
         if len(k) == 2:
             resultado.append(k)
     return resultado
 
 
-def modelos_municipais():
+def casas_municipais():
     """
     Obtém as chaves dos modelos de dados legislativos municipais
     """
     resultado = []
-    for k, v in model_selector_ref.items():
+    for k, v in house_selector_ref.items():
         if len(k) > 2 and k not in ['BR1', 'BR2']:
             resultado.append(k)
     return resultado
@@ -81,7 +81,7 @@ def obter_relatorio(parlamentar, data_final, model, periodo):
         return relatorio
     else:
         try:
-            modelClass = model_selector(model)
+            modelClass = house_selector(model)
             relatorio = modelClass().obter_relatorio(
                 parlamentar_id=parlamentar,
                 data_final=data_final,
@@ -112,7 +112,7 @@ def obter_parlamentar(model, par_id):
     :rtype: Parlamentar
     """
 
-    modelClass = model_selector(model)
+    modelClass = house_selector(model)
     if modelClass == None:
         raise InvalidModelId('{} não existe'.format(model))
     try:
@@ -131,7 +131,7 @@ def obter_parlamentares(model):
     :return: Lista de parlamentares
     :rtype: List
     """
-    modelClass = model_selector(model)
+    modelClass = house_selector(model)
     if modelClass == None:
         raise InvalidModelId('{} não existe'.format(model))
     try:

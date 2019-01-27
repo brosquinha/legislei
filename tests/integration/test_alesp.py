@@ -3,10 +3,10 @@ import unittest
 import warnings
 from unittest.mock import patch
 
-from legislei.models.deputadosSP import DeputadosALESPApp
+from legislei.houses.alesp import ALESPHandler
 
 
-class TestDeputadosSP(unittest.TestCase):
+class TestALESPHandlerIntegration(unittest.TestCase):
 
     def setUp(self):
         warnings.simplefilter("ignore")
@@ -21,7 +21,7 @@ class TestDeputadosSP(unittest.TestCase):
             "nome" : "Carlos Giannazi",
             "id" : "10592"
         }""")
-        actual = DeputadosALESPApp().obter_relatorio(
+        actual = ALESPHandler().obter_relatorio(
             "10592",
             "2018-05-18",
             7

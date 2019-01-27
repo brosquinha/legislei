@@ -4,13 +4,13 @@ from datetime import datetime
 from flask import render_template, request
 
 from legislei.exceptions import ModelError
-from legislei.models.parlamentares import ParlamentaresApp
+from legislei.houses.casa_legislativa import CasaLegislativa
 from legislei.models.relatorio import (Evento, Orgao, Parlamentar, Proposicao,
                                        Relatorio)
 from legislei.SDKs.CamaraMunicipalSaoPaulo.base import CamaraMunicipal
 
 
-class VereadoresApp(ParlamentaresApp):
+class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
 
     def __init__(self):
         super().__init__()

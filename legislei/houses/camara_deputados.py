@@ -5,7 +5,7 @@ from time import time
 from flask import render_template, request
 
 from legislei.exceptions import ModelError
-from legislei.models.parlamentares import ParlamentaresApp
+from legislei.houses.casa_legislativa import CasaLegislativa
 from legislei.models.relatorio import (Evento, Orgao, Parlamentar, Proposicao,
                                        Relatorio)
 from legislei.SDKs.CamaraDeputados.entidades import (Deputados, Eventos,
@@ -13,7 +13,7 @@ from legislei.SDKs.CamaraDeputados.entidades import (Deputados, Eventos,
 from legislei.SDKs.CamaraDeputados.exceptions import CamaraDeputadosError
 
 
-class DeputadosApp(ParlamentaresApp):
+class CamaraDeputadosHandler(CasaLegislativa):
 
     def __init__(self):
         super().__init__()

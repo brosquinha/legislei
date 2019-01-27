@@ -4,9 +4,12 @@ from unittest.mock import call, patch
 
 from flask import render_template
 
-from legislei.app import app, obter_relatorio, send_email, send_reports
+from legislei.app import app
+from legislei.cron import send_reports
 from legislei.db import MongoDBClient
 from legislei.exceptions import ModelError
+from legislei.house_selector import obter_relatorio
+from legislei.send_reports import send_email
 
 customAssertionMsg = '{} differs from expected {}'
 
@@ -34,7 +37,7 @@ class TestMainAppMethods(unittest.TestCase):
 
         self.assertEqual(actual_response, {'_id': 'TesteEmJson'})
         
-    @patch("legislei.model_selector.model_selector")
+    @patch("legislei.house_selector.house_selector")
     @patch("legislei.db.MongoDBClient.get_collection")
     def test_obter_relatorio_json_inexistente_funcao_sem_erro(
         self,
@@ -68,7 +71,7 @@ class TestMainAppMethods(unittest.TestCase):
 
         self.assertEqual(actual_response, {'nome': 'relatorio', '_id': 'Id'})
 
-    @patch("legislei.model_selector.model_selector")
+    @patch("legislei.house_selector.house_selector")
     def test_obter_relatorio_json_inexistente_funcao_com_erro(
         self,
         mock_model_selector
@@ -82,10 +85,10 @@ class TestMainAppMethods(unittest.TestCase):
         with self.assertRaises(ModelError):
             obter_relatorio('123', 'hj', 'model', periodo=7)
 
-    @patch("legislei.app.send_email")
-    @patch("legislei.app.render_template")
-    @patch("legislei.app.obter_relatorio")
-    @patch("legislei.models.deputados.DeputadosApp")
+    @patch("legislei.cron.send_email")
+    @patch("legislei.cron.render_template")
+    @patch("legislei.cron.obter_relatorio")
+    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler")
     def test_send_reports(
             self,
             mock_deputadosApp,

@@ -3,14 +3,14 @@ import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from legislei.models.parlamentares import ParlamentaresApp
+from legislei.houses.casa_legislativa import CasaLegislativa
 
 
-class TestParlamentaresApp(unittest.TestCase):
+class TestCasaLegislativa(unittest.TestCase):
 
     
     def test_obterDataInicial(self):
-        par = ParlamentaresApp()
+        par = CasaLegislativa()
         self.assertEqual(
             datetime(2018, 10, 21),
             par.obterDataInicial(datetime(2018, 10, 28), weeks=1)
@@ -24,6 +24,6 @@ class TestParlamentaresApp(unittest.TestCase):
     def test_formatarDatasYMD(self):
         data_final = datetime(2018, 10, 28)
         data_inicial = datetime(2018, 10, 7)
-        par = ParlamentaresApp()
+        par = CasaLegislativa()
         actual_response = par.formatarDatasYMD(data_inicial, data_final)
         self.assertEqual(('2018-10-07', '2018-10-28'), actual_response)
