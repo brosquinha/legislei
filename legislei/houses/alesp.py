@@ -25,14 +25,14 @@ class ALESPHandler(CasaLegislativa):
         try:
             start_time = time()
             self.relatorio = Relatorio()
-            self.relatorio.set_aviso_dados(u'Dados de sessões plenárias não disponível.')
+            self.relatorio.aviso_dados = u'Dados de sessões plenárias não disponível.'
             self.setPeriodoDias(periodo_dias)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
             print('Iniciando...')
             self.obter_parlamentar(parlamentar_id)
-            self.relatorio.set_data_inicial(data_inicial)
-            self.relatorio.set_data_final(data_final)
+            self.relatorio.data_inicial = data_inicial
+            self.relatorio.data_final = data_final
             print('Deputado obtido em {0:.5f}'.format(time() - start_time))
             comissoes = self.obterComissoesPorId()
             print('Comissoes por id obtidas em {0:.5f}'.format(time() - start_time))
@@ -43,8 +43,7 @@ class ALESPHandler(CasaLegislativa):
             print('Comissoes do deputado obtidas em {0:.5f}'.format(time() - start_time))
             self.obterEventosPresentes(
                 parlamentar_id, data_inicial, data_final, votacoes, comissoes, orgaos_nomes)
-            self.relatorio.set_eventos_ausentes_esperados_total(
-                len(self.relatorio.get_eventos_previstos()))
+            self.relatorio.eventos_ausentes_esperados_total = len(self.relatorio.eventos_previstos)
             print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
             self.obterProposicoesDeputado(parlamentar_id, data_inicial, data_final)
             print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
@@ -56,13 +55,13 @@ class ALESPHandler(CasaLegislativa):
         for deputado in self.dep.obterTodosDeputados():
             if deputado["id"] == parlamentar_id:
                 parlamentar = Parlamentar()
-                parlamentar.set_cargo('SP')
-                parlamentar.set_id(deputado['id'])
-                parlamentar.set_nome(deputado['nome'])
-                parlamentar.set_partido(deputado['siglaPartido'])
-                parlamentar.set_uf('SP')
-                parlamentar.set_foto(deputado['urlFoto'])
-                self.relatorio.set_parlamentar(parlamentar)
+                parlamentar.cargo = 'SP'
+                parlamentar.id = deputado['id']
+                parlamentar.nome = deputado['nome']
+                parlamentar.partido = deputado['siglaPartido']
+                parlamentar.uf = 'SP'
+                parlamentar.foto = deputado['urlFoto']
+                self.relatorio.parlamentar = parlamentar
                 return parlamentar
     
     def obter_parlamentares(self):
@@ -99,10 +98,10 @@ class ALESPHandler(CasaLegislativa):
                     self.obterDatetimeDeStr(membro["dataInicio"]) < data_final):
                 orgao = Orgao()
                 membro["siglaOrgao"] = comissoes[membro["idComissao"]]["sigla"]
-                orgao.set_nome(comissoes[membro["idComissao"]]["nome"])
-                orgao.set_sigla(membro['siglaOrgao'])
-                orgao.set_cargo("Titular" if membro["efetivo"] else "Suplente")
-                self.relatorio.add_orgao(orgao)
+                orgao.nome = comissoes[membro["idComissao"]]["nome"]
+                orgao.sigla = membro['siglaOrgao']
+                orgao.cargo = "Titular" if membro["efetivo"] else "Suplente"
+                self.relatorio.orgaos.append(orgao)
                 dep_comissoes_nomes.append(membro["siglaOrgao"])
         return dep_comissoes_nomes
 
@@ -116,34 +115,34 @@ class ALESPHandler(CasaLegislativa):
             if (self.obterDatetimeDeStr(e["data"]) > data_inicial and
                     self.obterDatetimeDeStr(e["data"]) < data_final):
                 evento = Evento()
-                evento.set_id(e['id'])
-                evento.set_data_inicial(e['data'])
-                evento.set_nome(e['convocacao'])
-                evento.set_situacao(e['situacao'])
+                evento.id = e['id']
+                evento.data_inicial = e['data']
+                evento.nome = e['convocacao']
+                evento.situacao = e['situacao']
                 if e['id'] in reunioes:
                     for r in reunioes[e['id']]:
                         proposicao = Proposicao()
-                        proposicao.set_id(r['idDocumento'])
-                        proposicao.set_pauta(r['idDocumento'])
-                        proposicao.set_url_documento(
-                            'https://www.al.sp.gov.br/propositura/?id={}'.format(r['idDocumento']))
-                        proposicao.set_voto(r['voto'])
-                        proposicao.set_tipo(r['idDocumento'])
-                        evento.add_pautas(proposicao)
+                        proposicao.id = r['idDocumento']
+                        proposicao.pauta = r['idDocumento']
+                        proposicao.url_documento = \
+                            'https://www.al.sp.gov.br/propositura/?id={}'.format(r['idDocumento'])
+                        proposicao.voto = r['voto']
+                        proposicao.tipo = r['idDocumento']
+                        evento.pautas.append(proposicao)
                 orgao = Orgao()
-                orgao.set_nome(comissoes[e['idComissao']]['nome'])
-                orgao.set_apelido(comissoes[e['idComissao']]['sigla'])
-                evento.add_orgaos(orgao)
+                orgao.nome = comissoes[e['idComissao']]['nome']
+                orgao.apelido = comissoes[e['idComissao']]['sigla']
+                evento.orgaos.append(orgao)
                 if e["id"] in presencas_reunioes_id:
                     evento.set_presente()
-                    self.relatorio.add_evento_presente(evento)
+                    self.relatorio.eventos_presentes.append(evento)
                 else:
                     evento.set_ausencia_evento_nao_esperado()
                     if (comissoes[e["idComissao"]]["sigla"] in orgaos_nomes and
                         e['situacao'].lower() in ['em preparação', 'em preparacao', 'realizada', 'encerrada']):
                         evento.set_ausente_evento_previsto()
-                        self.relatorio.add_evento_previsto(evento)
-                    self.relatorio.add_evento_ausente(evento)
+                        self.relatorio.eventos_previstos.append(evento)
+                    self.relatorio.eventos_ausentes.append(evento)
 
     def obterProposicoesDeputado(self, dep_id, data_inicial, data_final):
         proposicoes_deputado = []
@@ -162,17 +161,17 @@ class ALESPHandler(CasaLegislativa):
             if (data_prop > data_inicial and data_prop < data_final and
                     propositura['id'] in proposicoes_deputado):
                 proposicao = Proposicao()
-                proposicao.set_id(propositura['id'])
-                proposicao.set_url_documento('https://www.al.sp.gov.br/propositura/?id={}'.format(
-                    propositura['id']))
-                proposicao.set_data_apresentacao(propositura['dataEntrada'])
-                proposicao.set_ementa(propositura['ementa'])
-                proposicao.set_numero(propositura['numero'])
+                proposicao.id = propositura['id']
+                proposicao.url_documento = 'https://www.al.sp.gov.br/propositura/?id={}'.format(
+                    propositura['id'])
+                proposicao.data_apresentacao = propositura['dataEntrada']
+                proposicao.ementa = propositura['ementa']
+                proposicao.numero = propositura['numero']
                 if propositura['idNatureza']:
                     for t in tipos_documentos:
                         if t['id'] == propositura['idNatureza']:
-                            proposicao.set_tipo(t['sigla'])
-                self.relatorio.add_proposicao(proposicao)
+                            proposicao.tipo = t['sigla']
+                self.relatorio.proposicoes.append(proposicao)
 
     def obterDatetimeDeStr(self, txt):
         #Isso aqui deveria ser responsabilidade da SDK ALESP, não?

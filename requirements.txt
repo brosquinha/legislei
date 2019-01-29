@@ -15,6 +15,7 @@ Jinja2==2.8.1
 m2r==0.2.1
 MarkupSafe==1.1.0
 mistune==0.8.4
+mongoengine==0.16.3
 packaging==18.0
 passlib==1.7.1
 Pygments==2.2.0

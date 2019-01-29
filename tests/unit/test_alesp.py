@@ -161,7 +161,7 @@ class TestALESPHandler(unittest.TestCase):
         
         self.assertEqual(['C1', 'C2', 'C3'], actual_response)
         self.assertEqual(
-            len(self.dep.relatorio.get_orgaos()), 3
+            len(self.dep.relatorio.orgaos), 3
         )
         self.assertTrue(mock_obterDatetimeDeStr.called)
         mock.assert_no_pending_responses()
@@ -255,9 +255,9 @@ class TestALESPHandler(unittest.TestCase):
             ['C1']
         )
 
-        self.assertEqual(len(self.dep.relatorio.get_eventos_presentes()), 1)
-        self.assertEqual(len(self.dep.relatorio.get_eventos_ausentes()), 4)
-        self.assertEqual(len(self.dep.relatorio.get_eventos_previstos()), 1)
+        self.assertEqual(len(self.dep.relatorio.eventos_presentes), 1)
+        self.assertEqual(len(self.dep.relatorio.eventos_ausentes), 4)
+        self.assertEqual(len(self.dep.relatorio.eventos_previstos), 1)
         mock.assert_no_pending_responses()
 
     @patch("builtins.print")
@@ -340,7 +340,7 @@ class TestALESPHandler(unittest.TestCase):
             '1', datetime(2018, 12, 10), datetime(2018, 12, 16)
         )
 
-        self.assertEqual(len(self.dep.relatorio.get_proposicoes()), 2)
+        self.assertEqual(len(self.dep.relatorio.proposicoes), 2)
         mock.assert_no_pending_responses()
 
     def test_obterDatetimeDeStr(self):

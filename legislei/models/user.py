@@ -1,19 +1,20 @@
 from bson.objectid import ObjectId
 
+from mongoengine import *
+
 from legislei.db import MongoDBClient
 
 
-class User():
+class User(Document):
     """
     Classe de usuário requerida pelo Flask-Login
     """
 
-    user_id = None
-    
-    def __init__(self, id, name, email):
-        self.user_id = id
-        self.user_name = name
-        self.user_email = email
+    # user_id = ObjectIdField(db_field='_id', required=True, unique=True, primary_key=True)
+    user_id = StringField(db_field='_id', required=True, unique=True, primary_key=True)
+    username = StringField(min_length=3, unique=True, required=True)
+    email = EmailField(unique=True, required=True)
+    password = StringField(required=True)
     
     def is_authenticated(self):
         return self.user_id

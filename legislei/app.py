@@ -102,7 +102,7 @@ def avaliar():
     relatorio = request.form.get('id')
     avaliacao_valor = request.form.get('avaliacao')
     avaliado = request.form.get('avaliado')
-    email = current_user.user_email
+    email = current_user.email
     avaliacao = {}
     mongo_client = MongoDBClient()
     avaliacoes_col = mongo_client.get_collection('avaliacoes')
@@ -144,7 +144,7 @@ def minhas_avaliacoes(cargo, parlamentar, email):
         {
             'parlamentar.id': parlamentar,
             'parlamentar.cargo': cargo,
-            'email': current_user.user_email
+            'email': current_user.email
         }
     )]
     mongo_client.close()
@@ -154,7 +154,7 @@ def minhas_avaliacoes(cargo, parlamentar, email):
 @app.route('/minhasAvaliacoes')
 @login_required
 def avaliacoes():
-    email = current_user.user_email
+    email = current_user.email
     try:
         cargo = request.args['parlamentarTipo']
         parlamentar = request.args['parlamentar']
@@ -209,12 +209,12 @@ def nova_inscricao_post():
             request.form.get('parlamentar')
         ).to_dict()
         resultado_update = inscricoes_col.update_one(
-            {'email': current_user.user_email},
+            {'email': current_user.email},
             {'$push': {"parlamentares": parlamentar}}
         )
         if resultado_update.modified_count == 0:
             inscricoes_col.insert_one({
-                'email': current_user.user_email,
+                'email': current_user.email,
                 'intervalo': 7,
                 'parlamentares': [parlamentar]
             })
@@ -244,7 +244,7 @@ def avaliacoes_api():
         parlamentar = request.args['parlamentar']
     except KeyError:
         return json.dumps({'error': 'Missing arguments'}), 400
-    return json.dumps(minhas_avaliacoes(cargo, parlamentar, current_user.user_email), default=str), 200
+    return json.dumps(minhas_avaliacoes(cargo, parlamentar, current_user.email), default=str), 200
 
 
 @api_error_handler
@@ -272,7 +272,7 @@ def remover_inscricao(model, par_id):
         mongo_client = MongoDBClient()
         inscricoes_col = mongo_client.get_collection('inscricoes')
         inscricoes_col.update_one(
-            {'email': current_user.user_email},
+            {'email': current_user.email},
             {'$pull': {'parlamentares': {'cargo': model, 'id': par_id}}}
         )
         mongo_client.close()
@@ -290,7 +290,7 @@ def alterar_inscricoes_config():
         if periodo >= 7 and periodo <= 28:
             mongo_client = MongoDBClient()
             inscricoes_col = mongo_client.get_collection('inscricoes')
-            inscricoes_col.update_one({'email': current_user.user_email}, {'$set': {'intervalo': periodo}})
+            inscricoes_col.update_one({'email': current_user.email}, {'$set': {'intervalo': periodo}})
             return json.dumps({"message": "Ok {}".format(periodo)}), 200
     except (TypeError, ValueError):
         return '{"error": "Periodo deve ser int"}', 400

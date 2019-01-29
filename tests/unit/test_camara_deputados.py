@@ -387,8 +387,11 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         )
         mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
         deputado = Parlamentar()
-        deputado.set_id(123)
-        deputado.set_nome('Fulano da Silva')
+        deputado.id = '123'
+        deputado.nome = 'Fulano da Silva'
+        self.dep.relatorio.parlamentar = deputado
+        self.dep.relatorio.data_inicial = datetime(2018, 10, 21)
+        self.dep.relatorio.data_final = datetime(2018, 10, 28)
 
         self.dep.obterProposicoesDeputado(
             deputado, datetime(2018, 10, 28))
@@ -411,12 +414,12 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
             dataApresentacaoFim="2018-10-28"
         )
         deputado = Parlamentar()
-        deputado.set_id("12345")
+        deputado.id = "12345"
 
         self.dep.obterProposicoesDeputado(
             deputado,
             datetime(2018, 10, 28)
         )
 
-        self.assertEqual(self.dep.relatorio.get_aviso_dados(), "Não foi possível obter proposições do parlamentar.")
+        self.assertEqual(self.dep.relatorio.aviso_dados, "Não foi possível obter proposições do parlamentar.")
         mock.assert_no_pending_responses()

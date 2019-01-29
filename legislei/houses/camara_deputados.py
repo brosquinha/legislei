@@ -35,39 +35,38 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 data_final = datetime.now()
             self.setPeriodoDias(periodo_dias)
             deputado_info = self.obter_parlamentar(parlamentar_id)
-            self.relatorio.set_data_inicial(self.obterDataInicial(
-                data_final, **self.periodo))
-            self.relatorio.set_data_final(data_final)
+            self.relatorio.data_inicial = self.obterDataInicial(
+                data_final, **self.periodo)
+            self.relatorio.data_final = data_final
             print('Deputado obtido em {0:.5f}'.format(time() - start_time))
             (
                 eventos,
                 _presenca_total,
                 todos_eventos
             ) = self.procurarEventosComDeputado(
-                deputado_info.get_id(),
+                deputado_info.id,
                 data_final
             )
             print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
-            orgaos = self.obterOrgaosDeputado(deputado_info.get_id(), data_final)
+            orgaos = self.obterOrgaosDeputado(deputado_info.id, data_final)
             print('Orgaos obtidos em {0:.5f}'.format(time() - start_time))
             orgaos_nomes = [orgao['nomeOrgao'] for orgao in orgaos]
             for e in eventos:
                 evento = Evento()
-                evento.set_id(e['id'])
-                evento.set_data_inicial(e['dataHoraInicio'])
-                evento.set_data_final(e['dataHoraFim'])
-                evento.set_situacao(e['situacao'])
-                evento.set_nome(e['descricao'])
+                evento.id = e['id']
+                evento.data_inicial = e['dataHoraInicio']
+                evento.data_final = e['dataHoraFim']
+                evento.situacao = e['situacao']
+                evento.nome = e['descricao']
                 evento.set_presente()
-                evento.set_url(e['uri'])
                 for o in e['orgaos']:
                     orgao = Orgao()
-                    orgao.set_nome(o['nome'])
-                    orgao.set_apelido(o['apelido'])
-                    evento.add_orgaos(orgao)
+                    orgao.nome = o['nome']
+                    orgao.apelido = o['apelido']
+                    evento.orgaos.append(orgao)
                 pautas = self.obterPautaEvento(e['id'])
                 if pautas == [{'error': True}]:
-                    evento.add_pautas(None)
+                    evento.pautas.append(None)
                 else:
                     for pauta in pautas:
                         if len(pauta['votacao']):
@@ -75,56 +74,56 @@ class CamaraDeputadosHandler(CasaLegislativa):
                             if pauta['proposicao_detalhes'] == [{'error': True}]:
                                 proposicao = None
                             else:
-                                proposicao.set_id(pauta['proposicao_detalhes']['id'])
-                                proposicao.set_tipo(pauta['proposicao_detalhes']['siglaTipo'])
-                                proposicao.set_url_documento(
-                                    pauta['proposicao_detalhes']['urlInteiroTeor'])
-                                proposicao.set_url_autores(
-                                    pauta['proposicao_detalhes']['uriAutores'])
-                                proposicao.set_pauta(pauta['proposicao_detalhes']['ementa'])
+                                proposicao.id = pauta['proposicao_detalhes']['id']
+                                proposicao.tipo = pauta['proposicao_detalhes']['siglaTipo']
+                                proposicao.url_documento = \
+                                    pauta['proposicao_detalhes']['urlInteiroTeor']
+                                proposicao.url_autores = \
+                                    pauta['proposicao_detalhes']['uriAutores']
+                                proposicao.pauta = pauta['proposicao_detalhes']['ementa']
                             if pauta['votacao'] == [{'error': True}]:
-                                proposicao.set_voto('ERROR')
+                                proposicao.voto = 'ERROR'
                             else:
                                 voto = self.obterVotoDeputado(
-                                    pauta['votacao'][0]['id'], deputado_info.get_id())
-                                proposicao.set_voto(voto)
-                            evento.add_pautas(proposicao)
-                self.relatorio.add_evento_presente(evento)
+                                    pauta['votacao'][0]['id'], deputado_info.id)
+                                proposicao.voto = voto
+                            evento.pautas.append(proposicao)
+                self.relatorio.eventos_presentes.append(evento)
             print('Pautas obtidas em {0:.5f}'.format(time() - start_time))
             (
                 eventos_ausentes,
                 eventos_ausentes_total,
                 _eventos_previstos
             ) = self.obterEventosAusentes(
-                deputado_info.get_id(),
+                deputado_info.id,
                 data_final,
                 eventos,
                 orgaos_nomes,
                 todos_eventos
             )
-            self.relatorio.set_eventos_ausentes_esperados_total(eventos_ausentes_total)
+            self.relatorio.eventos_ausentes_esperados_total = eventos_ausentes_total
             for e in eventos_ausentes:
                 evento = Evento()
-                evento.set_id(e['id'])
+                evento.id = e['id']
                 if e['controleAusencia'] == 1:
                     evento.set_ausente_evento_previsto()
                 elif e['controleAusencia'] == 2:
                     evento.set_ausencia_evento_esperado()
                 else:
                     evento.set_ausencia_evento_nao_esperado()
-                evento.set_data_inicial(e['dataHoraInicio'])
-                evento.set_data_final(e['dataHoraFim'])
-                evento.set_nome(e['descricao'])
-                evento.set_situacao(e['situacao'])
-                evento.set_url(e['uri'])
+                evento.data_inicial = e['dataHoraInicio']
+                evento.data_final = e['dataHoraFim']
+                evento.nome = e['descricao']
+                evento.situacao = e['situacao']
+                evento.url = e['uri']
                 for o in e['orgaos']:
                     orgao = Orgao()
-                    orgao.set_nome(o['nome'])
-                    orgao.set_apelido(o['apelido'])
-                    evento.add_orgaos(orgao)
-                self.relatorio.add_evento_ausente(evento)
-                if evento.get_presenca() > 1:
-                    self.relatorio.add_evento_previsto(evento)
+                    orgao.nome = o['nome']
+                    orgao.apelido = o['apelido']
+                    evento.orgaos.append(orgao)
+                self.relatorio.eventos_ausentes.append(evento)
+                if evento.presenca > 1:
+                    self.relatorio.eventos_previstos.append(evento)
             print('Ausencias obtidas em {0:.5f}'.format(time() - start_time))
             self.obterProposicoesDeputado(deputado_info, data_final)
             print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
@@ -153,12 +152,12 @@ class CamaraDeputadosHandler(CasaLegislativa):
                     if (item['dataFim'] == None or dataFim > data_final):
                         orgao = Orgao()
                         if 'nomeOrgao' in item:
-                            orgao.set_nome(item['nomeOrgao'])
+                            orgao.nome = item['nomeOrgao']
                         if 'siglaOrgao' in item:
-                            orgao.set_sigla(item['siglaOrgao'])
+                            orgao.sigla = item['siglaOrgao']
                         if 'titulo' in item:
-                            orgao.set_cargo(item['titulo'])
-                        self.relatorio.add_orgao(orgao)
+                            orgao.cargo = item['titulo']
+                        self.relatorio.orgaos.append(orgao)
                         orgaos.append(item)
             return orgaos
         except CamaraDeputadosError:
@@ -265,29 +264,29 @@ class CamaraDeputadosHandler(CasaLegislativa):
         di, df = self.obterDataInicialEFinal(data_final)
         try:
             for page in self.prop.obterTodasProposicoes(
-                idDeputadoAutor=deputado.get_id(),
+                idDeputadoAutor=deputado.id,
                 dataApresentacaoInicio=di,
                 dataApresentacaoFim=df
             ):
                 for item in page:
-                    if (deputado.get_nome().lower() in 
+                    if (deputado.nome.lower() in 
                             [x['nome'].lower() for x in self.prop.obterAutoresProposicao(item['id'])]):
                         proposicao = Proposicao()
-                        proposicao.set_id(item['id'])
+                        proposicao.id = item['id']
                         p = self.prop.obterProposicao(item['id'])
                         if 'dataApresentacao' in p:
-                            proposicao.set_data_apresentacao(p['dataApresentacao'])
+                            proposicao.data_apresentacao = p['dataApresentacao']
                         if 'ementa' in p:
-                            proposicao.set_ementa(p['ementa'])
+                            proposicao.ementa = p['ementa']
                         if 'numero' in p:
-                            proposicao.set_numero(p['numero'])
+                            proposicao.numero = p['numero']
                         if 'siglaTipo' in p:
-                            proposicao.set_tipo(p['siglaTipo'])
+                            proposicao.tipo = p['siglaTipo']
                         if 'urlInteiroTeor' in p:
-                            proposicao.set_url_documento(p['urlInteiroTeor'])
-                        self.relatorio.add_proposicao(proposicao)
+                            proposicao.url_documento = p['urlInteiroTeor']
+                        self.relatorio.proposicoes.append(proposicao)
         except CamaraDeputadosError:
-            self.relatorio.set_aviso_dados('Não foi possível obter proposições do parlamentar.')
+            self.relatorio.aviso_dados = 'Não foi possível obter proposições do parlamentar.'
 
     def obter_parlamentares(self):
         deputados = []
@@ -299,11 +298,11 @@ class CamaraDeputadosHandler(CasaLegislativa):
     def obter_parlamentar(self, parlamentar_id):
         deputado_info = self.dep.obterDeputado(parlamentar_id)
         parlamentar = Parlamentar()
-        parlamentar.set_cargo('BR1')
-        parlamentar.set_id(deputado_info['id'])
-        parlamentar.set_nome(deputado_info['ultimoStatus']['nome'])
-        parlamentar.set_partido(deputado_info['ultimoStatus']['siglaPartido'])
-        parlamentar.set_uf(deputado_info['ultimoStatus']['siglaUf'])
-        parlamentar.set_foto(deputado_info['ultimoStatus']['urlFoto'])
-        self.relatorio.set_parlamentar(parlamentar)
+        parlamentar.cargo = 'BR1'
+        parlamentar.id = str(deputado_info['id'])
+        parlamentar.nome = deputado_info['ultimoStatus']['nome']
+        parlamentar.partido = deputado_info['ultimoStatus']['siglaPartido']
+        parlamentar.uf = deputado_info['ultimoStatus']['siglaUf']
+        parlamentar.foto = deputado_info['ultimoStatus']['urlFoto']
+        self.relatorio.parlamentar = parlamentar
         return parlamentar

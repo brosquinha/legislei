@@ -4,11 +4,15 @@ import unittest
 from unittest.mock import patch
 
 from bson import ObjectId
+from mongoengine import connect
 
 from legislei.app import app
 from legislei.db import MongoDBClient
 from legislei.exceptions import AppError, InvalidModelId
 from legislei.models.relatorio import Parlamentar
+
+
+connect('legislei-testing', host=os.environ.get("MONGODB_HOST", "localhost"), port=int(os.environ.get("MONGODB_PORT", "27017")))
 
 
 class TestApp(unittest.TestCase):
@@ -173,9 +177,9 @@ class TestApp(unittest.TestCase):
     def test_nova_inscricao_mais_uma(
             self, mock_obter_parlamentar):
         par = Parlamentar()
-        par.set_nome("Parlamentar2Teste")
-        par.set_cargo("BR")
-        par.set_id("12345")
+        par.nome = "Parlamentar2Teste"
+        par.cargo = "BR"
+        par.id = "12345"
         mock_obter_parlamentar.return_value = par
         login(self.app, "test", "123")
         actual = self.app.post(
@@ -330,9 +334,9 @@ class TestApp(unittest.TestCase):
     def test_obter_parlamentar_api(
             self, mock_obter_parlamentar):
         par = Parlamentar()
-        par.set_nome("ParlamentarTeste")
-        par.set_cargo("BR")
-        par.set_id("123")
+        par.nome = "ParlamentarTeste"
+        par.cargo = "BR"
+        par.id = "123"
         mock_obter_parlamentar.return_value = par
         actual = self.app.get("/API/parlamentares/BR1/123")
         actual_data = actual.data.decode('utf-8')
@@ -484,12 +488,12 @@ def logout(client):
 
 def set_up_parlamentar():
     par = Parlamentar()
-    par.set_nome("ParlamentarTeste")
-    par.set_foto("url")
-    par.set_id("123")
-    par.set_partido("Partido")
-    par.set_cargo("BR1")
-    par.set_uf("ES")
+    par.nome = "ParlamentarTeste"
+    par.foto = "url"
+    par.id = "123"
+    par.partido = "Partido"
+    par.cargo = "BR1"
+    par.uf = "ES"
     return par
 
 
