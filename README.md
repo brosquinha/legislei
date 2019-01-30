@@ -1,6 +1,7 @@
-![build](https://img.shields.io/travis/com/brosquinha/politica.svg)
+[![Build Status](https://travis-ci.com/brosquinha/politica.svg?branch=master)](https://travis-ci.com/brosquinha/politica)
 ![Python 3.5+](https://img.shields.io/badge/python-3.5^-blue.svg)
 ![glp](https://img.shields.io/github/license/brosquinha/politica.svg)
+[![Documentation Status](https://readthedocs.org/projects/legislei/badge/?version=latest)](https://legislei.readthedocs.io/pt/latest/?badge=latest)
 # Legislei
 
 Projeto de constante monitoramento das atividades de parlamentares de todas as três esferas federativas. As casas legislativas cadastradas até o momento são:
@@ -9,7 +10,9 @@ Projeto de constante monitoramento das atividades de parlamentares de todas as t
 * [ALESP](https://www.al.sp.gov.br/dados-abertos/)
 * [Câmara dos Deputados](https://dadosabertos.camara.leg.br/swagger/api.html)
 
-## Clonar repositório git
+## Setup
+
+### Clonar repositório git
 
 Para obter o código-fonte da aplicação Legislei, clone o repositório git com o seguinte comando:
 
@@ -17,7 +20,7 @@ Para obter o código-fonte da aplicação Legislei, clone o repositório git com
 git clone https://github.com/brosquinha/politica.git
 ```
 
-## Definir as variaveis de ambiente em \.env
+### Definir as variaveis de ambiente em \.env
 
 A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` dentro da pasta `legislei` com as seguintes variáveis de ambiente:
 
@@ -38,7 +41,7 @@ A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` dentro da past
 | MONGODB_PORT | Porta da conexão para o MongoDB (normalmente utilizado em desenvolvimento) |
 | MONGODB_DBNAME | Nome do banco de dados da aplicação no MongoDB |
 
-## Instalar pacotes Python 3.5+ e virtualenv
+### Instalar pacotes Python 3.5+ e virtualenv
 
 Para instalar o pacote `virtualenv`:
 
@@ -71,7 +74,7 @@ Para desativar o ambiente virtual atual:
 deactivate
 ```
 
-## Testando
+### Testando
 
 Para rodar os testes de unidade:
 
@@ -94,7 +97,16 @@ coverage run run_tests.py
 coverage html
 ```
 
-## Docker
+### Gerar HTML de documentação
+
+Rodar o seguinte na pasta raíz:
+
+```Bash
+cd docs/
+make html
+```
+
+## Executando no Docker
 
 Para construir a imagem:
 
@@ -115,12 +127,65 @@ Para rodar o compose Docker:
 docker-compose up
 ```
 
-## Gerar HTML de documentação
+## Contribuindo
 
-Rodar o seguinte na pasta raíz:
+### Acrescentar uma nova casa legislativa
 
-```Bash
-sphinx-apidoc -o docs/_modules .
-cd docs/
-make html
-```
+Para acrescentar uma nova casa legislativa ao projeto, primeiro é necessário entender a lógica do sistema Legislei.
+
+O sistema Legislei é formado por camadas, cada uma com uma responsabilidade bem determinada. A camada web é responsável
+pelo tratamento de requisições HTTP. Cabe a essa camada, por exemplo, apresentar os relatórios gerados pela próxima camada do sistema:
+os house handlers. Cada casa legislativa tem seu handler próprio, que é responsável por gerar os relatórios de parlamentares e dados dos
+seus parlamentares. Essa camada faz uso intensivo da última camada, as bibliotecas (libs) das casas legislativas. Essas libs são basicamente wrappers das
+API de cada casa, e são responsáveis por recuperar e apresentar os dados disponíveis pelas APIs de Dados Abertos das casas legislativas.
+Eventualmente, essas libs devem ser publicadas no repositório PyPi para serem utilizadas por qualquer outro projeto que precise de seus dados.
+
+Portanto, para se acrescentar uma nova casa legislativa ao sistema, é necessário desenvolver o house handler e a biblioteca de dados da casa,
+se já não houver alguma disponível.
+
+#### House hanlder
+
+O house handler deve ter conhecimento de como estruturar os dados fornecidos pela biblioteca da casa para disponibilizar para as
+camadas superiores os seguintes dados:
+
+* Relatório de atividades de um dado parlamentar em um dado intervalo de tempo;
+* Informações de um dado parlamentar;
+* Lista de parlamentares atuais com informações básicas.
+
+Um relatório de atividades deve conter os seguintes dados:
+
+* Dados do parlamentar do período;
+* Comissões das quais o parlamentar faz parte, e qual cargo ele possuí (Titular ou Suplente);
+* Proposições do parlamentar no período, se houver;
+* Eventos que o parlamentar esteve presente, se houver, com informações de pautas e votações;
+* Eventos que o parlamentar estava previsto, mas ausentou-se, se houver;
+* Eventos que o parlamentar ausentou-se, se houver;
+
+Toda house handler é um classe filha de `CasaLegislativa`, e deve implementar os seguintes métodos:
+
+* `obter_relatorio(parlamentar_id : String, data_final : datetime, periodo_dias : Integer) : Relatorio`
+* `obter_parlamentar(parlamentar_id : String) : Parlamentar`
+* `obter_arpamentares() : List of dict`
+
+Consulte a [documentação](http://legislei.readthedocs.io/) para mais detalhes sobre as classes `CasaLegislativa`, `Relatorio` e `Parlamentar`.
+
+Uma vez implementada o handler, atualize o dicionário `house_selector_dict` do arquivo `house_selector.py` com
+o identificador da sua casa, seguindo a seguinte regra:
+
+* `BR1` é Câmara dos Deputados e `BR2` é Senado Federal;
+* A sigla da UF para as assembleias legislativas estaduais (e.g., `SP`, `BA`, etc);
+* Nome do munincípio em maiúsculas para câmaras municipais (e.g., `SÃO PAULO`, `SALVADOR`).
+
+### Biblioteca de API
+
+Se não existir uma biblioteca de abstração da API da casa legislativa, você terá que criá-la também. É importante
+que essa biblioteca seja independente do projeto Legislei, para que possa ser eventualmente publicada à parte no
+repositório do PyPi para todos possam usá-la em outros projetos. Dessa forma, essa biblioteca não deve se preocupar
+em formatar seus dados pensando no handler; ao contrário, deve fornecê-los da maneira que faça mais sentido tendo em
+mente a API da casa legislativa. É função do house handler organizar os esses dados para entregar os relatórios.
+
+## Outras contribuições
+
+Toda e qualquer ajuda ao projeto é bem-vinda. Caso queira contribuir com outro aspecto do sistema, você pode abrir
+uma issue no GitHub para discussão de algum ponto e/ou criar um fork para depois abrir um Pull Request com sugestão
+de alterações.

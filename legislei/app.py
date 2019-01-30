@@ -43,6 +43,11 @@ def consultar():
     return render_template('consultar_form.html'), 200
 
 
+@app.route('/sobre')
+def sobre():
+    return render_template('sobre.html'), 200
+
+
 def modelar_pagina_relatorio(relatorio, template='consulta_deputado.html'):
     if isinstance(relatorio, tuple) and len(relatorio) == 2:
         return relatorio
