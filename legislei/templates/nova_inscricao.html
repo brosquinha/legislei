@@ -30,8 +30,9 @@
                 <div class="col-sm-auto text-center">
                     <div class="card text-center">
                         <div class="card-body">
-                            <img src id="parlamentarImg" />
+                            <img src id="parlamentarImg" style="max-width: 400px" />
                             <h5 id="parlamentarNome"></h5>
+                            <h4 id="parlamentarInfo" class="text-muted"></h4>
                         </div>
                         <div class="card-footer">
                             <button id="parlamentarSubmit" class="btn btn-success" disabled>
@@ -49,13 +50,15 @@
         document.getElementById("parlamentarIdInput").onchange = (e) => {
             $("#parlamentarCard").removeClass("d-none");
             $("#parlamentarSubmitSpinner").removeClass("d-none");
+            document.getElementById("parlamentarSubmit").setAttribute("disabled", "true");
             document.getElementById("parlamentarImg").removeAttribute("src");
             document.getElementById("parlamentarNome").innerText = "Buscando...";
+            document.getElementById("parlamentarInfo").innerText = '';
             $.ajax({
                 url: `/API/parlamentares/${document.getElementById("parlamentarTipo").value}/${document.getElementById("parlamentarIdInput").value}`,
                 method: "GET",
                 error: (jqXHR, txtStatus) => {
-                    alert(txtStatus);
+                    console.log(txtStatus);
                     $("#parlamentarCard").addClass("d-none");
                     document.getElementById("parlamentarSubmit").setAttribute("disabled", "true");
                 },
@@ -64,6 +67,7 @@
                     $("#parlamentarSubmitSpinner").addClass("d-none");
                     document.getElementById("parlamentarImg").setAttribute("src", data.foto);
                     document.getElementById("parlamentarNome").innerText = data.nome;
+                    document.getElementById("parlamentarInfo").innerText = `${data.partido} - ${data.uf}`;
                     document.getElementById("parlamentarSubmit").removeAttribute("disabled");
                 }
             })

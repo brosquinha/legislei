@@ -172,15 +172,15 @@ class Eventos(APIData):
 
         :param id: Identificador numérico de eventos
         :type id: List
-        :param idTipoEvento: Identificador numérico do tipo de evento; valores válidos \
+        :param codTipoEvento: Identificador numérico do tipo de evento; valores válidos \
         podem ser obtidos através de ``/referencias/tiposEvento``
-        :type idTipoEvento: List
-        :param idSituacao: Identificador numérico do tipo de situação de evento; valores \
+        :type codTipoEvento: List
+        :param codSituacao: Identificador numérico do tipo de situação de evento; valores \
         válidos podem ser obtidos através de ``/referencias/situacoesEvento``
-        :type idSituacao: List
-        :param idTipoOrgao: Identificador numérico de tipos de órgãos realizadores do \
+        :type codSituacao: List
+        :param codTipoOrgao: Identificador numérico de tipos de órgãos realizadores do \
         evento; valores válidos podem ser obtidos através de ``/referencias/tiposOrgao``
-        :type idTipoOrgao: List
+        :type codTipoOrgao: List
         :param dataInicio: Data de início de intervalo de tempo no formato ``AAAA-MM-DD``
         :type dataInicio: String
         :param dataFim: Data de término de intervalo de tempo no formato ``AAAA-MM-DD``
@@ -298,8 +298,8 @@ class Proposicoes(APIData):
         :type numero: List
         :param ano: Um ou mais anos de apresentação das proposições, no formato ``AAAA``
         :type ano: List
-        :param idAutor: Ids de deputados autores de proposições
-        :type idAutor: List
+        :param idDeputadoAutor: Ids de deputados autores de proposições
+        :type idDeputadoAutor: List
         :param autor: Nome de autor de proposições
         :type autor: String
         :param siglaPartidoAutor: Uma ou mais siglas de partidos a que pertençam autores \
@@ -326,14 +326,14 @@ class Proposicoes(APIData):
         :param dataApresentacaoFim: Data de término de intervalo de tempo em que tenham \
         sido apresentadas as proposições, no formato ``AAAA-MM-DD``
         :type dataApresentacaoFim: String
-        :param idSituacao: Identificador numérico de situação de proposição; valores \
+        :param codSituacao: Identificador numérico de situação de proposição; valores \
         válidos podem ser obtidos em ``/referencias/situacoesProposicao``
-        :type idSituacao: List
+        :type codSituacao: List
         :param ordem: Sentido de ordenação—``asc`` para ordem ascendente e ``desc`` \
         para descendente
         :type ordem: String
         :param ordenarPor: Nome de campo pelo qual a lista deve ser ordenada: ``id``, \
-        ``idTipo``, ``siglaTipo``, ``numero`` ou ``ano``
+        ``codTipo``, ``siglaTipo``, ``numero`` ou ``ano``
         :type ordenarPor: String
         
         :return: Generator de páginas de listas de proposições

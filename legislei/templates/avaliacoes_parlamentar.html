@@ -2,21 +2,20 @@
 
 {% block title %}Minhas avaliações do parlamentar{% endblock %}
 
-{% macro teste(num) -%}
+{% import 'relatorio_componentes.html' as relatorio %}
+
+{% macro cards(num) -%}
     {% for avaliacao in avaliacoes[num] %}
+    {% macro cardsFooter(style_bg_color, style_txt_color) -%}
+        <a href="/relatorio/{{ avaliacao['relatorioId'] }}" class="text-{{ style_txt_color }}">
+            Ver relatório dessa atividade</a>
+    {%- endmacro %}
         {% set avaliado = avaliacao['avaliado'] %}
-        <div class="card mb-1 bg-light">
-            <div class="card-header">
-                {{ avaliado['nome'] }}
-                {{ avaliado['tipo'] }}{{ avaliado['numero'] }}
-            </div>
-            <div class="card-body">
-                {{ avaliado }}
-            </div>
-            <div class="card-footer">
-                <a href="/relatorio/{{ avaliacao['relatorioId'] }}">Ver relatório dessa atividade</a>
-            </div>
-        </div>
+        {% if 'tipo' in avaliado %}
+            {{ relatorio.proposicaoCard(avaliado, cardsFooter) }}
+        {% else %}
+            {{ relatorio.eventoCard(avaliado, cardsFooter, collapse=False) }}
+        {% endif %}
     {% endfor %}
 {%- endmacro %}
 
@@ -41,16 +40,16 @@
         </div>
         <div class="row">
             <div class="col-sm-3">Atividades que amei
-                {{ teste('2') }}
+                {{ cards('2') }}
             </div>
             <div class="col-sm-3">Atividades que aprovei
-                {{ teste('1') }}
+                {{ cards('1') }}
             </div>
             <div class="col-sm-3">Atividades que desaprovei
-                {{ teste('-1') }}
+                {{ cards('-1') }}
             </div>
             <div class="col-sm-3">Atividades que detestei
-                {{ teste('-2') }}
+                {{ cards('-2') }}
             </div>
         </div>
     {% else %}
