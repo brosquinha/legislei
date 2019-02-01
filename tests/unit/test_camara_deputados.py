@@ -28,12 +28,10 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
             {'nome': 'SICRANO PINTO'}
         ])
 
-    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.formatarDatasYMD")
-    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicial")
+    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicialEFinal")
     def test_obterOrgaosDeputado(
             self,
-            mock_obterDataInicial,
-            mock_formatarDatasYMD
+            mock_obterDataInicialEFinal
     ):
         mock = Mocker(self.dep.dep)
         mock.add_response(
@@ -44,10 +42,10 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
                 {'nomeOrgao': 'Comissão C', 'dataFim': '2018-12-31'}
             ]],
             '1234',
-            dataInicial='2018-10-21'
+            dataInicio='2018-10-21',
+            dataFim='2018-10-28'
         )
-        mock_obterDataInicial.return_value = datetime(2018, 10, 21)
-        mock_formatarDatasYMD.return_value = ('2018-10-21')
+        mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
 
         actual_response = self.dep.obterOrgaosDeputado(
             '1234', datetime(2018, 10, 28))
@@ -58,9 +56,8 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         self.assertEqual(len(actual_response), 2)
 
         mock.assert_no_pending_responses()
-        mock_obterDataInicial.assert_called_once_with(
-            datetime(2018, 10, 28), days=7)
-        mock_formatarDatasYMD.assert_called_once_with(datetime(2018, 10, 21))
+        mock_obterDataInicialEFinal.assert_called_once_with(
+            datetime(2018, 10, 28))
 
     def test_obterOrgaosDeputado_fail_case(self):
         mock = Mocker(self.dep.dep)
@@ -359,7 +356,7 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         mock.add_response(
             "obterTodasProposicoes",
             [proposicoes],
-            idAutor='123',
+            idDeputadoAutor='123',
             dataApresentacaoInicio='2018-10-21',
             dataApresentacaoFim='2018-10-28'
         )
@@ -409,7 +406,7 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         mock.add_exception(
             "obterTodasProposicoes",
             CamaraDeputadosError,
-            idAutor="12345",
+            idDeputadoAutor="12345",
             dataApresentacaoInicio="2018-10-21",
             dataApresentacaoFim="2018-10-28"
         )

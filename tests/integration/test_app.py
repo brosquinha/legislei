@@ -23,6 +23,7 @@ class TestApp(unittest.TestCase):
         app.config['TESTING'] = True
         app.config['DEBUG'] = False
         os.environ["MONGODB_DBNAME"] = "legislei-testing"
+        os.environ["HOST_ENDPOINT"] = ''
         self.db = MongoDBClient()
         set_up_db(self.db)
         self.app = app.test_client()

@@ -43,6 +43,16 @@ def consultar():
     return render_template('consultar_form.html'), 200
 
 
+@app.route('/sobre')
+def sobre():
+    return render_template('sobre.html'), 200
+
+
+@app.route('/privacidade')
+def privacidade():
+    return render_template('politica_privacidade.html'), 200
+
+
 def modelar_pagina_relatorio(relatorio, template='consulta_deputado.html'):
     if isinstance(relatorio, tuple) and len(relatorio) == 2:
         return relatorio
@@ -209,7 +219,7 @@ def nova_inscricao_post():
                 'parlamentares': [parlamentar]
             })
         mongo_client.close()
-        return redirect('/minhasAvaliacoes')
+        return redirect('{}/minhasAvaliacoes'.format(os.environ.get('HOST_ENDPOINT')))
     except AppError as e:
         print(e)
         return 'Erro do modelo', 500
@@ -367,7 +377,7 @@ def new_user():
             'email': user_email
         })
         mongo_client.close()
-        return redirect('/login')
+        return redirect('{}/login'.format(os.environ.get('HOST_ENDPOINT')))
     except KeyError:
         return render_template('registrar.html', mensagem='Algo de errado não está certo')
 
@@ -389,7 +399,7 @@ def login():
     if user_data and pbkdf2_sha256.verify(user_psw, user_data['password']):
         user = User(str(user_data['_id']), user_data['username'], user_data['email'])
         login_user(user, remember=remember_me)
-        return redirect('/minhasAvaliacoes')
+        return redirect('{}/minhasAvaliacoes'.format(os.environ.get('HOST_ENDPOINT')))
     return render_template('login.html', mensagem='Usuário/senha incorretos')
 
 
@@ -397,7 +407,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect('/')
+    return redirect('{}/'.format(os.environ.get('HOST_ENDPOINT')))
 
 
 @app.errorhandler(500)

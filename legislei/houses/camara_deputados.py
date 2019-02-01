@@ -55,8 +55,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 evento.set_id(e['id'])
                 evento.set_data_inicial(e['dataHoraInicio'])
                 evento.set_data_final(e['dataHoraFim'])
-                evento.set_situacao(e['descricaoSituacao'])
-                evento.set_nome(e['titulo'])
+                evento.set_situacao(e['situacao'])
+                evento.set_nome(e['descricao'])
                 evento.set_presente()
                 evento.set_url(e['uri'])
                 for o in e['orgaos']:
@@ -113,8 +113,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
                     evento.set_ausencia_evento_nao_esperado()
                 evento.set_data_inicial(e['dataHoraInicio'])
                 evento.set_data_final(e['dataHoraFim'])
-                evento.set_nome(e['titulo'])
-                evento.set_situacao(e['descricaoSituacao'])
+                evento.set_nome(e['descricao'])
+                evento.set_situacao(e['situacao'])
                 evento.set_url(e['uri'])
                 for o in e['orgaos']:
                     orgao = Orgao()
@@ -134,11 +134,9 @@ class CamaraDeputadosHandler(CasaLegislativa):
 
     def obterOrgaosDeputado(self, deputado_id, data_final=datetime.now()):
         orgaos = []
-        di = self.formatarDatasYMD(
-            self.obterDataInicial(data_final, **self.periodo)
-        )
+        di, df = self.obterDataInicialEFinal(data_final)
         try:
-            for page in self.dep.obterOrgaosDeputado(deputado_id, dataInicial=di):
+            for page in self.dep.obterOrgaosDeputado(deputado_id, dataInicio=di, dataFim=df):
                 for item in page:
                     dataFim = datetime.now()
                     if item['dataFim'] != None:
@@ -146,7 +144,11 @@ class CamaraDeputadosHandler(CasaLegislativa):
                             # Um belo dia a API retornou Epoch ao invés do formato documentado (YYYY-MM-DD), então...
                             dataFim = datetime.fromtimestamp(item['dataFim']/1000)
                         except TypeError:
-                            dataFim = datetime.strptime(item['dataFim'], '%Y-%m-%d')
+                            try:
+                                dataFim = datetime.strptime(item['dataFim'], '%Y-%m-%d')
+                            except ValueError:
+                                #Agora aparentemente ele volta nesse formato aqui... aiai
+                                dataFim = datetime.strptime(item['dataFim'], '%Y-%m-%dT%H:%M')
                     if (item['dataFim'] == None or dataFim > data_final):
                         orgao = Orgao()
                         if 'nomeOrgao' in item:
@@ -262,7 +264,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
         di, df = self.obterDataInicialEFinal(data_final)
         try:
             for page in self.prop.obterTodasProposicoes(
-                idAutor=deputado.get_id(),
+                idDeputadoAutor=deputado.get_id(),
                 dataApresentacaoInicio=di,
                 dataApresentacaoFim=df
             ):

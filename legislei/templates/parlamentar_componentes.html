@@ -54,7 +54,7 @@
             deputadoOption = document.createElement("option");
             deputadoOption.setAttribute("value", data[i].id);
             deputadoOption.innerText = data[i].nome + " (" + data[i].siglaPartido +
-            ((document.getElementById('parlamentarIdInput').value == 'BR1') ? "-" + data[i].siglaUf : '') + ")";
+            ((document.getElementById('parlamentarTipo1').value == 'BR1') ? "-" + data[i].siglaUf : '') + ")";
             document.getElementById("listaPoliticos").appendChild(deputadoOption);
         }
         document.getElementById('parlamentarIdInput').removeAttribute('disabled');
@@ -65,8 +65,8 @@
         $("#loader").removeClass('d-none');
         $("#parlamentarIdInput").removeClass('rounded-left');
         document.getElementById('parlamentarIdInput').setAttribute('disabled', 'true');
-        if (localStorage[tipo]) {
-            preencherDatalist(localStorage[tipo]);
+        if (sessionStorage.getItem(tipo)) {
+            preencherDatalist(sessionStorage.getItem(tipo));
         } else {
             $.ajax({
                 url: "/API/parlamentares/"+tipo,
@@ -77,7 +77,7 @@
                     $("#parlamentarIdInput").addClass('rounded-left');
                 },
                 success: (data) => {
-                    localStorage[tipo] = data;
+                    sessionStorage.setItem(tipo, data);
                     preencherDatalist(data);
                 }
             });
@@ -85,6 +85,7 @@
     }
     document.getElementById('parlamentarTipo1').onchange = (e) => {
         let parTipo = document.getElementById('parlamentarTipo1').value;
+        document.getElementById('parlamentarIdInput').value = '';
         if (parTipo == '')
             return;
         document.getElementById('parlamentarTipo2').innerHTML = '<option value>Escolher...</option>';
@@ -106,6 +107,7 @@
                     }
                     document.getElementById('parlamentarTipo2').onchange = (e) => {
                         let parTipo = document.getElementById('parlamentarTipo2').value;
+                        document.getElementById('parlamentarIdInput').value = '';
                         if (parTipo == '')
                             return;
                         document.getElementById('parlamentarTipo').value = parTipo;

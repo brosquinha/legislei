@@ -1,6 +1,6 @@
 import json
 import unittest
-from unittest.mock import call, patch
+from unittest.mock import call, patch, ANY
 
 from flask import render_template
 
@@ -88,19 +88,12 @@ class TestMainAppMethods(unittest.TestCase):
     @patch("legislei.cron.send_email")
     @patch("legislei.cron.render_template")
     @patch("legislei.cron.obter_relatorio")
-    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler")
     def test_send_reports(
             self,
-            mock_deputadosApp,
             mock_obter_relatorio,
             mock_render_template,
             mock_send_email
-        ):
-        class FakeDeputadosApp():
-            def consultar_deputado(self, *args, **kwargs):
-                return {}
-
-        mock_deputadosApp.side_effect = FakeDeputadosApp
+    ):
         mock_obter_relatorio.return_value = {"nice": "JSON"}
         mock_render_template.return_value = "<html>Nice</html>"
         mock_send_email.return_value = True
@@ -130,3 +123,67 @@ class TestMainAppMethods(unittest.TestCase):
         self.assertEqual(mock_obter_relatorio.call_count, 3)
         self.assertEqual(mock_render_template.call_count, 1)
         mock_send_email.assert_called_once_with("test@test.com", "<html>Nice</html>")
+
+    @patch("legislei.cron.send_email")
+    @patch("legislei.cron.render_template")
+    @patch("legislei.cron.obter_relatorio")
+    def test_send_reports_one_obter_relatorio_fails(
+        self,
+        mock_obter_relatorio,
+        mock_render_template,
+        mock_send_email
+    ):
+        def fake_obter_relatorio(parlamentar, *args, **kwargs):
+            if parlamentar == 2:
+                raise ModelError('msg')
+            return {"nice": "JSON"}
+        mock_obter_relatorio.side_effect = fake_obter_relatorio
+        mock_render_template.return_value = "<html>Nice</html>"
+        mock_send_email.return_value = True
+
+        data = [
+            {
+                "parlamentares": [
+                    {
+                        'id': 1,
+                        'cargo': 'BR1'
+                    },
+                    {
+                        'id': 2,
+                        'cargo': 'SP'
+                    },
+                    {
+                        'id': 3,
+                        'cargo': 'BR1'
+                    }
+                ],
+                "intervalo": 7,
+                "email": "test@test.com"
+            }
+        ]
+        send_reports(data)
+
+        self.assertEqual(mock_obter_relatorio.call_count, 3)
+        self.assertEqual(mock_render_template.call_count, 1)
+        mock_send_email.assert_called_once_with("test@test.com", "<html>Nice</html>")
+        mock_render_template.assert_called_once_with(
+            'relatorio_deputado_email.out.html',
+            relatorios=[
+                {"nice": "JSON"},
+                {
+                    'parlamentar': {
+                        'id': 2,
+                        'cargo': 'SP'
+                    },
+                    'eventosPresentes': None,
+                    'eventosPrevistos': None,
+                    'proposicoes': None
+                },
+                {"nice": "JSON"},
+            ],
+            data_inicial=ANY,
+            data_final=ANY,
+            data_final_link=ANY,
+            intervalo=7,
+            host=ANY
+        )

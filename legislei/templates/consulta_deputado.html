@@ -2,22 +2,7 @@
 
 {% block title %}Consulta ao parlamentar{% endblock %}
 
-{% macro ratingButtons(color_class, id) -%}
-<div class="card-footer text-center">
-    <button class="btn btn-{{ color_class }} rating" data-toggle="tooltip" data-placement="top" data-rating-value="2" data-rating-id="{{ id }}" title="Amei">
-        <span class="fa fa-heart"></span>
-    </button>
-    <button class="btn btn-{{ color_class }} rating" data-toggle="tooltip" data-placement="top" data-rating-value="1" data-rating-id="{{ id }}" title="Curti">
-        <span class="fa fa-thumbs-up"></span>
-    </button>
-    <button class="btn btn-{{ color_class }} rating" data-toggle="tooltip" data-placement="top" data-rating-value="-1" data-rating-id="{{ id }}" title="Não curti">
-        <span class="fa fa-thumbs-down"></span>
-    </button>
-    <button class="btn btn-{{ color_class }} rating" data-toggle="tooltip" data-placement="top" data-rating-value="-2" data-rating-id="{{ id }}" title="Detestei">
-        <span class="fa fa-skull"></span>
-    </button>
-</div>
-{%- endmacro %}
+{% import 'relatorio_componentes.html' as componente %}
 
 {% block content %}
     <nav aria-label="breadcrumb">
@@ -111,21 +96,7 @@
                 <div class="col-sm">Proposições da semana
                     ({{ proposicoes_deputado|length }}):
                     {% for item in proposicoes_deputado %}
-                        {% set color_class = 'primary' if item['tipo'] in ['PL', 'PEC'] else 'info' %}
-                        <div class="card mb-1 text-white bg-{{ color_class }}">
-                            <div class="card-header">
-                                <a href="{{ item['uri'] }}" target="_blank" class="text-white">
-                                    {{ item['tipo'] }}{{ item['numero'] }}</a>
-                                ({{ item['dataApresentacao'] }})
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">{{ item['ementa'] }}</p>
-                                <p class="card-text">
-                                    <a href="{{ item['urlDocumento'] }}" target="_blank" class="text-white">Detalhes</a>
-                                </p>
-                            </div>
-                            {{ ratingButtons(color_class, item['id']) }}
-                        </div>
+                        {{ componente.proposicaoCard(item) }}
                     {% endfor %}
                 </div>
             {% endif %}
@@ -133,52 +104,7 @@
             {% if eventos_presentes|length > 0 %}
                 <div class="col-sm">Eventos do parlamentar ({{ eventos_presentes|length }}):
                     {% for item in eventos_presentes %}
-                        <div class="card mb-1 bg-success text-light">
-                            <div class="card-header">
-                                <a href="{{ item['url'] }}" target="_blank" class="text-white">{{ item['nome'] }}</a>
-                            ({{ item['dataInicial'] }}—{{ item['dataFinal'] }})
-                            ({{ item['situacao'] }})</div>
-                            <div class="card-body" data-test="{{ item['pautas']|length }}">
-                                {% if 'error' in item['pautas'] %}
-                                    <p class="card-text bg-danger">
-                                        Não foi possível obter pautas do evento.
-                                    </p>
-                                {% else %}
-                                    {% for p in item['pautas'] %}
-                                        <p class="card-text">
-                                            {% if 'error' == p['voto'] %}
-                                                Não foi possível obter voto do deputado
-                                            {% elif p['voto'] not in [None, False] and 'null' not in p['voto'] %}
-                                                Votou <b>{{ p['voto'] }}</b> em
-                                            {% else %}
-                                                <b>Não votou</b> em
-                                            {% endif %}
-                                            {% if 'error' == p %}
-                                                Não foi possível obter proposição da pauta
-                                            {% else %}
-                                                <b>{{ p['tipo'] }}</b>:
-                                                <a
-                                                    href="{{ p['urlDocumento'] }}"
-                                                    target="_blank"
-                                                    class="text-white">{{ p['pauta'] }}</a>
-                                                (<a
-                                                    href="{{ p['urlAutores'] }}"
-                                                    target="_blank"
-                                                    class="text-white">ver autores</a>)
-                                            {% endif %}
-                                        </p>
-                                    {% endfor %}
-                                {% endif %}
-                                {% if item['orgaos'] %}
-                                <p class="card-text">
-                                    Órgão: <span title="{{ item['orgaos'][0]['nome'] }}">
-                                        {{ item['orgaos'][0]['apelido'] }}
-                                    </span>
-                                </p>
-                                {% endif %}
-                            </div>
-                            {{ ratingButtons('success', item['id']) }}
-                        </div>
+                    {{ componente.eventoCard(item) }}
                     {% endfor %}
                 </div>
             {% endif %}
@@ -191,32 +117,7 @@
                     <p class="text-danger">Não foi possível obter eventos previstos do deputado.</p>
                 {% endif %}
                 {% for item in eventos_ausentes %}
-                    {% if item['presenca'] == 3 %}
-                    {% set color_class = 'danger' %}
-                    <div class="card mb-1 text-white bg-danger">
-                    {% elif item['presenca'] == 2 %}
-                    {% set color_class = 'warning' %}
-                    <div class="card mb-1 text-white bg-warning">
-                    {% else %}
-                    {% set color_class = 'light' %}
-                    <div class="card mb-1 collapse multi-collapse">
-                    {% endif %}
-                        <div class="card-header">
-                            <a href="{{ item['url'] }}" target="_blank" class="{{ 'text-white' if item['presenca'] > 1 }}">
-                                {{ item['nome'] }}</a>
-                        ({{ item['dataInicial'] }}—{{ item['dataFinal'] }})
-                        ({{ item['situacao'] }})</div>
-                        {% if item['orgaos'] %}
-                            <div class="card-body">
-                                <p class="card-text">Órgão:
-                                    <span title="{{ item['orgaos'][0]['nome'] }}">
-                                        {{ item['orgaos'][0]['apelido'] }}
-                                    </span>
-                                </p>
-                            </div>
-                            {{ ratingButtons(color_class, item['id']) }}
-                        {% endif %}
-                    </div>
+                    {{ componente.eventoCard(item) }}
                 {% endfor %}
             </div>
         </div>
