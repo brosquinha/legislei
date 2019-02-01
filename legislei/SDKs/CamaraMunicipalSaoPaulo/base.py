@@ -48,28 +48,59 @@ class CamaraMunicipal(object):
                             'presenteExtra': child.attrib['PresenteExtra'],
                             'sessoes': child_sessoes
                         })
-                        '''print('{}: {} + {} presencas'.format(
-                            child.attrib['Nome'],
-                            child.attrib['PresenteOrd'],
-                            child.attrib['PresenteExtra']
-                        ))'''
                     elif child.tag == 'Presencas':
                         presenca['totalOrd'] = child.attrib['TotalSessoesOrdinarias']
                         presenca['totalExtra'] = child.attrib['TotalSessoesExtraOrdinarias']
-                        '''print('Total: {} + {}'.format(
-                            child.attrib['TotalSessoesOrdinarias'],
-                            child.attrib['TotalSessoesExtraOrdinarias']
-                        ))'''
                 sessoes_nomes = set(sessoes_nomes)
                 for sessao in sessoes_nomes:
-                    presenca['sessoes'][sessao] = self.obterPautaSessao(
-                        data_controle, sessao)
+                    # presenca['sessoes'][sessao] = self.obterPautaSessao(
+                    #     data_controle, sessao)
+                    presenca['sessoes'][sessao] = self.obterVotacoesSessao(
+                        data_controle, sessao
+                    )
             data_controle = data_controle + timedelta(days=1)
             presenca_total.append(presenca)
         return presenca_total
 
+    def obterVotacoesSessao(self, data, nome):
+        votacoes = []
+        data_sessao = None
+        r = self.http.request(
+            'GET',
+            'https://splegispdarmazenamento.blob.core.windows.net/containersip/VOTACOES_{:02d}_{:02d}_{}.xml'.format(
+                data.day, data.month, data.year
+            )
+        )
+        if r.status != 200:
+            print("Sem votacoes nesse dia")
+        else:
+            root = ET.fromstring(r.data.decode('utf-8'))
+            for child in root:
+                if child.tag == 'Sessao':
+                    if child.attrib['Nome'] == nome:
+                        data_sessao = child.attrib['Data']
+                        for v in child:
+                            votacao = {
+                                'pauta': v.attrib['Materia'],
+                                'projeto': v.attrib['Ementa'],
+                                'votos': []
+                            }
+                            for voto in v:
+                                if voto.tag == 'Vereador':
+                                    votacao['votos'].append({
+                                        'id': voto.attrib['IDParlamentar'],
+                                        'nome': voto.attrib['Nome'],
+                                        'voto': voto.attrib['Voto']
+                                    })
+                            votacoes.append(votacao)
+        return {'pautas': votacoes, 'data': data_sessao}
+
     def obterPautaSessao(self, data, nome):
-        projetos = []
+        projetos = {
+            'pautas': [],
+            'situacao': None,
+            'id': None
+        }
         r = self.http.request(
             'POST',
             'http://splegisws.camara.sp.gov.br/ws/ws2.asmx/PautasSessoesPlenariasJSON',
@@ -78,8 +109,62 @@ class CamaraMunicipal(object):
         )
         for item in json.loads(r.data.decode('utf-8')):
             if nome in item['sessao']:
-                projetos.append(['{}{}'.format(x['tipo'], x['numero']) for x in item['projetos']])
+                projetos = {
+                    'pautas': self.obterPautaEstendidaSessao(item['chave']),
+                    'situacao': item['status'],
+                    'id': item['chave']
+                }
         return projetos
+
+    def obterPautaEstendidaSessao(self, sessao_id):
+        ementas = []
+        r = self.http.request(
+            'POST',
+            'http://splegisws.camara.sp.gov.br/ws/ws2.asmx/PautaEstendidaSessaoPlenariaJSON',
+            encode_multipart=False,
+            fields={'Chave': sessao_id},
+        )
+        for item in json.loads(r.data.decode('utf-8'))['projetos']:
+            ementas.append({
+                'ementa': item['ementa'],
+                'tipo': item['tipo'], 
+                'numero': item['numero']
+            })
+        return ementas
+
+    def obterProjetosParlamentar(self, parlamentar_nome, ano, tipo='PL'):
+        projetos = []
+        r = self.http.request(
+            'POST',
+            'http://splegisws.camara.sp.gov.br/ws/ws2.asmx/ProjetosAutoresJSON',
+            encode_multipart=False,
+            fields={'ano': ano, 'tipo': tipo, 'numero': ''},
+        )
+        for item in json.loads(r.data.decode('utf-8')):
+            if 'leitura' in item and 'autores' in item:
+                try:
+                    for autor in item['autores']:
+                        if autor['nome'].lower() == parlamentar_nome.lower():
+                            timestamp_str = re.match(r'\/Date\((\d*)\)', item['leitura'])
+                            projetos.append({
+                                'tipo': item['tipo'],
+                                'numero': item['numero'],
+                                'ano': item['ano'],
+                                'data': datetime.fromtimestamp(int(timestamp_str.group(1))/1000)
+                            })
+                except Exception:
+                    #TODO
+                    pass
+        return projetos
+
+    def obterProjetosDetalhes(self, ano):
+        r = self.http.request(
+            'POST',
+            'http://splegisws.camara.sp.gov.br/ws/ws2.asmx/ProjetosPorAnoJSON',
+            encode_multipart=False,
+            fields={'ano': ano},
+        )
+        return json.loads(r.data.decode('utf-8'))
 
     def obterOcupacaoGabinete(self):
         r = self.http.request(
@@ -200,15 +285,6 @@ class CamaraMunicipal(object):
                     nome_vereador = 'ERRO1'.join(tipos_nomes)
             else:
                 nome_vereador = 'ERRO2'
-                """if nomes[2]:
-                    if '%' in nomes[2]:
-                        nome_vereador = nomes[2].split('%')[1]
-                    else:
-                        nome_vereador = nomes[2]
-                elif nomes[1]:
-                    nome_vereador = nomes[1]
-                else:
-                    nome_vereador = nomes[0]"""
             
             vereadores.append(
                 {

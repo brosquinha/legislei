@@ -17,7 +17,7 @@
     {% set color_class = 'primary' if item['tipo'] in ['PL', 'PEC'] else 'info' %}
     <div class="card mb-1 text-white bg-{{ color_class }}">
         <div class="card-header">
-            <a href="{{ item['uri'] }}" target="_blank" class="text-white">
+            <a href="{{ item['urlDocumento'] }}" target="_blank" class="text-white">
                 {{ item['tipo'] }}{{ item['numero'] }}</a>
             ({{ item['dataApresentacao'] }})
         </div>
