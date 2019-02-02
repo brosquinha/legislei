@@ -34,6 +34,6 @@ class TestALESPHandlerIntegration(unittest.TestCase):
         self.assertEqual(len(actual["eventosPrevistos"]), 0)
         self.assertEqual(len(actual["eventosAusentes"]), 16)
         self.assertEqual(actual["dataFinal"], "18/05/2018")
-        self.assertEqual(actual["presencaTotal"], "12.50%")
+        self.assertEqual(actual["presencaTotal"], "11.11%")
         self.assertEqual(actual["presencaRelativa"], "100.00%")
         self.assertEqual(actual["dataInicial"], "11/05/2018")

@@ -36,8 +36,8 @@ class TestCamaraDeputadosHandlerIntegration(unittest.TestCase):
         self.assertEqual(len(actual["orgaos"]), 15)
         self.assertEqual(actual["dataFinal"], "29/06/2018")
         self.assertEqual(actual["eventosAusentesEsperadosTotal"], 9)
-        self.assertEqual(actual["presencaTotal"], "9.26%")
-        self.assertEqual(actual["presencaRelativa"], "55.56%")
+        self.assertEqual(actual["presencaTotal"], "8.47%")
+        self.assertEqual(actual["presencaRelativa"], "35.71%")
         self.assertEqual(actual["dataInicial"], "22/06/2018")
 
     def test_obter_parlamentares(self):

@@ -155,8 +155,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
                             orgao.set_nome(item['nomeOrgao'])
                         if 'siglaOrgao' in item:
                             orgao.set_sigla(item['siglaOrgao'])
-                        if 'nomePapel' in item:
-                            orgao.set_cargo(item['nomePapel'])
+                        if 'titulo' in item:
+                            orgao.set_cargo(item['titulo'])
                         self.relatorio.add_orgao(orgao)
                         orgaos.append(item)
             return orgaos

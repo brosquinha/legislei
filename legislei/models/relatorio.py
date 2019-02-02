@@ -150,15 +150,15 @@ class Relatorio():
     def _calcular_presenca_relativa(self):
         ausencia_relativa = len([x for x in self._eventos_ausentes if x.get_presenca() > 1])
         try:
-            return 100 * len(self._eventos_presentes) / ausencia_relativa
+            return 100 * len(self._eventos_presentes) / (ausencia_relativa + len(self._eventos_presentes))
         except ZeroDivisionError:
             return 0 if len(self._eventos_presentes) == 0 else 100
 
     def _calcular_presenca_absoluta(self):
         try:
-            return 100 * len(self._eventos_presentes) / len(self._eventos_ausentes)
+            return 100 * len(self._eventos_presentes) / (len(self._eventos_ausentes) + len(self._eventos_presentes))
         except ZeroDivisionError:
-            return 0if len(self._eventos_presentes) == 0 else 100
+            return 0 if len(self._eventos_presentes) == 0 else 100
 
     def to_dict(self):
         relatorio = {
