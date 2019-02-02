@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
 project = 'Legislei'
-copyright = '2018, Thales César Giriboni'
-author = 'Thales César Giriboni'
+copyright = u'2018, Thales César Giriboni'
+author = u'Thales César Giriboni'
 
 # The short X.Y version
 version = ''
@@ -44,6 +44,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
+    'm2r'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -52,8 +53,8 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-# source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+# source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
 
 # The master toctree document.
 master_doc = 'index'
@@ -79,7 +80,7 @@ pygments_style = None
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'classic'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -134,7 +135,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'Legislei.tex', 'Legislei Documentation',
-     'Thales César Giriboni', 'manual'),
+     u'Thales César Giriboni', 'manual'),
 ]
 
 
@@ -184,3 +185,19 @@ epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
+
+def run_apidoc(_):
+    argv = [
+        "-f",
+        "-e",
+        "-M",
+        "-o", "./_modules",
+        ".."
+    ]
+
+    # Sphinx 1.7+
+    from sphinx.ext import apidoc
+    apidoc.main(argv)
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)

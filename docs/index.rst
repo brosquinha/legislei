@@ -7,14 +7,8 @@ Documentação do projeto Legislei
 ====================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    _modules/modules
 
-
-Índices
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. mdinclude:: ../README.md

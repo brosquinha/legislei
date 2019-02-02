@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Legislei{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-md-center">
+        <div class="col-sm-10 text-justify">
+            <h2 class="display-4">Projeto Legislei</h2>
+            <p class="lead">
+                Acompanhe seu parlamentar em suas atividades, recebendo semanalmente ou mensalmente
+                relatórios com presenças, proposições e votações que ele ou ela participaram.
+                <a href="/registrar" title="Criar uma conta">Crie uma conta</a> para receber em seu email
+                os relatórios de seus parlamentares.
+            </p>
+            <img
+                src="https://www.abdib.org.br/wp-content/uploads/2018/10/C%C3%A2mara-dos-Deputados.jpg"
+                alt="Plenário da Câmara dos Deputados"
+                class="w-100 mb-5"
+                />
+            <h3>Como funciona</h3>
+            <p>Atualmente, estão cadastrados as seguintes câmaras legislativas:
+                <ul>
+                    <li>Câmara dos Deputados</li>
+                    <li>Assembleia Legislativa de São Paulo</li>
+                    <li>Câmara Municipal de São Paulo</li>
+                </ul>
+            </p>
+            <p>Esse é um <a href="https://www.gnu.org/philosophy/free-sw.pt-br.html" target="_blank">
+                software livre</a>, o que quer dizer que você tem a liberdade de, entre outras coisas,
+                obter seu código-fonte, disponilibizado no <a href="https://github.com/brosquinha/politica" target="_blank">GitHub</a>,
+                e rodá-lo em seu próprio computador. Por ser desenvolvido em containers Docker, sua implementação em
+                servidores modernos é consideravelmente mais simples. Consulte a
+                <a href="http://legislei.readthedocs.io/" target="_blank">documentação</a> para mais detalhes.
+            </p>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% macro cargoCompleto(cargo) -%}
+    {% set cargo_nome = cargo|cargoNome %}
+    {% if 'federal' in cargo_nome %}
+        {{ cargo_nome }}
+    {% elif 'estadual' in cargo_nome %}
+        {{ cargo_nome }} de {{ cargo }}
+    {% else %}
+        {{ cargo_nome }} de {{ cargo|cargoCidadeNome }}
+    {% endif %}
+{%- endmacro %}
+
+{% macro selectNivelFederativo() -%}
+<select id="parlamentarTipo1" class="form-control mb-1">
+    <option value="">Escolher...</option>
+    <option value="BR1">Deputado federal</option>
+    <!--option value="BR2">Senador</option-->
+    <option value="estaduais">Deputado estadual</option>
+    <option value="municipais">Vereador</option>
+</select>
+{%- endmacro %}
+
+{% macro selectUF() -%}
+<select id="parlamentarTipo2" class="form-control mb-1" disabled>
+    <option value>Escolher...</option>
+</select>
+<input name="parlamentarTipo" id="parlamentarTipo" type="hidden" />
+{%- endmacro %}
+
+{% macro selectParlamentar() -%}
+<div class="input-group">
+    <div class="input-group-prepend">
+        <span class="input-group-text form-control d-none" id="loader">
+            <i class="fa fa-spinner fa-spin"></i>
+        </span>
+    </div>
+    <input
+        name="parlamentar"
+        id="parlamentarIdInput"
+        list="listaPoliticos"
+        placeholder="Político"
+        class="form-control mb-1 rounded-right rounded-left"
+        required
+        disabled />
+    <datalist id="listaPoliticos"></datalist>
+</div>
+{%- endmacro %}
+
+{% macro script() -%}
+<script>
+    let preencherDatalist = (data) => {
+        data = JSON.parse(data);
+        document.getElementById("listaPoliticos").innerHTML = '';
+        for (let i=0; i<data.length; i++) {
+            deputadoOption = document.createElement("option");
+            deputadoOption.setAttribute("value", data[i].id);
+            deputadoOption.innerText = data[i].nome + " (" + data[i].siglaPartido +
+            ((document.getElementById('parlamentarTipo1').value == 'BR1') ? "-" + data[i].siglaUf : '') + ")";
+            document.getElementById("listaPoliticos").appendChild(deputadoOption);
+        }
+        document.getElementById('parlamentarIdInput').removeAttribute('disabled');
+        $("#loader").addClass('d-none');
+        $("#parlamentarIdInput").addClass('rounded-left');
+    }
+    let obterParlamentares = (tipo) => {
+        $("#loader").removeClass('d-none');
+        $("#parlamentarIdInput").removeClass('rounded-left');
+        document.getElementById('parlamentarIdInput').setAttribute('disabled', 'true');
+        if (sessionStorage.getItem(tipo)) {
+            preencherDatalist(sessionStorage.getItem(tipo));
+        } else {
+            $.ajax({
+                url: "/API/parlamentares/"+tipo,
+                method: "GET",
+                error: (jqXHR, txtStatus) => {
+                    console.warn(txtStatus);
+                    $("#loader").addClass('d-none');
+                    $("#parlamentarIdInput").addClass('rounded-left');
+                },
+                success: (data) => {
+                    sessionStorage.setItem(tipo, data);
+                    preencherDatalist(data);
+                }
+            });
+        }
+    }
+    document.getElementById('parlamentarTipo1').onchange = (e) => {
+        let parTipo = document.getElementById('parlamentarTipo1').value;
+        document.getElementById('parlamentarIdInput').value = '';
+        if (parTipo == '')
+            return;
+        document.getElementById('parlamentarTipo2').innerHTML = '<option value>Escolher...</option>';
+        if (parTipo != 'BR1' && parTipo != 'BR2') {
+            $.ajax({
+                url: "/API/models/" + document.getElementById('parlamentarTipo1').value,
+                method: "GET",
+                error: (jqXHR, txtStatus) => {
+                    console.log(jqXHR);
+                },
+                success: (data) => {
+                    document.getElementById('parlamentarTipo2').removeAttribute('disabled');
+                    data = JSON.parse(data);
+                    for (let i=0; i<data.models.length; i++) {
+                        let modelOption = document.createElement('option');
+                        modelOption.setAttribute('value', data.models[i]);
+                        modelOption.innerText = data.models[i];
+                        document.getElementById('parlamentarTipo2').appendChild(modelOption);
+                    }
+                    document.getElementById('parlamentarTipo2').onchange = (e) => {
+                        let parTipo = document.getElementById('parlamentarTipo2').value;
+                        document.getElementById('parlamentarIdInput').value = '';
+                        if (parTipo == '')
+                            return;
+                        document.getElementById('parlamentarTipo').value = parTipo;
+                        obterParlamentares(parTipo);
+                    }
+                }
+            });
+        } else {
+            document.getElementById('parlamentarTipo').value = parTipo;
+            document.getElementById('parlamentarTipo2').setAttribute('disabled', 'true');
+            obterParlamentares(parTipo);
+        }
+    }
+</script>
+{%- endmacro %}

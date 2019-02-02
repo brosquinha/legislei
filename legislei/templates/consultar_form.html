@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Consultar político{% endblock %}
+
+{% import 'parlamentar_componentes.html' as parlamentar_form %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item active" aria-current="page">Consultar político</li>
+        </ol>
+    </nav>
+    <div class="container text-center">
+        <form action="relatorio" name="form1">
+            <div class="form-row">
+                <div class="col-md">
+                    {{ parlamentar_form.selectNivelFederativo() }}
+                </div>
+                <div class="col-md">
+                    {{ parlamentar_form.selectUF() }}
+                </div>
+                <div class="col-md">
+                    {{ parlamentar_form.selectParlamentar() }}
+                </div>
+                <div class="col-md">
+                    <input type="date" name="data" class="form-control mb-1" required />
+                </div>
+                <div class="col-md">
+                    <input
+                        type="number"
+                        min="7"
+                        max="28"
+                        name="dias"
+                        class="form-control mb-1"
+                        value="7"
+                        required />
+                </div>
+                <input type="submit" />
+            </div>
+        </form>
+    </div>
+    {{ parlamentar_form.script() }}
+{% endblock %}

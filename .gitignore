@@ -18,3 +18,7 @@ _modules
 
 #ALESP package
 .ALESP
+
+#Coverage stuff
+.coverage
+htmlcov/

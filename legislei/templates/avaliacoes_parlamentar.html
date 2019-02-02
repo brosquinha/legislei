@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Minhas avaliações do parlamentar{% endblock %}
+
+{% import 'relatorio_componentes.html' as relatorio %}
+
+{% macro cards(num) -%}
+    {% for avaliacao in avaliacoes[num] %}
+    {% macro cardsFooter(style_bg_color, style_txt_color) -%}
+        <a href="/relatorio/{{ avaliacao['relatorioId'] }}" class="text-{{ style_txt_color }}">
+            Ver relatório dessa atividade</a>
+    {%- endmacro %}
+        {% set avaliado = avaliacao['avaliado'] %}
+        {% if 'tipo' in avaliado %}
+            {{ relatorio.proposicaoCard(avaliado, cardsFooter) }}
+        {% else %}
+            {{ relatorio.eventoCard(avaliado, cardsFooter, collapse=False) }}
+        {% endif %}
+    {% endfor %}
+{%- endmacro %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/minhasAvaliacoes">Minhas avaliações</a>
+            </li>
+            <li class="breadcrumb-item active text-uppercase" aria-current="page">{{ parlamentar['nome'] }}</li>
+        </ol>
+    </nav>
+    {% if parlamentar %}
+        <div class="container mb-3 bg-light rounded">
+            <div class="media">
+                <div class="media-body">
+                    <h1 class="text-uppercase">{{ parlamentar['nome'] }} ({{ parlamentar['partido'] }}-{{ parlamentar['uf'] }})</h1>
+                    <h4 class="mt-0">Saldo total: {{ nota }}</h4>
+                </div>
+                <img class="align-self-start rounded" src="{{ parlamentar['foto'] }}" alt="{{ parlamentar['nome'] }}" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-3">Atividades que amei
+                {{ cards('2') }}
+            </div>
+            <div class="col-sm-3">Atividades que aprovei
+                {{ cards('1') }}
+            </div>
+            <div class="col-sm-3">Atividades que desaprovei
+                {{ cards('-1') }}
+            </div>
+            <div class="col-sm-3">Atividades que detestei
+                {{ cards('-2') }}
+            </div>
+        </div>
+    {% else %}
+        <h5>Nenhuma avaliação para esse parlamentar</h5>
+    {% endif %}
+{% endblock %}
