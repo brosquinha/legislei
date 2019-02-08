@@ -219,7 +219,7 @@ def nova_inscricao_post():
                 'parlamentares': [parlamentar]
             })
         mongo_client.close()
-        return redirect('{}/minhasAvaliacoes'.format(os.environ.get('HOST_ENDPOINT')))
+        return redirect('{}/minhasAvaliacoes'.format(os.environ.get('HOST_ENDPOINT', request.url_root[:-1])))
     except AppError as e:
         print(e)
         return 'Erro do modelo', 500
@@ -377,7 +377,7 @@ def new_user():
             'email': user_email
         })
         mongo_client.close()
-        return redirect('{}/login'.format(os.environ.get('HOST_ENDPOINT')))
+        return redirect('{}/login'.format(os.environ.get('HOST_ENDPOINT', request.url_root[:-1])))
     except KeyError:
         return render_template('registrar.html', mensagem='Algo de errado não está certo')
 
@@ -399,7 +399,7 @@ def login():
     if user_data and pbkdf2_sha256.verify(user_psw, user_data['password']):
         user = User(str(user_data['_id']), user_data['username'], user_data['email'])
         login_user(user, remember=remember_me)
-        return redirect('{}/minhasAvaliacoes'.format(os.environ.get('HOST_ENDPOINT')))
+        return redirect('{}/minhasAvaliacoes'.format(os.environ.get('HOST_ENDPOINT', request.url_root[:-1])))
     return render_template('login.html', mensagem='Usuário/senha incorretos')
 
 
@@ -407,7 +407,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect('{}/'.format(os.environ.get('HOST_ENDPOINT')))
+    return redirect('{}/'.format(os.environ.get('HOST_ENDPOINT', request.url_root[:-1])))
 
 
 @app.errorhandler(500)

@@ -4,9 +4,14 @@
 
 {% import 'relatorio_componentes.html' as componente %}
 
+{% set deputado = relatorio['parlamentar'] %}
+
+{% block description %}Relatório parlamentar de {{ deputado['nome'] }} de {{ relatorio['dataInicial'] }} a {{ relatorio['dataFinal'] }}{% endblock %}
+
+{% block page_img %}{{ deputado['foto'] }}{% endblock %}
+
 {% block content %}
     <nav aria-label="breadcrumb">
-        {% set deputado = relatorio['parlamentar'] %}
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
                 <a href="/minhasAvaliacoes">Minhas avaliações</a>
