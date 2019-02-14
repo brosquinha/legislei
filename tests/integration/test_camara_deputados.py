@@ -43,7 +43,7 @@ class TestCamaraDeputadosHandlerIntegration(unittest.TestCase):
     def test_obter_parlamentares(self):
         expected = 512
         actual = CamaraDeputadosHandler().obter_parlamentares()
-        self.assertEqual(len(actual), expected)
+        self.assertGreaterEqual(len(actual), expected)
 
     def test_obter_parlamentar(self):
         expected = json.loads("""{

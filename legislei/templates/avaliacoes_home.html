@@ -2,6 +2,8 @@
 
 {% block title %}Minhas avaliações{% endblock %}
 
+{% block description %}Minhas avaliações de parlamentares{% endblock %}
+
 {% import 'parlamentar_componentes.html' as parlamentar_form %}
 
 {% block content %}
@@ -168,7 +170,7 @@
                 alert('Houve o seguinte erro ao salvar: '+txtStatus);
             },
             success: () => {
-                alert('Configurações atualizadas!');
+                alert('Opção em desenvolvimento.');
             }
         });
     }
