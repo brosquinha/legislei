@@ -72,14 +72,21 @@ class TestMainAppMethods(unittest.TestCase):
         self.assertEqual(actual_response, {'nome': 'relatorio', '_id': 'Id'})
 
     @patch("legislei.house_selector.house_selector")
+    @patch("legislei.db.MongoDBClient.get_collection")
     def test_obter_relatorio_json_inexistente_funcao_com_erro(
         self,
+        mock_get_collection,
         mock_model_selector
     ):
+        class FakeRelatorios:
+            def find_one(self, obj):
+                return None
+        
         class FakeModel:
             def obter_relatorio(self, *args, **kwargs):
                 raise ModelError('Erro')
 
+        mock_get_collection.return_value = FakeRelatorios()
         mock_model_selector.return_value = FakeModel
 
         with self.assertRaises(ModelError):

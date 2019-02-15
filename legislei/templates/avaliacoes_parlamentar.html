@@ -2,6 +2,8 @@
 
 {% block title %}Minhas avaliações do parlamentar{% endblock %}
 
+{% block description %}Minhas avaliações de {{ parlamentar['nome'] if parlamentar else 'parlamentar' }}{% endblock %}
+
 {% import 'relatorio_componentes.html' as relatorio %}
 
 {% macro cards(num) -%}
@@ -18,6 +20,10 @@
         {% endif %}
     {% endfor %}
 {%- endmacro %}
+
+{% if parlamentar %}
+    {% block page_img %}{{ parlamentar['foto'] }}{% endblock %}
+{% endif %}
 
 {% block content %}
     <nav aria-label="breadcrumb">

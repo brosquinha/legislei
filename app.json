@@ -1,0 +1,52 @@
+{
+    "name": "legislei",
+    "description": "",
+    "scripts": {},
+    "env": {
+      "APP_SECRET_KEY": {
+        "generator": "secret"
+      },
+      "DEBUG": {
+        "required": true
+      },
+      "EMAIL_PORT": {
+        "required": true
+      },
+      "EMAIL_PSW": {
+        "required": true
+      },
+      "EMAIL_SSL": {
+        "required": true
+      },
+      "EMAIL_TLS": {
+        "required": true
+      },
+      "EMAIL_USR": {
+        "required": true
+      },
+      "MONGODB_URI": {
+        "required": true
+      },
+      "SENDGRID_PASSWORD": {
+        "required": true
+      },
+      "SENDGRID_USERNAME": {
+        "required": true
+      }
+    },
+    "formation": {
+      "web": {
+        "quantity": 1
+      }
+    },
+    "addons": [
+      "mongolab",
+      "sendgrid"
+    ],
+    "buildpacks": [
+      {
+        "url": "heroku/python"
+      }
+    ],
+    "stack": "container"
+  }
