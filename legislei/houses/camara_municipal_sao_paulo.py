@@ -70,8 +70,8 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
             return self.relatorio
         except Exception as e:
             print(e)
-            raise e
-            # raise ModelError(str(e))
+            #raise e
+            raise ModelError(str(e))
 
     def obter_proposicoes_parlamentar(self, parlamentar_nome, data_inicial, data_final):
         projetos = self.ver.obterProjetosParlamentar(parlamentar_nome, data_final.year)
