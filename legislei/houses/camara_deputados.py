@@ -26,6 +26,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
     def obter_relatorio(self, parlamentar_id, data_final=None, periodo_dias=7):
         try:
             self.relatorio = Relatorio()
+            self.relatorio.set_aviso_dados(u'Dados de votações em sessões não disponíveis.')
             start_time = time()
             if data_final:
                 data_final = datetime.strptime(data_final, '%Y-%m-%d')
@@ -40,7 +41,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
             print('Deputado obtido em {0:.5f}'.format(time() - start_time))
             (
                 eventos,
-                presenca_total,
+                _presenca_total,
                 todos_eventos
             ) = self.procurarEventosComDeputado(
                 deputado_info.get_id(),
@@ -80,12 +81,12 @@ class CamaraDeputadosHandler(CasaLegislativa):
                                     pauta['proposicao_detalhes']['urlInteiroTeor'])
                                 proposicao.set_url_autores(
                                     pauta['proposicao_detalhes']['uriAutores'])
+                                proposicao.set_pauta(pauta['proposicao_detalhes']['ementa'])
                             if pauta['votacao'] == [{'error': True}]:
                                 proposicao.set_voto('ERROR')
                             else:
                                 voto = self.obterVotoDeputado(
                                     pauta['votacao'][0]['id'], deputado_info.get_id())
-                                proposicao.set_pauta(pauta['proposicao_detalhes']['ementa'])
                                 proposicao.set_voto(voto)
                             evento.add_pautas(proposicao)
                 self.relatorio.add_evento_presente(evento)
@@ -93,7 +94,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
             (
                 eventos_ausentes,
                 eventos_ausentes_total,
-                eventos_previstos
+                _eventos_previstos
             ) = self.obterEventosAusentes(
                 deputado_info.get_id(),
                 data_final,
