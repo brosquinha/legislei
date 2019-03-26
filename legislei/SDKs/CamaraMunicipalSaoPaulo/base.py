@@ -44,6 +44,7 @@ class CamaraMunicipal(object):
                                 })
                         presenca['vereadores'].append({
                             'nome': child.attrib['Nome'],
+                            'chave': child.attrib['IDParlamentar'],
                             'presenteOrd': child.attrib['PresenteOrd'],
                             'presenteExtra': child.attrib['PresenteExtra'],
                             'sessoes': child_sessoes
@@ -53,8 +54,6 @@ class CamaraMunicipal(object):
                         presenca['totalExtra'] = child.attrib['TotalSessoesExtraOrdinarias']
                 sessoes_nomes = set(sessoes_nomes)
                 for sessao in sessoes_nomes:
-                    # presenca['sessoes'][sessao] = self.obterPautaSessao(
-                    #     data_controle, sessao)
                     presenca['sessoes'][sessao] = self.obterVotacoesSessao(
                         data_controle, sessao
                     )
@@ -88,7 +87,7 @@ class CamaraMunicipal(object):
                             for voto in v:
                                 if voto.tag == 'Vereador':
                                     votacao['votos'].append({
-                                        'id': voto.attrib['IDParlamentar'],
+                                        'chave': voto.attrib['IDParlamentar'],
                                         'nome': voto.attrib['Nome'],
                                         'voto': voto.attrib['Voto']
                                     })
@@ -132,7 +131,7 @@ class CamaraMunicipal(object):
             })
         return ementas
 
-    def obterProjetosParlamentar(self, parlamentar_nome, ano, tipo='PL'):
+    def obterProjetosParlamentar(self, parlamentar_id, ano, tipo='PL'):
         projetos = []
         r = self.http.request(
             'POST',
@@ -144,7 +143,7 @@ class CamaraMunicipal(object):
             if 'leitura' in item and 'autores' in item:
                 try:
                     for autor in item['autores']:
-                        if autor['nome'].lower() == parlamentar_nome.lower():
+                        if str(autor['chave']) == parlamentar_id.lower():
                             timestamp_str = re.match(r'\/Date\((\d*)\)', item['leitura'])
                             projetos.append({
                                 'tipo': item['tipo'],
@@ -191,116 +190,27 @@ class CamaraMunicipal(object):
         return json
 
     def obterVereadores(self):
-        def tratarDadosTxt(regex, txt, dict_params):
-            """
-            Obtém um campo de dados do formato arbitrário da CMSP e retorna
-            um dicionário muito mais simpático.
-
-            O parâmetro `dict_params` é uma lista de chaves para o dicionário,
-            com os elementos posicionados de tal forma a bater com o índice do
-            grupo do regex a qual ele se refere. Exemplo:
-
-            ```
-            liderancas = tratarDadosTxt(
-                r'^([^\^\#]*)\^i([^\^\#]*)\^f([^\^\#]*)(\^c([^\^\#]*))?$',
-                liderancas_txt,
-                ['partido', 'dataInicio', 'dataFim', '', 'cargo']
-            )
-            ```
-            Args:
-                param regex: Regex para capturar os dados do txt
-                param txt: String de dados do txt
-                param dict_params: Lista de parâmetros para o dict de saída
-
-            Returns:
-                Dicionário dos dados de entrada do txt filtrados com o regex
-                ordenados de acordo com dicionário de parâmetros
-            """
-            lista = []
-            if txt != '#':
-                for item in txt[1:].split('%'):
-                    item_re = re.search(regex, item)
-                    if item_re == None:
-                        continue
-                    lista_item = {}
-                    i = 1
-                    for p in dict_params:
-                        if p != '':
-                            lista_item[p] = item_re.group(i)
-                        i += 1
-                    lista.append(lista_item)
-            return lista
-
-        vereadores = []
         r = self.http.request(
-            'GET',
-            'http://www.saopaulo.sp.leg.br/wp-content/uploads/dados_abertos/vereador/vereador.txt'
+            'POST',
+            'http://splegisws.camara.sp.gov.br/ws/ws2.asmx/VereadoresCMSPJSON',
+            encode_multipart=False
         )
-        dados = r.data.decode('latin_1').replace('\r\n', '\n').encode('utf-8').decode('utf-8')
-        gabinetes = self.obterOcupacaoGabinete()
-        buscas = re.finditer(
-            r'^(\d{1,5})((\#([^\#]*)){3})(\#(([^\^\#]*)(\^i[^\^\#]*)(\^f[^\^\#]*)(\^c[^\^\#]*)?\%)*)(\#([^\#]*))(\#(((\^p\d)(\^n\d+)(\^s\w+)(\^q[\d\.]+)?)\%)*)(\#((\^i[\d\/]+)(\^f[\d\/]+)(\^s\w+)?(\^p[^\%\#\^]+)?(\^[cbd][^\%\#]+)*\%)*)(\#((\^n[^\^]*)?(\^i[\d\/]*)?(\^f[\d\/]+)?(\^c[^\%\^]+)?(\^d[^\%]+)?\%)*)$',
-            dados, re.MULTILINE)
-        for busca in buscas:
-            registro = busca.group(1) #Não é o ID utilizado pelo resto do sistema
-            tipos_nomes = busca.group(2).split('#') #Nome, NomeParlamentar, Outros nomes
-            liderancas = tratarDadosTxt(
-                r'^([^\^\#]*)\^i([^\^\#]*)\^f([^\^\#]*)(\^c([^\^\#]*))?$',
-                busca.group(5),
-                ['partido', 'dataInicio', 'dataFim', '', 'cargo']
-            )
-            mesa_diretora = busca.group(12) #TODO: Tratar!
-            legislaturas = tratarDadosTxt(
-                r'^\^p(\d)\^n(\d+)\^s(\w+)(\^q([\d\.]+))?$',
-                busca.group(13),
-                ['periodo', 'numeroLegislatura', 'situacao', '', 'votos']
-            )
-            mandatos = tratarDadosTxt(
-                r'^\^i([\d\/]+)\^f([\d\/]+)(\^s(\w+))?(\^p([^\%\#\^]+))?(\^[cbd]([^\%\#]+))*$',
-                busca.group(20),
-                ['dataInicio', 'dataFim', '', 'situacao', '',  'partido', '', 'extras'] #TODO: Tratar extras
-            )
-            comissoes = tratarDadosTxt(
-                r'^(\^n([^\^]*))(\^i([\d\/]*))?(\^f([\d\/]+))?(\^c([^\%\^]+))?(\^d([^\%]+))?$',
-                busca.group(27),
-                ['', 'nome', '', 'dataIncio', '', 'dataFim', '', 'cargo', '', 'obs']
-            )
-            if len(mandatos):
-                partido = mandatos[-1]['partido']
-            else:
-                partido = 'NA'
-            vereador_id = None
-            if len(legislaturas):
-                gabinetes_nomes = [x['vereador'].lower() for x in gabinetes]
-                nome_vereador = None
-                for tipo in tipos_nomes:
-                    for nome in tipo.split('%'):
-                        if nome.lower() in gabinetes_nomes:
-                            nome_vereador = nome
-                            vereador_id = 'TODO'
-                            for gabinete in gabinetes:
-                                if gabinete['vereador'].lower() == nome.lower():
-                                    vereador_id = gabinete['codigo']
-                if nome_vereador == None:
-                    nome_vereador = 'ERRO1'.join(tipos_nomes)
-            else:
-                nome_vereador = 'ERRO2'
-            
-            vereadores.append(
-                {
-                    'registro': registro,
-                    'id': vereador_id,
-                    'nome': nome_vereador,
-                    'siglaPartido': partido,
-                    'liderancas': liderancas,
-                    'legislaturas': legislaturas,
-                    'mesaDiretora': mesa_diretora,
-                    'mandatos': mandatos,
-                    'comissoes': comissoes
-                }
-            )
-        return vereadores
-
-    def obterAtualLegislatura(self):
-        #TODO
-        return '17'
+        if r.status != 200:
+            raise Exception('API call failed')
+        try:
+            data_json = json.loads(r.data.decode('utf-8'))
+            vereadores = []
+            for vereador in data_json:
+                self.converterDataEmTime(vereador['mandatos'], ['inicio', 'fim'])
+                legislatura_atual = False
+                for mandato in vereador['mandatos']:
+                    if mandato['fim'] > datetime.now():
+                        legislatura_atual = True
+                if not legislatura_atual:
+                    continue
+                self.converterDataEmTime(vereador['cargos'], ['inicio', 'fim'])
+                self.converterDataEmTime(vereador['filiacoes'], ['inicio', 'fim'])
+                vereadores.append(vereador)
+            return vereadores
+        except:
+            raise Exception('Failed to decode API data')

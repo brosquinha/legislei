@@ -34,7 +34,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
             for dia in self.ver.obterPresenca(data_inicial, data_final):
                 if dia:
                     for v in dia['vereadores']:
-                        if v['nome'].lower() == vereador.get_nome().lower():
+                        if str(v['chave']) == vereador.get_id():
                             for s in v['sessoes']:
                                 if s['presenca'] == 'Presente':
                                     presenca.append(s['nome'])
@@ -56,7 +56,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                             proposicao.set_pauta(prop['projeto'])
                             proposicao.set_tipo(prop['pauta'])
                             for v in prop['votos']:
-                                if v['nome'] == parlamentar_id.upper():
+                                if str(v['chave']) == parlamentar_id:
                                     proposicao.set_voto(v['voto'])
                             evento.add_pautas(proposicao)
                         if key in presenca:
@@ -66,15 +66,15 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                             evento.set_ausencia_evento_esperado()
                             self.relatorio.add_evento_ausente(evento)
             self.relatorio.set_eventos_ausentes_esperados_total(sessao_total - presenca_total)
-            self.obter_proposicoes_parlamentar(vereador.get_nome(), data_inicial, data_final)
+            self.obter_proposicoes_parlamentar(vereador.get_id(), data_inicial, data_final)
             return self.relatorio
         except Exception as e:
             print(e)
             #raise e
             raise ModelError(str(e))
 
-    def obter_proposicoes_parlamentar(self, parlamentar_nome, data_inicial, data_final):
-        projetos = self.ver.obterProjetosParlamentar(parlamentar_nome, data_final.year)
+    def obter_proposicoes_parlamentar(self, parlamentar_id, data_inicial, data_final):
+        projetos = self.ver.obterProjetosParlamentar(parlamentar_id, data_final.year)
         projetos_ids = ['{}{}{}'.format(x['tipo'], x['numero'], x['ano']) for x in projetos]
         for projeto in self.ver.obterProjetosDetalhes(data_final.year):
             try:
@@ -104,12 +104,14 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
 
     def obter_parlamentar(self, parlamentar_id):
         for item in self.ver.obterVereadores():
-            if item['nome'].lower() == parlamentar_id.lower():
+            if str(item['chave']) == parlamentar_id:
                 parlamentar = Parlamentar()
                 parlamentar.set_cargo('São Paulo')
                 parlamentar.set_nome(item['nome'])
-                parlamentar.set_id(item['nome']) #Por ora
-                parlamentar.set_partido(item['siglaPartido'])
+                parlamentar.set_id(str(item['chave']))
+                for mandato in item['mandatos']:
+                    if mandato['fim'] > datetime.now():
+                        parlamentar.set_partido(mandato['partido']['sigla'])
                 parlamentar.set_uf('SP')
                 parlamentar.set_foto(
                     'https://www.99luca11.com/Users/usuario_sem_foto.png')
@@ -118,16 +120,13 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
 
     def obter_parlamentares(self):
         vereadores = self.ver.obterVereadores()
-        atual = self.ver.obterAtualLegislatura()
         lista = []
         for v in vereadores:
-            if (len(v['legislaturas']) and 
-                    v['legislaturas'][-1]['numeroLegislatura'] == atual):
-                lista.append(
-                    {
-                        'nome': v['nome'],
-                        'id': v['nome'],
-                        'siglaPartido': v['siglaPartido']
-                    }
-                )
+            lista.append(
+                {
+                    'nome': v['nome'],
+                    'id': v['chave'],
+                    'siglaPartido': v['mandatos'][0]['partido']['sigla']
+                }
+            )
         return lista
