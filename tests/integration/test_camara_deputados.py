@@ -29,7 +29,7 @@ class TestCamaraDeputadosHandlerIntegration(unittest.TestCase):
         ).to_dict()
         self.maxDiff = None
         self.assertDictEqual(actual["parlamentar"], parlamentar)
-        self.assertEqual(len(actual["eventosAusentes"]), 51)
+        self.assertGreaterEqual(len(actual["eventosAusentes"]), 50)
         self.assertEqual(len(actual["eventosPrevistos"]), 9)
         self.assertEqual(len(actual["eventosPresentes"]), 6)
         self.assertEqual(len(actual["proposicoes"]), 4)
