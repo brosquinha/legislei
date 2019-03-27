@@ -115,9 +115,21 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                 parlamentar.set_uf('SP')
                 parlamentar.set_foto(
                     'https://www.99luca11.com/Users/usuario_sem_foto.png')
+                self.obter_cargos_parlamentar(item['cargos'])
                 self.relatorio.set_parlamentar(parlamentar)
                 return parlamentar
 
+    def obter_cargos_parlamentar(self, cargos):
+        for cargo in cargos:
+            if 'fim' in cargo and cargo['fim'] < datetime.now():
+                continue
+            orgao = Orgao()
+            orgao.set_nome(cargo['ente']['nome'].replace(u'Comissão - ', ''))
+            orgao.set_cargo(cargo['nome'])
+            orgao.set_apelido(orgao.get_nome())
+            orgao.set_sigla(orgao.get_nome())
+            self.relatorio.add_orgao(orgao)
+    
     def obter_parlamentares(self):
         vereadores = self.ver.obterVereadores()
         lista = []
