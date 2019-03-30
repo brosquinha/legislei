@@ -1,6 +1,7 @@
 [run]
 omit =
     politica/*
+    */.local/*
     tests/*
     run_tests.py
     settings.py
