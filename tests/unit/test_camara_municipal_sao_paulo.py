@@ -51,7 +51,7 @@ class TestCamaraMunicipalSaoPauloHandler(unittest.TestCase):
 
         self.cmsp.obter_proposicoes_parlamentar('123', datetime(2019, 3, 19), datetime(2019, 3, 27))
 
-        self.assertEqual(len(self.cmsp.relatorio.get_proposicoes()), 2)
+        self.assertEqual(len(self.cmsp.relatorio.proposicoes), 2)
 
     @patch("legislei.SDKs.CamaraMunicipalSaoPaulo.base.CamaraMunicipal.obterVereadores")
     def test_obter_parlamentar(self, mock_obterVereadores):
@@ -71,9 +71,9 @@ class TestCamaraMunicipalSaoPauloHandler(unittest.TestCase):
 
         self.cmsp.obter_parlamentar('2')
 
-        self.assertEqual(self.cmsp.relatorio.get_parlamentar().get_nome(), "Fulana")
-        self.assertEqual(self.cmsp.relatorio.get_parlamentar().get_partido(), "TESTE")
-        self.assertEqual(self.cmsp.relatorio.get_parlamentar().get_cargo(), "São Paulo".upper())
+        self.assertEqual(self.cmsp.relatorio.parlamentar.nome, "Fulana")
+        self.assertEqual(self.cmsp.relatorio.parlamentar.partido, "TESTE")
+        self.assertEqual(self.cmsp.relatorio.parlamentar.cargo, "São Paulo")
 
     def test_obter_cargos_parlamentar(self):
         cargos = [
@@ -93,7 +93,7 @@ class TestCamaraMunicipalSaoPauloHandler(unittest.TestCase):
 
         self.cmsp.obter_cargos_parlamentar(cargos)
 
-        self.assertEqual(len(self.cmsp.relatorio.get_orgaos()), 2)
+        self.assertEqual(len(self.cmsp.relatorio.orgaos), 2)
     
     @patch("legislei.SDKs.CamaraMunicipalSaoPaulo.base.CamaraMunicipal.obterVereadores")
     def test_obter_parlamentares(self, mock_obterVereadores):

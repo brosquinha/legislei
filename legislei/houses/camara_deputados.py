@@ -26,7 +26,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
     def obter_relatorio(self, parlamentar_id, data_final=None, periodo_dias=7):
         try:
             self.relatorio = Relatorio()
-            self.relatorio.set_aviso_dados(u'Dados de votações em sessões não disponíveis.')
+            self.relatorio.aviso_dados = u'Dados de votações em sessões não disponíveis.'
             start_time = time()
             if data_final:
                 data_final = datetime.strptime(data_final, '%Y-%m-%d')

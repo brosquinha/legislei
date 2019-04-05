@@ -21,20 +21,20 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
     def obter_relatorio(self, parlamentar_id, data_final=datetime.now(), periodo_dias=7):
         try:
             self.relatorio = Relatorio()
-            self.relatorio.set_aviso_dados(u'Dados de sessões de comissões não disponível.')
+            self.relatorio.aviso_dados = u'Dados de sessões de comissões não disponível.'
             self.setPeriodoDias(periodo_dias)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
             vereador = self.obter_parlamentar(parlamentar_id)
-            self.relatorio.set_data_inicial(data_inicial)
-            self.relatorio.set_data_final(data_final)
+            self.relatorio.data_inicial = data_inicial
+            self.relatorio.data_final = data_final
             presenca = []
             sessao_total = 0
             presenca_total = 0
             for dia in self.ver.obterPresenca(data_inicial, data_final):
                 if dia:
                     for v in dia['vereadores']:
-                        if str(v['chave']) == vereador.get_id():
+                        if str(v['chave']) == vereador.id:
                             for s in v['sessoes']:
                                 if s['presenca'] == 'Presente':
                                     presenca.append(s['nome'])
@@ -43,30 +43,30 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                     for key, value in dia['sessoes'].items():
                         evento = Evento()
                         orgao = Orgao()
-                        orgao.set_nome('Plenário')
-                        orgao.set_apelido('PLENÁRIO')
-                        evento.add_orgaos(orgao)
-                        evento.set_nome(key)
-                        evento.set_id(str(uuid4()))
+                        orgao.nome = 'Plenário'
+                        orgao.apelido = 'PLENÁRIO'
+                        evento.orgaos.append(orgao)
+                        evento.nome = key
+                        evento.id = str(uuid4())
                         if value['data']:
-                            evento.set_data_inicial(value['data'])
-                            evento.set_data_final(value['data'])
+                            evento.data_inicial = value['data']
+                            evento.data_final = value['data']
                         for prop in value['pautas']:
                             proposicao = Proposicao()
-                            proposicao.set_pauta(prop['projeto'])
-                            proposicao.set_tipo(prop['pauta'])
+                            proposicao.pauta = prop['projeto']
+                            proposicao.tipo = prop['pauta']
                             for v in prop['votos']:
                                 if str(v['chave']) == parlamentar_id:
-                                    proposicao.set_voto(v['voto'])
-                            evento.add_pautas(proposicao)
+                                    proposicao.voto = v['voto']
+                            evento.pautas.append(proposicao)
                         if key in presenca:
                             evento.set_presente()
-                            self.relatorio.add_evento_presente(evento)
+                            self.relatorio.eventos_presentes.append(evento)
                         else:
                             evento.set_ausencia_evento_esperado()
                             self.relatorio.add_evento_ausente(evento)
-            self.relatorio.set_eventos_ausentes_esperados_total(sessao_total - presenca_total)
-            self.obter_proposicoes_parlamentar(vereador.get_id(), data_inicial, data_final)
+            self.relatorio.eventos_ausentes_esperados_total = sessao_total - presenca_total
+            self.obter_proposicoes_parlamentar(vereador.id, data_inicial, data_final)
             return self.relatorio
         except Exception as e:
             print(e)
@@ -84,20 +84,20 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                     if not(projeto_data >= data_inicial and projeto_data <= data_final):
                         continue
                     proposicao = Proposicao()
-                    proposicao.set_data_apresentacao(projeto_data)
-                    proposicao.set_ementa(projeto['ementa'])
-                    proposicao.set_id(projeto['chave'])
-                    proposicao.set_tipo(projeto['tipo'])
-                    proposicao.set_numero('{}{}'.format(projeto['numero'], projeto['ano']))
-                    proposicao.set_url_documento(
+                    proposicao.data_apresentacao = projeto_data
+                    proposicao.ementa = projeto['ementa']
+                    proposicao.id = projeto['chave']
+                    proposicao.tipo = projeto['tipo']
+                    proposicao.numero = '{}{}'.format(projeto['numero'], projeto['ano'])
+                    proposicao.url_documento = (
                         'http://documentacao.saopaulo.sp.leg.br/cgi-bin/wxis.bin/iah/scripts/?IsisScript=iah.xis&lang=pt&format=detalhado.pft&base=proje&form=A&nextAction=search&indexSearch=^nTw^lTodos%20os%20campos&exprSearch=P={tipo}{numero}{ano}'.format(
                             tipo=projeto['tipo'],
                             numero=projeto['numero'],
                             ano=projeto['ano']
                         )
                     )
-                    proposicao.set_url_autores(proposicao.get_url_documento())
-                    self.relatorio.add_proposicao(proposicao)
+                    proposicao.url_autores = proposicao.url_documento
+                    self.relatorio.proposicoes.append(proposicao)
             except Exception as e:
                 #TODO
                 print(e)
@@ -106,17 +106,17 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
         for item in self.ver.obterVereadores():
             if str(item['chave']) == parlamentar_id:
                 parlamentar = Parlamentar()
-                parlamentar.set_cargo('São Paulo')
-                parlamentar.set_nome(item['nome'])
-                parlamentar.set_id(str(item['chave']))
+                parlamentar.cargo = 'São Paulo'
+                parlamentar.nome = item['nome']
+                parlamentar.id = str(item['chave'])
                 for mandato in item['mandatos']:
                     if mandato['fim'] > datetime.now():
-                        parlamentar.set_partido(mandato['partido']['sigla'])
-                parlamentar.set_uf('SP')
-                parlamentar.set_foto(
-                    'https://www.99luca11.com/Users/usuario_sem_foto.png')
+                        parlamentar.partido = mandato['partido']['sigla']
+                parlamentar.uf = 'SP'
+                parlamentar.foto = \
+                    'https://www.99luca11.com/Users/usuario_sem_foto.png'
                 self.obter_cargos_parlamentar(item['cargos'])
-                self.relatorio.set_parlamentar(parlamentar)
+                self.relatorio.parlamentar = parlamentar
                 return parlamentar
 
     def obter_cargos_parlamentar(self, cargos):
@@ -124,11 +124,11 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
             if 'fim' in cargo and cargo['fim'] < datetime.now():
                 continue
             orgao = Orgao()
-            orgao.set_nome(cargo['ente']['nome'].replace(u'Comissão - ', ''))
-            orgao.set_cargo(cargo['nome'])
-            orgao.set_apelido(orgao.get_nome())
-            orgao.set_sigla(orgao.get_nome())
-            self.relatorio.add_orgao(orgao)
+            orgao.nome = cargo['ente']['nome'].replace(u'Comissão - ', '')
+            orgao.cargo = cargo['nome']
+            orgao.apelido = orgao.nome
+            orgao.sigla = orgao.nome
+            self.relatorio.orgaos.append(orgao)
     
     def obter_parlamentares(self):
         vereadores = self.ver.obterVereadores()
