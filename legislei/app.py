@@ -20,7 +20,7 @@ from legislei.house_selector import (casas_estaduais, casas_municipais,
                                      obter_parlamentares, obter_relatorio)
 from legislei.models.relatorio import Relatorio
 from legislei.models.user import User
-from legislei.send_reports import check_reports_to_send, send_email
+from legislei.usuarios import Usuario
 
 app = Flask(__name__, static_url_path='/static')
 app.secret_key = os.environ.get('APP_SECRET_KEY')
@@ -30,7 +30,7 @@ login_manager.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.get_user(user_id)
+    return Usuario().obter_por_id(user_id)
 
 
 @app.route('/')
@@ -389,16 +389,10 @@ def login_page():
 
 @app.route('/login', methods=['POST'])
 def login():
-    user_name = request.form.get('name').lower()
+    user_name = request.form.get('name')
     user_psw = request.form.get('password')
     remember_me = True if request.form.get('rememberme') else False
-    mongo_client = MongoDBClient()
-    users_col = mongo_client.get_collection('users')
-    user_data = users_col.find_one({'username': user_name})
-    mongo_client.close()
-    if user_data and pbkdf2_sha256.verify(user_psw, user_data['password']):
-        user = User(str(user_data['_id']), user_data['username'], user_data['email'])
-        login_user(user, remember=remember_me)
+    if Usuario().login(user_name, user_psw, remember_me):
         return redirect('{}/minhasAvaliacoes'.format(os.environ.get('HOST_ENDPOINT', request.url_root[:-1])))
     return render_template('login.html', mensagem='Usuário/senha incorretos')
 
@@ -406,7 +400,7 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
-    logout_user()
+    Usuario().logout()
     return redirect('{}/'.format(os.environ.get('HOST_ENDPOINT', request.url_root[:-1])))
 
 
