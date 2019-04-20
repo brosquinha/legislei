@@ -1,25 +1,20 @@
 # -*- coding: utf-8 -*-
 import json
 import os
-from datetime import datetime, timedelta
-from time import time
 
-from apscheduler.schedulers.background import BackgroundScheduler
-from bson.objectid import ObjectId
 from flask import Flask, redirect, render_template, request
-from flask_login import (LoginManager, current_user, login_required,
-                         login_user, logout_user)
-from passlib.hash import pbkdf2_sha256
-from pytz import timezone
+from flask_login import LoginManager, current_user, login_required
 
 from legislei import settings
-from legislei.db import MongoDBClient
-from legislei.exceptions import AppError, InvalidModelId, ModelError
+from legislei.avaliacoes import Avaliacao
+from legislei.exceptions import AppError, AvaliacoesModuleError, InvalidModelId, UsersModuleError
 from legislei.house_selector import (casas_estaduais, casas_municipais,
                                      check_if_house_exists, obter_parlamentar,
-                                     obter_parlamentares, obter_relatorio)
+                                     obter_parlamentares)
+from legislei.inscricoes import Inscricao
 from legislei.models.relatorio import Relatorio
 from legislei.models.user import User
+from legislei.relatorios import Relatorios
 from legislei.usuarios import Usuario
 
 app = Flask(__name__, static_url_path='/static')
@@ -65,11 +60,11 @@ def modelar_pagina_relatorio(relatorio, template='consulta_deputado.html'):
 @app.route('/relatorio')
 def consultar_parlamentar():
     try:
-        return modelar_pagina_relatorio(obter_relatorio(
-            parlamentar=request.args.get('parlamentar'),
-            data_final=request.args.get('data'),
-            model=request.args.get('parlamentarTipo'),
-            periodo=request.args.get('dias')
+        return modelar_pagina_relatorio(Relatorios().obter_relatorio(
+            parlamentar=request.args['parlamentar'],
+            data_final=request.args['data'],
+            cargo=request.args['parlamentarTipo'],
+            periodo=request.args['dias']
         ))
     except AppError:
         return render_template(
@@ -81,12 +76,9 @@ def consultar_parlamentar():
 
 @app.route('/relatorio/<id>')
 def obter_relatorio_por_id(id):
-    mongo_client = MongoDBClient()
-    relatorios_col = mongo_client.get_collection('relatorios')
-    relatorio = relatorios_col.find_one({'_id': ObjectId(id)})
-    mongo_client.close()
+    relatorio = Relatorios().obter_por_id(id)
     if relatorio:
-        return modelar_pagina_relatorio(relatorio)
+        return modelar_pagina_relatorio(relatorio.first().to_dict())
     else:
         return render_template(
             'erro.html',
@@ -98,57 +90,18 @@ def obter_relatorio_por_id(id):
 @app.route('/avaliar', methods=['POST'])
 @login_required
 def avaliar():
-    #POC: melhorar modelagem disso, plz
-    relatorio = request.form.get('id')
-    avaliacao_valor = request.form.get('avaliacao')
-    avaliado = request.form.get('avaliado')
-    email = current_user.email
-    avaliacao = {}
-    mongo_client = MongoDBClient()
-    avaliacoes_col = mongo_client.get_collection('avaliacoes')
-    relatorios_col = mongo_client.get_collection('relatorios')
-    relatorio = relatorios_col.find_one({'_id': ObjectId(relatorio)})
-    if relatorio == None:
-        return 'Report not found', 400
-    for tipo in ['eventosAusentes', 'eventosPresentes', 'proposicoes']:
-        for item in relatorio[tipo]:
-            if 'id' in item and str(item['id']) == avaliado:
-                avaliacao['avaliado'] = item
-                break
-    if not 'avaliado' in avaliacao:
-        return 'Item not found', 400
-    avaliacao['parlamentar'] = relatorio['parlamentar']
-    avaliacao['email'] = email
-    avaliacao['relatorioId'] = relatorio['_id']
-    avaliacao['avaliacao'] = avaliacao_valor
-    avaliacao_existente = avaliacoes_col.find_one({
-        'avaliado.id': avaliacao['avaliado']['id'],
-        'parlamentar.id': relatorio['parlamentar']['id'],
-        'parlamentar.cargo': relatorio['parlamentar']['cargo'],
-        'email': email,
-        'relatorioId': relatorio['_id']
-    })
-    if avaliacao_existente:
-        avaliacoes_col.update_one(
-            {'_id': avaliacao_existente['_id']}, {'$set': {'avaliacao': avaliacao_valor}})
-    else:
-        avaliacoes_col.insert_one(avaliacao)
-    mongo_client.close()
-    return 'Created', 201
-
-
-def minhas_avaliacoes(cargo, parlamentar, email):
-    mongo_client = MongoDBClient()
-    avaliacoes_col = mongo_client.get_collection('avaliacoes')
-    avaliacoes = [i for i in avaliacoes_col.find(
-        {
-            'parlamentar.id': parlamentar,
-            'parlamentar.cargo': cargo,
-            'email': current_user.email
-        }
-    )]
-    mongo_client.close()
-    return avaliacoes
+    try:
+        relatorio = request.form.get('id')
+        avaliacao_valor = request.form.get('avaliacao')
+        avaliado = request.form.get('avaliado')
+    except KeyError:
+        return 'Missing arguments', 400
+    try:
+        email = current_user.email
+        Avaliacao().avaliar(avaliado, avaliacao_valor, email, relatorio)
+        return 'Created', 201
+    except AvaliacoesModuleError as e:
+        return e.message, 400
 
 
 @app.route('/minhasAvaliacoes')
@@ -159,31 +112,14 @@ def avaliacoes():
         cargo = request.args['parlamentarTipo']
         parlamentar = request.args['parlamentar']
     except KeyError:
-        mongo_client = MongoDBClient()
-        subscription_col = mongo_client.get_collection('inscricoes')
-        inscricoes = subscription_col.find_one({'email': email})
-        mongo_client.close()
+        parlamentares, intervalo = Inscricao().obter_minhas_inscricoes(email)
         return render_template(
             'avaliacoes_home.html',
-            parlamentares=inscricoes['parlamentares'] if inscricoes else [],
-            periodo=inscricoes['intervalo'] if inscricoes else 7
+            parlamentares=parlamentares,
+            periodo=intervalo
         )
-    avaliacoes = minhas_avaliacoes(cargo, parlamentar, email)
-    if not len(avaliacoes):
-        return render_template('avaliacoes_parlamentar.html', parlamentar=None)
-    parlamentar_dados = avaliacoes[-1]['parlamentar']
-    avaliacoes_dados = {'2': [], '1': [], '-1': [], '-2': []}
-    for avaliacao in avaliacoes:
-        try:
-            avaliacoes_dados[avaliacao['avaliacao']].append(avaliacao)
-        except KeyError:
-            print(avaliacao)
-    nota = (
-        10 * len(avaliacoes_dados['2']) +
-        len(avaliacoes_dados['1']) -
-        len(avaliacoes_dados['-1']) -
-        10 * len(avaliacoes_dados['-2'])
-    )
+    parlamentar_dados, avaliacoes_dados, nota = Avaliacao().avaliacoes(
+        cargo, parlamentar, email)
     return render_template(
         'avaliacoes_parlamentar.html',
         parlamentar=parlamentar_dados,
@@ -202,23 +138,11 @@ def nova_inscricao():
 @login_required
 def nova_inscricao_post():
     try:
-        mongo_client = MongoDBClient()
-        inscricoes_col = mongo_client.get_collection('inscricoes')
-        parlamentar = obter_parlamentar(
+        Inscricao().nova_inscricao(
             request.form.get('parlamentarTipo'),
-            request.form.get('parlamentar')
-        ).to_dict()
-        resultado_update = inscricoes_col.update_one(
-            {'email': current_user.email},
-            {'$push': {"parlamentares": parlamentar}}
+            request.form.get('parlamentar'),
+            current_user.email
         )
-        if resultado_update.modified_count == 0:
-            inscricoes_col.insert_one({
-                'email': current_user.email,
-                'intervalo': 7,
-                'parlamentares': [parlamentar]
-            })
-        mongo_client.close()
         return redirect('{}/minhasAvaliacoes'.format(os.environ.get('HOST_ENDPOINT', request.url_root[:-1])))
     except AppError as e:
         print(e)
@@ -244,7 +168,7 @@ def avaliacoes_api():
         parlamentar = request.args['parlamentar']
     except KeyError:
         return json.dumps({'error': 'Missing arguments'}), 400
-    return json.dumps(minhas_avaliacoes(cargo, parlamentar, current_user.email), default=str), 200
+    return json.dumps(Avaliacao().minhas_avaliacoes(cargo, parlamentar, current_user.email).to_json(), default=str), 200
 
 
 @api_error_handler
@@ -252,13 +176,15 @@ def avaliacoes_api():
 def consultar_deputado_api():
     # TODO Melhorar obter_relatorio para poder apresentar o erro em JSON, não em template
     try:
-        return json.dumps(obter_relatorio(
-            parlamentar=request.args.get('parlamentar'),
-            data_final=request.args.get('data'),
-            model=request.args.get('parlamentarTipo'),
-            periodo=request.args.get('dias')
+        return json.dumps(Relatorios().obter_relatorio(
+            parlamentar=request.args['parlamentar'],
+            data_final=request.args['data'],
+            cargo=request.args['parlamentarTipo'],
+            periodo=request.args['dias'],
         ))
-    except AppError:
+    except AppError as e:
+        return json.dumps({'error': e.message}), 500
+    except KeyError:
         return json.dumps({'error': 'Missing parameters'}), 400
 
 
@@ -269,13 +195,7 @@ def remover_inscricao(model, par_id):
     if not check_if_house_exists(model):
         return '{"error": "Cargo não existe"}', 400
     try:
-        mongo_client = MongoDBClient()
-        inscricoes_col = mongo_client.get_collection('inscricoes')
-        inscricoes_col.update_one(
-            {'email': current_user.email},
-            {'$pull': {'parlamentares': {'cargo': model, 'id': par_id}}}
-        )
-        mongo_client.close()
+        Inscricao().remover_inscricao(model, par_id, current_user.email)
         return '{"message": "Ok"}', 200
     except AttributeError:
         return '{"error": "Erro de modelo"}', 500
@@ -287,11 +207,8 @@ def remover_inscricao(model, par_id):
 def alterar_inscricoes_config():
     try:
         periodo = int(request.form.get('periodo'))
-        if periodo >= 7 and periodo <= 28:
-            mongo_client = MongoDBClient()
-            inscricoes_col = mongo_client.get_collection('inscricoes')
-            inscricoes_col.update_one({'email': current_user.email}, {'$set': {'intervalo': periodo}})
-            return json.dumps({"message": "Ok {}".format(periodo)}), 200
+        Inscricao().alterar_configs(periodo, current_user.email)
+        return json.dumps({"message": "Ok {}".format(periodo)}), 200
     except (TypeError, ValueError):
         return '{"error": "Periodo deve ser int"}', 400
 
@@ -336,13 +253,7 @@ def buscar_relatorios_parlamentar(model, par_id):
     if not check_if_house_exists(model):
         return '{"error": "Cargo não existe"}', 400
     try:
-        mongo_client = MongoDBClient()
-        relatorios_col = mongo_client.get_collection('relatorios')
-        relatorios = relatorios_col.find({'parlamentar.cargo': model, 'parlamentar.id': par_id})
-        resultado = []
-        for relatorio in relatorios:
-            resultado.append(relatorio)
-        mongo_client.close()
+        resultado = Relatorios().buscar_por_parlamentar(model, par_id)
         return json.dumps(resultado, default=str), 200
     except AttributeError: 
         return '{"error": "Erro de configuração de dados desse cargo"}', 500
@@ -355,31 +266,19 @@ def new_user_page():
 
 @app.route('/registrar', methods=['POST'])
 def new_user():
-    #Provavelmente é melhor usar MongoEngine para facilitar isso aqui
     try:
-        user_name = request.form['name'].lower()
-        user_psw = request.form['password']
-        user_email = request.form['email']
-        if not(len(user_name) > 3 and len(user_psw) and
-                user_psw == request.form['password_confirmed']):
-            return render_template('registrar.html', mensagem='Requisitos não atingidos')
-        mongo_client = MongoDBClient()
-        users_col = mongo_client.get_collection('users')
-        if users_col.find_one({'username': user_name}):
-            mongo_client.close()
-            return render_template('registrar.html', mensagem='Usuário já existe')
-        if users_col.find_one({'email': user_email}):
-            mongo_client.close()
-            return render_template('registrar.html', mensagem='Email já cadastrado')
-        users_col.insert_one({
-            'username': user_name,
-            'password': pbkdf2_sha256.using(rounds=16, salt_size=16).hash(user_psw),
-            'email': user_email
-        })
-        mongo_client.close()
-        return redirect('{}/login'.format(os.environ.get('HOST_ENDPOINT', request.url_root[:-1])))
+        try:
+            Usuario().registrar(
+                nome=request.form['name'].lower(),
+                senha=request.form['password'],
+                senha_confirmada=request.form['password_confirmed'],
+                email=request.form['email']
+            )
+            return redirect('{}/login'.format(os.environ.get('HOST_ENDPOINT', request.url_root[:-1])))
+        except UsersModuleError as e:
+            return render_template('registrar.html', mensagem=e.message)
     except KeyError:
-        return render_template('registrar.html', mensagem='Algo de errado não está certo')
+        return render_template('registrar.html', mensagem='Preencha todo o formulário')
 
 
 @app.route('/login')

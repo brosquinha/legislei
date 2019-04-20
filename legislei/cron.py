@@ -7,8 +7,8 @@ from pytz import timezone
 
 from legislei.app import app
 from legislei.exceptions import ModelError
-from legislei.house_selector import obter_relatorio
 from legislei.send_reports import check_reports_to_send, send_email
+from legislei.relatorios import Relatorios
 
 
 def check_and_send_reports():
@@ -22,10 +22,10 @@ def send_reports(data):
         data_inicial = (datetime.now() - timedelta(days=int(item["intervalo"]))).strftime('%d/%m/%Y')
         for par in item["parlamentares"]:
             try:
-                reports.append(obter_relatorio(
+                reports.append(Relatorios().obter_relatorio(
                     parlamentar=par['id'],
                     data_final=datetime.now().strftime('%Y-%m-%d'),
-                    model=par['cargo'],
+                    cargo=par['cargo'],
                     periodo=item["intervalo"]
                 ))
             except ModelError:
