@@ -64,9 +64,11 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                             self.relatorio.eventos_presentes.append(evento)
                         else:
                             evento.set_ausencia_evento_esperado()
-                            self.relatorio.add_evento_ausente(evento)
+                            self.relatorio.eventos_ausentes.append(evento)
             self.relatorio.eventos_ausentes_esperados_total = sessao_total - presenca_total
             self.obter_proposicoes_parlamentar(vereador.id, data_inicial, data_final)
+            self.relatorio.data_final = self.relatorio.data_final.strftime("%d/%m/%Y")
+            self.relatorio.data_inicial = self.relatorio.data_inicial.strftime("%d/%m/%Y")
             return self.relatorio
         except Exception as e:
             print(e)
@@ -106,7 +108,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
         for item in self.ver.obterVereadores():
             if str(item['chave']) == parlamentar_id:
                 parlamentar = Parlamentar()
-                parlamentar.cargo = 'São Paulo'
+                parlamentar.cargo = 'SÃO PAULO'
                 parlamentar.nome = item['nome']
                 parlamentar.id = str(item['chave'])
                 for mandato in item['mandatos']:

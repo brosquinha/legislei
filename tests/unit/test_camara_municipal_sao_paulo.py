@@ -73,7 +73,7 @@ class TestCamaraMunicipalSaoPauloHandler(unittest.TestCase):
 
         self.assertEqual(self.cmsp.relatorio.parlamentar.nome, "Fulana")
         self.assertEqual(self.cmsp.relatorio.parlamentar.partido, "TESTE")
-        self.assertEqual(self.cmsp.relatorio.parlamentar.cargo, "São Paulo")
+        self.assertEqual(self.cmsp.relatorio.parlamentar.cargo, "SÃO PAULO")
 
     def test_obter_cargos_parlamentar(self):
         cargos = [

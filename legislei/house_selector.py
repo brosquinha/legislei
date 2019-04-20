@@ -1,6 +1,5 @@
 from flask import render_template
 
-from legislei.db import MongoDBClient
 from legislei.exceptions import AppError, InvalidModelId, ModelError
 from legislei.houses.camara_deputados import CamaraDeputadosHandler
 from legislei.houses.alesp import ALESPHandler
@@ -71,32 +70,18 @@ def obter_relatorio(parlamentar, data_final, model, periodo):
     :type periodo: Int
 
     :return: Relatório do parlamentar em um período
-    :rtype: Dict
+    :rtype: Relatorio
     """
-    mongo_db = MongoDBClient()
-    relatorios_col = mongo_db.get_collection('relatorios')
-    relatorio = relatorios_col.find_one({'idTemp': '{}-{}'.format(parlamentar, data_final)})
-    if relatorio != None:
-        relatorio['_id'] = str(relatorio['_id'])
+    try:
+        modelClass = house_selector(model)
+        relatorio = modelClass().obter_relatorio(
+            parlamentar_id=parlamentar,
+            data_final=data_final,
+            periodo_dias=periodo
+        )
         return relatorio
-    else:
-        try:
-            modelClass = house_selector(model)
-            relatorio = modelClass().obter_relatorio(
-                parlamentar_id=parlamentar,
-                data_final=data_final,
-                periodo_dias=periodo
-            )
-            relatorio_dict = relatorio.to_dict()
-            relatorio_dict['_id'] = str(relatorios_col.insert_one(
-                {
-                    **relatorio_dict,
-                    **{'idTemp': '{}-{}'.format(parlamentar, data_final)}
-                }
-            ).inserted_id)
-            return relatorio_dict
-        except (AttributeError, TypeError) as e:
-            raise AppError(str(e))
+    except (AttributeError, TypeError) as e:
+        raise AppError(str(e))
 
 
 def obter_parlamentar(model, par_id):

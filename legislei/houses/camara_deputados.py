@@ -53,7 +53,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
             orgaos_nomes = [orgao['nomeOrgao'] for orgao in orgaos]
             for e in eventos:
                 evento = Evento()
-                evento.id = e['id']
+                evento.id = str(e['id'])
                 evento.data_inicial = e['dataHoraInicio']
                 evento.data_final = e['dataHoraFim']
                 evento.situacao = e['situacao']
@@ -74,7 +74,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
                             if pauta['proposicao_detalhes'] == [{'error': True}]:
                                 proposicao = None
                             else:
-                                proposicao.id = pauta['proposicao_detalhes']['id']
+                                proposicao.id = str(pauta['proposicao_detalhes']['id'])
                                 proposicao.tipo = pauta['proposicao_detalhes']['siglaTipo']
                                 proposicao.url_documento = \
                                     pauta['proposicao_detalhes']['urlInteiroTeor']
@@ -104,7 +104,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
             self.relatorio.eventos_ausentes_esperados_total = eventos_ausentes_total
             for e in eventos_ausentes:
                 evento = Evento()
-                evento.id = e['id']
+                evento.id = str(e['id'])
                 if e['controleAusencia'] == 1:
                     evento.set_ausente_evento_previsto()
                 elif e['controleAusencia'] == 2:
@@ -128,6 +128,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
             self.obterProposicoesDeputado(deputado_info, data_final)
             print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
             
+            self.relatorio.data_final = self.relatorio.data_final.strftime("%d/%m/%Y")
+            self.relatorio.data_inicial = self.relatorio.data_inicial.strftime("%d/%m/%Y")
             return self.relatorio
         except CamaraDeputadosError:
             raise ModelError("API Câmara dos Deputados indisponível")
@@ -272,14 +274,14 @@ class CamaraDeputadosHandler(CasaLegislativa):
                     if (deputado.nome.lower() in 
                             [x['nome'].lower() for x in self.prop.obterAutoresProposicao(item['id'])]):
                         proposicao = Proposicao()
-                        proposicao.id = item['id']
+                        proposicao.id = str(item['id'])
                         p = self.prop.obterProposicao(item['id'])
                         if 'dataApresentacao' in p:
                             proposicao.data_apresentacao = p['dataApresentacao']
                         if 'ementa' in p:
                             proposicao.ementa = p['ementa']
                         if 'numero' in p:
-                            proposicao.numero = p['numero']
+                            proposicao.numero = str(p['numero'])
                         if 'siglaTipo' in p:
                             proposicao.tipo = p['siglaTipo']
                         if 'urlInteiroTeor' in p:

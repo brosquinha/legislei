@@ -7,7 +7,7 @@ from mongoengine import *
 class Parlamentar(EmbeddedDocument):
 
     id = StringField(required=True)
-    nome = StringField(required=True)
+    nome = StringField()
     partido = StringField()
     uf = StringField()
     foto = StringField()
@@ -45,13 +45,13 @@ class Orgao(EmbeddedDocument):
 
 class Proposicao(EmbeddedDocument):
 
-    id = StringField(required=True)
+    id = StringField()
     tipo = StringField(required=True)
     ementa = StringField()
     numero = StringField()
-    url_documento = URLField()
-    url_autores = URLField()
-    data_apresentacao = DateTimeField()
+    url_documento = URLField(db_field='urlDocumento')
+    url_autores = URLField(db_field='urlAutores')
+    data_apresentacao = StringField(db_field='dataApresentacao') # DateTimeField
     voto = StringField()
     pauta = StringField()
 
@@ -73,13 +73,13 @@ class Evento(EmbeddedDocument):
 
     id = StringField(required=True)
     nome = StringField(required=True)
-    data_inicial = DateTimeField()
-    data_final = DateTimeField()
+    data_inicial = StringField(db_field='dataInicial') # DateTimeField
+    data_final = StringField(db_field='dataFinal') # DateTimeField
     url = URLField()
     situacao = StringField()
     presenca = IntField(default=-1)
-    pautas = ListField(Proposicao)
-    orgaos = ListField(Orgao)
+    pautas = EmbeddedDocumentListField(Proposicao)
+    orgaos = EmbeddedDocumentListField(Orgao)
 
     def set_presente(self):
         self.presenca = 0
@@ -114,18 +114,20 @@ class Evento(EmbeddedDocument):
 
 class Relatorio(Document):
 
+    idTemp = StringField()
     parlamentar = EmbeddedDocumentField(Parlamentar, required=True)
-    data_inicial = DateTimeField(required=True)
-    data_final = DateTimeField(required=True)
-    aviso_dados = StringField(null=True)
-    orgaos = ListField(Orgao())
-    proposicoes = ListField(Proposicao())
-    eventos_presentes = ListField(Evento())
-    eventos_ausentes = ListField(Evento())
-    eventos_previstos = ListField(Evento())
-    presenca_relativa = FloatField(default=0.0)
-    presenca_absoluta = FloatField(default=0.0)
-    eventos_ausentes_esperados_total = IntField(default=0)
+    data_inicial = StringField(db_field='dataInicial') # DateTimeField
+    data_final = StringField(db_field='dataFinal') # DateTimeField
+    aviso_dados = StringField(db_field='mensagem', null=True)
+    orgaos = EmbeddedDocumentListField(Orgao)
+    proposicoes = EmbeddedDocumentListField(Proposicao)
+    eventos_presentes = EmbeddedDocumentListField(Evento, db_field='eventosPresentes')
+    eventos_ausentes = EmbeddedDocumentListField(Evento, db_field='eventosAusentes')
+    eventos_previstos = EmbeddedDocumentListField(Evento, db_field='eventosPrevistos')
+    presenca_relativa = FloatField(db_field='presencaRelativa', default=0.0)
+    presenca_absoluta = FloatField(db_field='presencaTotal', default=0.0)
+    eventos_ausentes_esperados_total = IntField(db_field='eventosAusentesEsperadosTotal', default=0)
+    meta = {'collection': 'relatorios'}
 
     def _calcular_presenca_relativa(self):
         ausencia_relativa = len([x for x in self.eventos_ausentes if x.presenca > 1])
@@ -142,10 +144,11 @@ class Relatorio(Document):
 
     def to_dict(self):
         relatorio = {
+            '_id': str(self.pk),
             'parlamentar': self.parlamentar.to_dict(),
             'mensagem': self.aviso_dados,
-            'dataInicial': self.data_inicial.strftime("%d/%m/%Y"),
-            'dataFinal': self.data_final.strftime("%d/%m/%Y"),
+            'dataInicial': self.data_inicial,
+            'dataFinal': self.data_final,
             'orgaos': [],
             'proposicoes': [],
             'eventosPresentes': [],
