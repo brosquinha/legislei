@@ -1,36 +1,39 @@
 import json
 import os
 import unittest
+import warnings
 from unittest.mock import patch
 
 from bson import ObjectId
+from mongoengine import connect
 
 from legislei.app import app
-from legislei.db import MongoDBClient
 from legislei.exceptions import AppError, InvalidModelId
-from legislei.models.relatorio import Parlamentar
+from legislei.models.avaliacoes import Avaliacoes
+from legislei.models.inscricoes import Inscricoes
+from legislei.models.relatorio import Evento, Orgao, Parlamentar, Proposicao, Relatorio
+from legislei.models.user import User
 
 
 class TestApp(unittest.TestCase):
 
+    db = None
+    
     @classmethod
     def setUpClass(cls):
-        db = MongoDBClient()
-        db._mongo_client.drop_database("legislei-testing")
-        db.close()
+        TestApp.db = connect('legislei-testing', host=os.environ.get("MONGODB_HOST", "localhost"), port=int(os.environ.get("MONGODB_PORT", "27017")))
+        TestApp.db.drop_database("legislei-testing")
     
     def setUp(self):
         app.config['TESTING'] = True
         app.config['DEBUG'] = False
         os.environ["MONGODB_DBNAME"] = "legislei-testing"
         os.environ["HOST_ENDPOINT"] = ''
-        self.db = MongoDBClient()
-        set_up_db(self.db)
+        set_up_db(TestApp.db)
         self.app = app.test_client()
 
     def tearDown(self):
-        self.db._mongo_client.drop_database("legislei-testing")
-        self.db.close()
+        TestApp.db.drop_database("legislei-testing")
 
     def test_home_page(self):
         actual = self.app.get("/")
@@ -151,13 +154,12 @@ class TestApp(unittest.TestCase):
         self.assertEqual(actual.status_code, 200)
         self.assertIn(u"Nova inscrição".encode('utf-8'), actual.data)
 
-    @patch("legislei.app.obter_parlamentar")
+    @patch("legislei.inscricoes.obter_parlamentar")
     def test_nova_inscricao_primeira_inscricao(
             self, mock_obter_parlamentar):
         mock_obter_parlamentar.return_value = set_up_parlamentar()
         login(self.app, "test", "123")
-        inscricoes_col = self.db.get_collection("inscricoes")
-        inscricoes_col.drop()
+        Inscricoes.drop_collection()
         actual = self.app.post(
             "/novaInscricao",
             data={
@@ -169,13 +171,14 @@ class TestApp(unittest.TestCase):
         self.assertIn(u"Minhas avaliações".encode("utf-8"), actual.data)
         self.assertIn(b"ParlamentarTeste", actual.data)
 
-    @patch("legislei.app.obter_parlamentar")
+    @patch("legislei.inscricoes.obter_parlamentar")
     def test_nova_inscricao_mais_uma(
             self, mock_obter_parlamentar):
+        warnings.simplefilter("ignore") # Details: https://github.com/MongoEngine/mongoengine/issues/1491
         par = Parlamentar()
-        par.set_nome("Parlamentar2Teste")
-        par.set_cargo("BR")
-        par.set_id("12345")
+        par.nome = "Parlamentar2Teste"
+        par.cargo = "BR"
+        par.id = "12345"
         mock_obter_parlamentar.return_value = par
         login(self.app, "test", "123")
         actual = self.app.post(
@@ -330,9 +333,9 @@ class TestApp(unittest.TestCase):
     def test_obter_parlamentar_api(
             self, mock_obter_parlamentar):
         par = Parlamentar()
-        par.set_nome("ParlamentarTeste")
-        par.set_cargo("BR")
-        par.set_id("123")
+        par.nome = "ParlamentarTeste"
+        par.cargo = "BR"
+        par.id = "123"
         mock_obter_parlamentar.return_value = par
         actual = self.app.get("/API/parlamentares/BR1/123")
         actual_data = actual.data.decode('utf-8')
@@ -417,7 +420,7 @@ class TestApp(unittest.TestCase):
         )
         actual_data = actual.data.decode('utf-8')
         self.assertEqual(actual.status_code, 200)
-        self.assertIn(u"Usuário já existe", actual_data)
+        self.assertIn(u"Usuário e/ou email já existem", actual_data)
 
     def test_registrar_email_existente(self):
         actual = self.app.post(
@@ -431,7 +434,7 @@ class TestApp(unittest.TestCase):
         )
         actual_data = actual.data.decode('utf-8')
         self.assertEqual(actual.status_code, 200)
-        self.assertIn(u"Email já cadastrado", actual_data)
+        self.assertIn(u"Usuário e/ou email já existem", actual_data)
 
     def test_login_home(self):
         actual = self.app.get("/login")
@@ -484,42 +487,59 @@ def logout(client):
 
 def set_up_parlamentar():
     par = Parlamentar()
-    par.set_nome("ParlamentarTeste")
-    par.set_foto("url")
-    par.set_id("123")
-    par.set_partido("Partido")
-    par.set_cargo("BR1")
-    par.set_uf("ES")
+    par.nome = "ParlamentarTeste"
+    par.foto = "url"
+    par.id = "123"
+    par.partido = "Partido"
+    par.cargo = "BR1"
+    par.uf = "ES"
     return par
 
 
 def set_up_db(db):
-    parlamentar_test = set_up_parlamentar().to_dict()
-    relatorios_col = db.get_collection("relatorios")
-    relatorio = {
-        "_id": ObjectId("5c264b5e3a5efd576ecaf48e"),
-        "parlamentar": parlamentar_test,
-        "proposicoes": [],
-        "dataInicial": "01/01/2019",
-        "dataFinal": "07/01/2019",
-        "eventosPresentes": [{
-            "url": "url",
-            "situacao": "Encerrada",
-            "dataFinal": "2019-01-01T00:00",
-            "orgaos": [
-                {
-                    "sigla": "OT",
-                    "nome": "ÓrgãoTeste",
-                    "apelido": "OhTe",
-                    "cargo": None
-                }
-            ],
-            "dataInicial": "2019-01-01T00:00",
-            "presenca": 0,
-            "nome": "Evento teste",
-            "id": "12345"
-        }],
-        "eventosAusentes": [{
+    parlamentar_test = set_up_parlamentar()
+    orgaos_evento = [Orgao(
+        nome="ÓrgãoTeste",
+        sigla="OT",
+        cargo="None",
+        apelido="OhTe"
+    )]
+    eventos_presentes = [Evento(
+        id="12345",
+        nome="Evento teste",
+        data_inicial="2019-01-01T00:00",
+        data_final="2019-01-01T00:00",
+        url="http://url.com",
+        situacao="Encerrada",
+        presenca=0,
+        orgaos=orgaos_evento
+    )]
+    eventos_ausentes = [Evento(
+        id="123",
+        nome="Evento teste",
+        data_inicial="2019-01-01T00:00",
+        data_final="2019-01-01T00:00",
+        url="http://url.com",
+        situacao="Cancelada",
+        presenca=1,
+        orgaos=orgaos_evento
+    )]
+    Relatorio(
+        pk=ObjectId("5c264b5e3a5efd576ecaf48e"),
+        parlamentar=parlamentar_test,
+        proposicoes=[],
+        data_inicial="01/01/2019",
+        data_final="07/01/2019",
+        orgaos=[],
+        eventos_presentes=eventos_presentes,
+        eventos_ausentes=eventos_ausentes,
+        eventos_previstos=[],
+    ).save()
+    Avaliacoes(
+        email="test@email.com",
+        parlamentar=parlamentar_test,
+        avaliacao="1",
+        avaliado={
             "url": "url",
             "situacao": "Cancelada",
             "dataFinal": "2019-01-01T00:00",
@@ -535,48 +555,16 @@ def set_up_db(db):
             "presenca": 1,
             "nome": "Evento teste",
             "id": "123"
-        }],
-        "eventosPrevistos": [],
-        "orgaos": [],
-        "idTemp": "123-2019-01-07"
-    }
-    relatorios_col.insert_one(relatorio)
-    avaliacoes_col = db.get_collection("avaliacoes")
-    avaliacoes = [
-        {
-            "email": "test@email.com",
-            "parlamentar": parlamentar_test,
-            "avaliacao": "1",
-            "relatorioId": ObjectId("5c264b5e3a5efd576ecaf48e"),
-            "avaliado": {
-                "url": "url",
-                "situacao": "Cancelada",
-                "dataFinal": "2019-01-01T00:00",
-                "orgaos": [
-                    {
-                        "sigla": "OT",
-                        "nome": "ÓrgãoTeste",
-                        "apelido": "OhTe",
-                        "cargo": None
-                    }
-                ],
-                "dataInicial": "2019-01-01T00:00",
-                "presenca": 1,
-                "nome": "Evento teste",
-                "id": "123"
-            }
-        }
-    ]
-    avaliacoes_col.insert_many(avaliacoes)
-    usuarios_col = db.get_collection("users")
-    usuarios_col.insert_one({
-        "email": "test@email.com",
-        "username": "test",
-        "password": "$pbkdf2-sha256$16$ZOwdg9A6R2itlTKm9N57bw$J8ut3l2pGwngIOdLZeT/LMHCY/CW75wNZOAk6k6sP1c"
-    })
-    inscricoes_col = db.get_collection("inscricoes")
-    inscricoes_col.insert_one({
-        "email": "test@email.com",
-        "parlamentares": [parlamentar_test],
-        "intervalo": 7
-    })
+        },
+        relatorioId=ObjectId("5c264b5e3a5efd576ecaf48e"),
+    ).save()
+    User(
+        username="test",
+        email="test@email.com",
+        password="$pbkdf2-sha256$16$ZOwdg9A6R2itlTKm9N57bw$J8ut3l2pGwngIOdLZeT/LMHCY/CW75wNZOAk6k6sP1c"
+    ).save()
+    Inscricoes(
+        email="test@email.com",
+        parlamentares=[parlamentar_test],
+        intervalo=7
+    ).save()

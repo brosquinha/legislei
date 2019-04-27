@@ -11,3 +11,49 @@ class ModelError(AppError):
 
 class InvalidModelId(AppError):
     """ Exceção para Ids de models inválidos """
+
+
+class UsersModuleError(AppError):
+    """ Base users module error """
+    message = "Erro do serviço de usuários"
+
+
+class UsernameOrEmailAlreadyExistis(UsersModuleError):
+    """ Username already exists in database """
+    message = "Usuário e/ou email já existem"
+
+    def __init__(self):
+        super().__init__(self.message)
+
+
+class RequirementsNotMet(UsersModuleError):
+    """ User creation requirements not met exception """
+    message = "Requisitos não atingidos"
+
+    def __init__(self):
+        super().__init__(self.message)
+
+class InvalidEmail(UsersModuleError):
+    """ Invalid email exception """
+    message = "Email inválido"
+
+    def __init__(self):
+        super().__init__(self.message)
+
+class AvaliacoesModuleError(AppError):
+    """ Base avaliacoes module error """
+    message = "Erro do serviço de avaliações"
+
+class ReportNotFound(AvaliacoesModuleError):
+    """ Report not found exception """
+    message = "Report not found"
+
+    def __init__(self):
+        super().__init__(self.message)
+
+class ItemNotFound(AvaliacoesModuleError):
+    """ Item not found exception """
+    message =  "Item not found"
+
+    def __init__(self):
+        super().__init__(self.message)

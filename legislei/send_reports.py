@@ -6,7 +6,7 @@ from email.header import Header
 from email.mime.text import MIMEText
 
 from legislei import settings
-from legislei.db import MongoDBClient
+from legislei.inscricoes import Inscricao
 
 smtp_server = os.environ.get("EMAIL_ENDPOINT", "smtp.gmail.com")
 smtp_server_port = os.environ.get("EMAIL_PORT", "587")
@@ -34,7 +34,5 @@ def send_email(email, report):
 
 
 def check_reports_to_send():
-    mongo_db = MongoDBClient()
-    subscription_col = mongo_db.get_collection('inscricoes')
-    for inscricao in subscription_col.find():
+    for inscricao in Inscricao().obter_todas_inscricoes():
         yield inscricao
