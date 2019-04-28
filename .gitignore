@@ -22,3 +22,6 @@ _modules
 #Coverage stuff
 .coverage
 htmlcov/
+
+#Migrations config
+.migrations/
