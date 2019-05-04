@@ -51,7 +51,7 @@ class Proposicao(EmbeddedDocument):
     numero = StringField()
     url_documento = URLField(db_field='urlDocumento')
     url_autores = URLField(db_field='urlAutores')
-    data_apresentacao = StringField(db_field='dataApresentacao') # DateTimeField
+    data_apresentacao = DateTimeField(db_field='dataApresentacao')
     voto = StringField()
     pauta = StringField()
 
@@ -73,8 +73,8 @@ class Evento(EmbeddedDocument):
 
     id = StringField(required=True)
     nome = StringField(required=True)
-    data_inicial = StringField(db_field='dataInicial') # DateTimeField
-    data_final = StringField(db_field='dataFinal') # DateTimeField
+    data_inicial = DateTimeField(db_field='dataInicial')
+    data_final = DateTimeField(db_field='dataFinal')
     url = URLField()
     situacao = StringField()
     presenca = IntField(default=-1)
@@ -116,8 +116,8 @@ class Relatorio(Document):
 
     idTemp = StringField()
     parlamentar = EmbeddedDocumentField(Parlamentar, required=True)
-    data_inicial = StringField(db_field='dataInicial') # DateTimeField
-    data_final = StringField(db_field='dataFinal') # DateTimeField
+    data_inicial = DateTimeField(db_field='dataInicial')
+    data_final = DateTimeField(db_field='dataFinal')
     aviso_dados = StringField(db_field='mensagem', null=True)
     orgaos = EmbeddedDocumentListField(Orgao)
     proposicoes = EmbeddedDocumentListField(Proposicao)
