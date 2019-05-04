@@ -20,7 +20,7 @@ class Relatorios():
         relatorio = Relatorio.objects(
             parlamentar__id__=parlamentar,
             parlamentar__cargo=cargo,
-            data_final=datetime.strptime(data_final, '%Y-%m-%d').strftime("%d/%m/%Y")
+            data_final=datetime.strptime(data_final, '%Y-%m-%d')
         )
         if relatorio:
             return relatorio.first().to_dict()

@@ -57,3 +57,14 @@ class ItemNotFound(AvaliacoesModuleError):
 
     def __init__(self):
         super().__init__(self.message)
+
+class InscricoesModuleError(AppError):
+    """ Inscricoes module error """
+    message = "Erro do serviço de inscrições"
+
+class UserDoesNotExist(InscricoesModuleError):
+    """ User with given email does not exist exception """
+    message = "User with given email does not exist"
+
+    def __init__(self):
+        super().__init__(self.message)

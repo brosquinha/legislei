@@ -181,7 +181,7 @@ def consultar_deputado_api():
             data_final=request.args['data'],
             cargo=request.args['parlamentarTipo'],
             periodo=request.args['dias'],
-        ))
+        ), default=str)
     except AppError as e:
         return json.dumps({'error': e.message}), 500
     except KeyError:

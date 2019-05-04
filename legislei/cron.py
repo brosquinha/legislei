@@ -18,13 +18,13 @@ def check_and_send_reports():
 def send_reports(data):
     for item in data:
         reports = []
-        data_final = datetime.now().strftime('%d/%m/%Y')
-        data_inicial = (datetime.now() - timedelta(days=int(item["intervalo"]))).strftime('%d/%m/%Y')
+        data_final = datetime.now()
+        data_inicial = (data_final - timedelta(days=int(item["intervalo"])))
         for par in item["parlamentares"]:
             try:
                 reports.append(Relatorios().obter_relatorio(
                     parlamentar=par['id'],
-                    data_final=datetime.now().strftime('%Y-%m-%d'),
+                    data_final=data_final.strftime('%Y-%m-%d'),
                     cargo=par['cargo'],
                     periodo=item["intervalo"]
                 ))
@@ -39,9 +39,9 @@ def send_reports(data):
             html_report = render_template(
                 'relatorio_deputado_email.out.html',
                 relatorios=reports,
-                data_inicial=data_inicial,
-                data_final=data_final,
-                data_final_link=datetime.now().strftime('%Y-%m-%d'),
+                data_inicial=data_inicial.strftime('%d/%m/%Y'),
+                data_final=data_final.strftime('%d/%m/%Y'),
+                data_final_link=data_final.strftime('%Y-%m-%d'),
                 intervalo=item["intervalo"],
                 host=os.environ.get('HOST_ENDPOINT')
             )

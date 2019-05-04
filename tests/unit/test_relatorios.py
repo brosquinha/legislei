@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 from mongoengine import connect
 from unittest.mock import patch
 
@@ -27,12 +28,12 @@ class TestRelatorios(unittest.TestCase):
         parlamentar_1 = Parlamentar(id='1', cargo='BR1')
         parlamentar_2 = Parlamentar(id='2', cargo='BR1')
         parlamentar_3 = Parlamentar(id='1', cargo='BR2')
-        relatorio_1 = Relatorio(parlamentar=parlamentar_1, data_inicial='2019-01-01').save()
-        relatorio_2 = Relatorio(parlamentar=parlamentar_2, data_inicial='2019-01-01').save()
-        relatorio_3 = Relatorio(parlamentar=parlamentar_3, data_inicial='2019-01-01').save()
-        relatorio_4 = Relatorio(parlamentar=parlamentar_1, data_inicial='2019-01-01').save()
-        relatorio_5 = Relatorio(parlamentar=parlamentar_3, data_inicial='2019-01-01').save()
-        relatorio_6 = Relatorio(parlamentar=parlamentar_2, data_inicial='2019-01-01').save()
+        relatorio_1 = Relatorio(parlamentar=parlamentar_1, data_inicial=datetime(2019, 1, 1)).save()
+        relatorio_2 = Relatorio(parlamentar=parlamentar_2, data_inicial=datetime(2019, 1, 1)).save()
+        relatorio_3 = Relatorio(parlamentar=parlamentar_3, data_inicial=datetime(2019, 1, 1)).save()
+        relatorio_4 = Relatorio(parlamentar=parlamentar_1, data_inicial=datetime(2019, 1, 1)).save()
+        relatorio_5 = Relatorio(parlamentar=parlamentar_3, data_inicial=datetime(2019, 1, 1)).save()
+        relatorio_6 = Relatorio(parlamentar=parlamentar_2, data_inicial=datetime(2019, 1, 1)).save()
 
         actual = Relatorios().buscar_por_parlamentar('BR1', '1')
         expected = [relatorio_1.to_dict(), relatorio_4.to_dict()]
@@ -41,7 +42,7 @@ class TestRelatorios(unittest.TestCase):
 
     def test_obter_relatorio_json_existente(self):
         parlamentar = Parlamentar(id='1', cargo='BR1')
-        relatorio = Relatorio(parlamentar=parlamentar, data_final='01/01/2019').save()
+        relatorio = Relatorio(parlamentar=parlamentar, data_final=datetime(2019, 1, 1)).save()
 
         actual_response = Relatorios().obter_relatorio('1', '2019-01-01', 'BR1', periodo=7)
 
@@ -53,7 +54,7 @@ class TestRelatorios(unittest.TestCase):
         mock_model_selector
     ):
         parlamentar = Parlamentar(id='1', cargo='BR1')
-        relatorio = Relatorio(parlamentar=parlamentar, data_final='01/01/2019')
+        relatorio = Relatorio(parlamentar=parlamentar, data_final=datetime(2019, 1, 1))
         class FakeModel:
             def obter_relatorio(self, *args, **kwargs):
                 return relatorio

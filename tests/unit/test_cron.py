@@ -30,7 +30,8 @@ class TestCron(unittest.TestCase):
             mock_render_template,
             mock_send_email
     ):
-        data_final = datetime.now().strftime('%d/%m/%Y')
+        agora = datetime.now()
+        data_final = datetime(agora.year, agora.month, agora.day)
         parlamentar1 = Parlamentar(id='1', cargo='BR1')
         parlamentar2 = Parlamentar(id='2', cargo='BR2')
         parlamentar3 = Parlamentar(id='3', cargo='BR1')

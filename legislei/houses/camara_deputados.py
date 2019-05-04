@@ -128,8 +128,6 @@ class CamaraDeputadosHandler(CasaLegislativa):
             self.obterProposicoesDeputado(deputado_info, data_final)
             print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
             
-            self.relatorio.data_final = self.relatorio.data_final.strftime("%d/%m/%Y")
-            self.relatorio.data_inicial = self.relatorio.data_inicial.strftime("%d/%m/%Y")
             return self.relatorio
         except CamaraDeputadosError:
             raise ModelError("API Câmara dos Deputados indisponível")

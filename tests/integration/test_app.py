@@ -2,6 +2,7 @@ import json
 import os
 import unittest
 import warnings
+from datetime import datetime
 from unittest.mock import patch
 
 from bson import ObjectId
@@ -159,7 +160,7 @@ class TestApp(unittest.TestCase):
             self, mock_obter_parlamentar):
         mock_obter_parlamentar.return_value = set_up_parlamentar()
         login(self.app, "test", "123")
-        Inscricoes.drop_collection()
+        User.objects(username="test").update_one(unset__inscricoes=None)
         actual = self.app.post(
             "/novaInscricao",
             data={
@@ -507,8 +508,8 @@ def set_up_db(db):
     eventos_presentes = [Evento(
         id="12345",
         nome="Evento teste",
-        data_inicial="2019-01-01T00:00",
-        data_final="2019-01-01T00:00",
+        data_inicial=datetime(2019, 1, 1),
+        data_final=datetime(2019, 1, 1),
         url="http://url.com",
         situacao="Encerrada",
         presenca=0,
@@ -517,8 +518,8 @@ def set_up_db(db):
     eventos_ausentes = [Evento(
         id="123",
         nome="Evento teste",
-        data_inicial="2019-01-01T00:00",
-        data_final="2019-01-01T00:00",
+        data_inicial=datetime(2019, 1, 1),
+        data_final=datetime(2019, 1, 1),
         url="http://url.com",
         situacao="Cancelada",
         presenca=1,
@@ -528,8 +529,8 @@ def set_up_db(db):
         pk=ObjectId("5c264b5e3a5efd576ecaf48e"),
         parlamentar=parlamentar_test,
         proposicoes=[],
-        data_inicial="01/01/2019",
-        data_final="07/01/2019",
+        data_inicial=datetime(2019, 1, 1),
+        data_final=datetime(2019, 1, 7),
         orgaos=[],
         eventos_presentes=eventos_presentes,
         eventos_ausentes=eventos_ausentes,
@@ -542,7 +543,7 @@ def set_up_db(db):
         avaliado={
             "url": "url",
             "situacao": "Cancelada",
-            "dataFinal": "2019-01-01T00:00",
+            "dataFinal": datetime(2019, 1, 1),
             "orgaos": [
                 {
                     "sigla": "OT",
@@ -551,20 +552,20 @@ def set_up_db(db):
                     "cargo": None
                 }
             ],
-            "dataInicial": "2019-01-01T00:00",
+            "dataInicial": datetime(2019, 1, 1),
             "presenca": 1,
             "nome": "Evento teste",
             "id": "123"
         },
         relatorioId=ObjectId("5c264b5e3a5efd576ecaf48e"),
     ).save()
+    inscricoes = Inscricoes(
+        parlamentares=[parlamentar_test],
+        intervalo=7
+    )
     User(
         username="test",
         email="test@email.com",
-        password="$pbkdf2-sha256$16$ZOwdg9A6R2itlTKm9N57bw$J8ut3l2pGwngIOdLZeT/LMHCY/CW75wNZOAk6k6sP1c"
-    ).save()
-    Inscricoes(
-        email="test@email.com",
-        parlamentares=[parlamentar_test],
-        intervalo=7
+        password="$pbkdf2-sha256$16$ZOwdg9A6R2itlTKm9N57bw$J8ut3l2pGwngIOdLZeT/LMHCY/CW75wNZOAk6k6sP1c",
+        inscricoes=inscricoes
     ).save()
