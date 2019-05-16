@@ -1,6 +1,7 @@
 import certifi
 import json
 import urllib3
+from time import sleep
 from .exceptions import CamaraDeputadosConnectionError, CamaraDeputadosInvalidResponse
 
 
@@ -51,7 +52,7 @@ class APIData(object):
             url_path = '{}{}'.format(self.camara_dos_deputados_endpoint, self._api_section)
         while data_length != 0:
             url_args['pagina'] = str(page_num)
-            r = self.http.request(
+            r = self._make_request(
                 'GET',
                 url_path,
                 fields=url_args,
@@ -93,7 +94,7 @@ class APIData(object):
             param_id,
             param_page
         )
-        r = self.http.request(
+        r = self._make_request(
             'GET',
             url,
             headers={'accept': 'application/json'}
@@ -118,7 +119,7 @@ class APIData(object):
         :rtype: Dictionary
         :raises: CamaraDeputadosConnectionError, CamaraDeputadosInvalidResponse
         """
-        r = self.http.request(
+        r = self._make_request(
             'GET',
             uri,
             fields=kwargs,
@@ -130,3 +131,21 @@ class APIData(object):
             return json.loads(r.data.decode('utf-8'))
         except:
             raise CamaraDeputadosInvalidResponse(r.data.decode('utf-8'))
+
+    def _make_request(self, *args, **kwargs):
+        """
+        Faz requisições HTTP
+
+        Se receber um 429, espera 50ms e depois tenta de novo.
+
+        :param args: Unamed args for urllib3 request
+        :param kwagargs: Named args for urllib3 request
+        :return: Request object
+        """
+        too_many_requests = True
+        while too_many_requests:
+            r = self.http.request(*args, **kwargs)
+            if r.status == 429:
+                sleep(0.05)
+            else:
+                return r
