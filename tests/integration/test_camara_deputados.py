@@ -12,6 +12,7 @@ class TestCamaraDeputadosHandlerIntegration(unittest.TestCase):
     def setUp(self):
         warnings.simplefilter("ignore")
     
+    @unittest.skip
     @patch("builtins.print")
     def test_obter_relatorio(self, mock_print):
         parlamentar = json.loads("""{
