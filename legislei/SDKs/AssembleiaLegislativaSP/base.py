@@ -13,7 +13,8 @@ class Base():
     """
 
     def __init__(self):
-        self.api_endpoint = "http://www.al.sp.gov.br/repositorioDados/"
+        self.api_host = "http://www.al.sp.gov.br"
+        self.api_endpoint = "{}/repositorioDados/".format(self.api_host)
         self.http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED',
             ca_certs=certifi.where()
