@@ -22,6 +22,5 @@ class TestCamaraMunicipalSaoPauloHandlerIntegration(unittest.TestCase):
         self.assertEqual(len(actual["eventosPrevistos"]), 0)
         self.assertEqual(len(actual["eventosPresentes"]), 7)
         self.assertEqual(len(actual["proposicoes"]), 2)
-        self.assertEqual(len(actual["orgaos"]), 1)
         self.assertEqual(actual["dataFinal"], "23/03/2019")
         self.assertEqual(actual["dataInicial"], "16/03/2019")
