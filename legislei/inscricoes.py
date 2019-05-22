@@ -9,7 +9,7 @@ class Inscricao():
         inscricoes = []
         for user in User.objects():
             if user.inscricoes:
-                inscricoes.append(user.inscricoes)
+                inscricoes.append(user)
         return inscricoes
     
     def obter_minhas_inscricoes(self, email):

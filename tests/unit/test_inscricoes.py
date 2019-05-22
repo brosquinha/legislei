@@ -29,22 +29,24 @@ class TestInscricao(unittest.TestCase):
             intervalo=7,
             parlamentares=[self.parlamentar1]
         )
-        User(
+        user1 = User(
             username='user1',
             password='pwd',
             email='user1@email.com',
             inscricoes=inscricoes1
-        ).save()
-        User(
+        )
+        user1.save()
+        user2 = User(
             username='user2',
             password='pwd',
             email='user2@email.com',
             inscricoes=inscricoes2
-        ).save()
+        )
+        user2.save()
 
         actual = Inscricao().obter_todas_inscricoes()
 
-        self.assertEqual(actual, [inscricoes1, inscricoes2])
+        self.assertEqual(actual, [user1, user2])
 
     def test_obter_minhas_inscricoes_com_inscricoes(self):
         inscricoes = Inscricoes(
