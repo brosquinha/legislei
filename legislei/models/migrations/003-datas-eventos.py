@@ -18,7 +18,7 @@ of Proposicao type from String to Date
 """
 
 def success(client):
-    relatorios = client['legislei']['relatorios']
+    relatorios = client.get_default_database()['relatorios']
     for relatorio in relatorios.find():
         for tipo_evento in ['eventosAusentes', 'eventosPresentes', 'eventosPrevistos', 'proposicoes']:
             for evento in relatorio[tipo_evento]:
@@ -46,7 +46,7 @@ def success(client):
                         {'$set': {"{}.$.{}".format(tipo_evento, nome_data): data}}
                     )
 def fail(client):
-    relatorios = client['legislei']['relatorios'].with_options(
+    relatorios = client.get_default_database()['relatorios'].with_options(
         codec_options=CodecOptions(
             tz_aware=True,
             tzinfo=pytz.timezone('America/Sao_Paulo')

@@ -3,8 +3,8 @@ Moves subscriptions into users, removing its original collection, inscricoes
 """
 
 def success(client):
-    inscricoes = client['legislei']['inscricoes']
-    users = client['legislei']['users']
+    inscricoes = client.get_default_database()['inscricoes']
+    users = client.get_default_database()['users']
     for inscricao in inscricoes.find():
         users.update_one(
             {'email': inscricao['email']},
@@ -17,8 +17,8 @@ def success(client):
 
 
 def fail(client):
-    inscricoes = client['legislei']['inscricoes']
-    users = client['legislei']['users']
+    inscricoes = client.get_default_database()['inscricoes']
+    users = client.get_default_database()['users']
     for user in users.find():
         if 'inscricoes' not in user:
             continue

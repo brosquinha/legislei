@@ -6,7 +6,7 @@ String to Date, and removes unused "idTemp" field.
 """
 
 def success(client):
-    relatorios = client["legislei"]["relatorios"]
+    relatorios = client.get_default_database()["relatorios"]
     relatorios.update_many({'idTemp': {'$exists': 'true'}}, {
                            '$unset': {'idTemp': ''}})
     for r in relatorios.find({'dataInicial': {'$type': 2}}):
@@ -18,7 +18,7 @@ def success(client):
 
 
 def fail(client):
-    relatorios = client["legislei"]["relatorios"]
+    relatorios = client.get_default_database()["relatorios"]
     for r in relatorios.find():
         relatorios.update_one({'_id': r['_id']}, {'$set': {'idTemp': "{}-{}".format(
             r['parlamentar']['id'], r['dataFinal'].strftime('%Y-%m-%d'))}})
