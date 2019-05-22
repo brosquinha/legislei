@@ -1,5 +1,6 @@
 import unittest
 import warnings
+from datetime import datetime
 from unittest.mock import patch
 
 from legislei.houses.camara_municipal_sao_paulo import CamaraMunicipalSaoPauloHandler
@@ -22,5 +23,5 @@ class TestCamaraMunicipalSaoPauloHandlerIntegration(unittest.TestCase):
         self.assertEqual(len(actual["eventosPrevistos"]), 0)
         self.assertEqual(len(actual["eventosPresentes"]), 7)
         self.assertEqual(len(actual["proposicoes"]), 2)
-        self.assertEqual(actual["dataFinal"], "23/03/2019")
-        self.assertEqual(actual["dataInicial"], "16/03/2019")
+        self.assertEqual(actual["dataFinal"], datetime(2019, 3, 23))
+        self.assertEqual(actual["dataInicial"], datetime(2019, 3, 16))

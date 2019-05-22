@@ -47,8 +47,6 @@ class ALESPHandler(CasaLegislativa):
             print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
             self.obterProposicoesDeputado(parlamentar_id, data_inicial, data_final)
             print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
-            self.relatorio.data_final = self.relatorio.data_final.strftime("%d/%m/%Y")
-            self.relatorio.data_inicial = self.relatorio.data_inicial.strftime("%d/%m/%Y")
             return self.relatorio
         except ALESPError:
             raise ModelError('Erro')
@@ -118,7 +116,7 @@ class ALESPHandler(CasaLegislativa):
                     self.obterDatetimeDeStr(e["data"]) < data_final):
                 evento = Evento()
                 evento.id = e['id']
-                evento.data_inicial = e['data']
+                evento.data_inicial = self.obterDatetimeDeStr(e["data"])
                 evento.nome = e['convocacao']
                 evento.situacao = e['situacao']
                 if e['id'] in reunioes:
@@ -152,7 +150,7 @@ class ALESPHandler(CasaLegislativa):
         tipos_documentos = self.prop.obterNaturezaDocumentos()
         print('Obtendo autores...')
         for autor in self.prop.obterTodosAutoresProposicoes():
-            if autor['idAutor'] == dep_id:
+            if str(autor['idAutor']) == str(dep_id):
                 proposicoes_deputado.append(autor['idDocumento'])
         print(len(proposicoes_deputado))
         print('Obtendo proposicoes...')
@@ -166,7 +164,7 @@ class ALESPHandler(CasaLegislativa):
                 proposicao.id = propositura['id']
                 proposicao.url_documento = 'https://www.al.sp.gov.br/propositura/?id={}'.format(
                     propositura['id'])
-                proposicao.data_apresentacao = propositura['dataEntrada']
+                proposicao.data_apresentacao = data_prop
                 proposicao.ementa = propositura['ementa']
                 proposicao.numero = propositura['numero']
                 if propositura['idNatureza']:

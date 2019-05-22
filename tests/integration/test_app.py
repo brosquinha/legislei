@@ -563,6 +563,7 @@ def set_up_db(db):
         parlamentares=[parlamentar_test],
         intervalo=7
     )
+    User.drop_collection()
     User(
         username="test",
         email="test@email.com",

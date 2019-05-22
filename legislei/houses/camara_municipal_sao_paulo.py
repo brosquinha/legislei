@@ -49,8 +49,11 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                         evento.nome = key
                         evento.id = str(uuid4())
                         if value['data']:
-                            evento.data_inicial = value['data']
-                            evento.data_final = value['data']
+                            try:
+                                evento.data_inicial = datetime.strptime(value['data'], "%d/%m/%Y")
+                                evento.data_final = datetime.strptime(value['data'], "%d/%m/%Y")
+                            except ValueError:
+                                pass
                         for prop in value['pautas']:
                             proposicao = Proposicao()
                             proposicao.pauta = prop['projeto']
@@ -67,8 +70,6 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                             self.relatorio.eventos_ausentes.append(evento)
             self.relatorio.eventos_ausentes_esperados_total = sessao_total - presenca_total
             self.obter_proposicoes_parlamentar(vereador.id, data_inicial, data_final)
-            self.relatorio.data_final = self.relatorio.data_final.strftime("%d/%m/%Y")
-            self.relatorio.data_inicial = self.relatorio.data_inicial.strftime("%d/%m/%Y")
             return self.relatorio
         except Exception as e:
             print(e)

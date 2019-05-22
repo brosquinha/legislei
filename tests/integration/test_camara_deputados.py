@@ -1,7 +1,7 @@
 import json
 import unittest
 import warnings
-from datetime import date
+from datetime import date, datetime
 from unittest.mock import patch
 
 from legislei.houses.camara_deputados import CamaraDeputadosHandler
@@ -34,9 +34,9 @@ class TestCamaraDeputadosHandlerIntegration(unittest.TestCase):
         self.assertEqual(len(actual["eventosPresentes"]), 6)
         self.assertEqual(len(actual["proposicoes"]), 4)
         self.assertEqual(len(actual["orgaos"]), 15)
-        self.assertEqual(actual["dataFinal"], "29/06/2018")
+        self.assertEqual(actual["dataFinal"], datetime(2018, 6, 29))
         self.assertEqual(actual["eventosAusentesEsperadosTotal"], 9)
-        self.assertEqual(actual["dataInicial"], "22/06/2018")
+        self.assertEqual(actual["dataInicial"], datetime(2018, 6, 22))
 
     def test_obter_parlamentares(self):
         expected = 512

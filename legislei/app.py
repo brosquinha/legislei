@@ -66,7 +66,13 @@ def consultar_parlamentar():
             cargo=request.args['parlamentarTipo'],
             periodo=request.args['dias']
         ))
-    except AppError:
+    except AppError as e:
+        return render_template(
+            'erro.html',
+            erro_titulo="500 - Erro interno",
+            erro_descricao=e.message
+        ), 500
+    except KeyError:
         return render_template(
             'erro.html',
             erro_titulo="400 - Requisição incompleta",

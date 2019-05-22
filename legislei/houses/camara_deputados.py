@@ -54,8 +54,11 @@ class CamaraDeputadosHandler(CasaLegislativa):
             for e in eventos:
                 evento = Evento()
                 evento.id = str(e['id'])
-                evento.data_inicial = e['dataHoraInicio']
-                evento.data_final = e['dataHoraFim']
+                try:
+                    evento.data_inicial = self.obterDatetimeDeStr(e['dataHoraInicio'])
+                    evento.data_final = self.obterDatetimeDeStr(e['dataHoraFim'])
+                except ValueError:
+                    pass
                 evento.situacao = e['situacao']
                 evento.nome = e['descricao']
                 evento.set_presente()
@@ -111,8 +114,11 @@ class CamaraDeputadosHandler(CasaLegislativa):
                     evento.set_ausencia_evento_esperado()
                 else:
                     evento.set_ausencia_evento_nao_esperado()
-                evento.data_inicial = e['dataHoraInicio']
-                evento.data_final = e['dataHoraFim']
+                try:
+                    evento.data_inicial = self.obterDatetimeDeStr(e['dataHoraInicio'])
+                    evento.data_final = self.obterDatetimeDeStr(e['dataHoraFim'])
+                except ValueError:
+                    pass
                 evento.nome = e['descricao']
                 evento.situacao = e['situacao']
                 evento.url = e['uri']
@@ -140,15 +146,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 for item in page:
                     dataFim = datetime.now()
                     if item['dataFim'] != None:
-                        try:
-                            # Um belo dia a API retornou Epoch ao invés do formato documentado (YYYY-MM-DD), então...
-                            dataFim = datetime.fromtimestamp(item['dataFim']/1000)
-                        except TypeError:
-                            try:
-                                dataFim = datetime.strptime(item['dataFim'], '%Y-%m-%d')
-                            except ValueError:
-                                #Agora aparentemente ele volta nesse formato aqui... aiai
-                                dataFim = datetime.strptime(item['dataFim'], '%Y-%m-%dT%H:%M')
+                        dataFim = self.obterDatetimeDeStr(item['dataFim'])
                     if (item['dataFim'] == None or dataFim > data_final):
                         orgao = Orgao()
                         if 'nomeOrgao' in item:
@@ -275,7 +273,10 @@ class CamaraDeputadosHandler(CasaLegislativa):
                         proposicao.id = str(item['id'])
                         p = self.prop.obterProposicao(item['id'])
                         if 'dataApresentacao' in p:
-                            proposicao.data_apresentacao = p['dataApresentacao']
+                            try:
+                                proposicao.data_apresentacao = self.obterDatetimeDeStr(p['dataApresentacao'])
+                            except ValueError:
+                                pass
                         if 'ementa' in p:
                             proposicao.ementa = p['ementa']
                         if 'numero' in p:
@@ -287,6 +288,20 @@ class CamaraDeputadosHandler(CasaLegislativa):
                         self.relatorio.proposicoes.append(proposicao)
         except CamaraDeputadosError:
             self.relatorio.aviso_dados = 'Não foi possível obter proposições do parlamentar.'
+
+    def obterDatetimeDeStr(self, txt):
+        if txt == None:
+            return txt
+        try:
+            # Um belo dia a API retornou Epoch ao invés do formato documentado (YYYY-MM-DD), então...
+            data = datetime.fromtimestamp(txt/1000)
+        except TypeError:
+            try:
+                data = datetime.strptime(txt, '%Y-%m-%d')
+            except ValueError:
+                #Agora aparentemente ele volta nesse formato aqui... aiai
+                data = datetime.strptime(txt, '%Y-%m-%dT%H:%M')
+        return data
 
     def obter_parlamentares(self):
         deputados = []
