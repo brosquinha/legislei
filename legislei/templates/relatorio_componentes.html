@@ -19,7 +19,7 @@
         <div class="card-header">
             <a href="{{ item['urlDocumento'] if item['urlDocumento'] else 'about:blank' }}" target="_blank" class="text-white">
                 {{ item['tipo'] }}{{ item['numero'] }}</a>
-            ({{ item['dataApresentacao'] }})
+            ({{ item['dataApresentacao'] | formatDate(True) }})
         </div>
         <div class="card-body">
             <p class="card-text">{{ item['ementa'] }}</p>
@@ -57,7 +57,7 @@
     {% endif %}
         <div class="card-header">
             <a href="{{ item['url'] if item['url'] else 'about:blank' }}" target="_blank" class="text-{{ color_txt_class }}">{{ item['nome'] }}</a>
-        ({{ item['dataInicial'] }}—{{ item['dataFinal'] }})
+        ({{ item['dataInicial'] | formatDate(True) }}—{{ item['dataFinal'] | formatDate(True) }})
         {% if item['situacao'] %} ({{ item['situacao'] }}) {% endif %}</div>
         <div class="card-body" data-test="{{ item['pautas']|length }}">
             {% if 'error' in item['pautas'] %}
