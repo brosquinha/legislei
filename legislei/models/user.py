@@ -1,6 +1,8 @@
 from bson.objectid import ObjectId
+from mongoengine import (Document, EmailField, EmbeddedDocumentField,
+                         StringField)
 
-from mongoengine import Document, StringField, EmailField, StringField
+from legislei.models.inscricoes import Inscricoes
 
 
 class User(Document):
@@ -11,8 +13,9 @@ class User(Document):
     username = StringField(min_length=3, unique=True, required=True)
     email = EmailField(unique=True, required=True)
     password = StringField(required=True)
+    inscricoes = EmbeddedDocumentField(Inscricoes)
     meta = {'collection': 'users'}
-    
+
     def is_authenticated(self):
         return str(self.pk)
 

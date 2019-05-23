@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from time import time
 
+import pytz
 from flask import render_template, request
 
 from legislei.exceptions import ModelError
@@ -22,6 +23,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
         self.prop = Proposicoes()
         self.vot = Votacoes()
         self.relatorio = Relatorio()
+        self.brasilia_tz = pytz.timezone('America/Sao_Paulo')
 
     def obter_relatorio(self, parlamentar_id, data_final=None, periodo_dias=7):
         try:
@@ -35,9 +37,9 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 data_final = datetime.now()
             self.setPeriodoDias(periodo_dias)
             deputado_info = self.obter_parlamentar(parlamentar_id)
-            self.relatorio.data_inicial = self.obterDataInicial(
-                data_final, **self.periodo)
-            self.relatorio.data_final = data_final
+            self.relatorio.data_inicial = self.brasilia_tz.localize(
+                self.obterDataInicial(data_final, **self.periodo))
+            self.relatorio.data_final = self.brasilia_tz.localize(data_final)
             print('Deputado obtido em {0:.5f}'.format(time() - start_time))
             (
                 eventos,
@@ -54,8 +56,13 @@ class CamaraDeputadosHandler(CasaLegislativa):
             for e in eventos:
                 evento = Evento()
                 evento.id = str(e['id'])
-                evento.data_inicial = e['dataHoraInicio']
-                evento.data_final = e['dataHoraFim']
+                try:
+                    evento.data_inicial = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraInicio']))
+                    evento.data_final = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraFim']))
+                except ValueError:
+                    pass
                 evento.situacao = e['situacao']
                 evento.nome = e['descricao']
                 evento.set_presente()
@@ -111,8 +118,13 @@ class CamaraDeputadosHandler(CasaLegislativa):
                     evento.set_ausencia_evento_esperado()
                 else:
                     evento.set_ausencia_evento_nao_esperado()
-                evento.data_inicial = e['dataHoraInicio']
-                evento.data_final = e['dataHoraFim']
+                try:
+                    evento.data_inicial = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraInicio']))
+                    evento.data_final = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraFim']))
+                except ValueError:
+                    pass
                 evento.nome = e['descricao']
                 evento.situacao = e['situacao']
                 evento.url = e['uri']
@@ -128,8 +140,6 @@ class CamaraDeputadosHandler(CasaLegislativa):
             self.obterProposicoesDeputado(deputado_info, data_final)
             print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
             
-            self.relatorio.data_final = self.relatorio.data_final.strftime("%d/%m/%Y")
-            self.relatorio.data_inicial = self.relatorio.data_inicial.strftime("%d/%m/%Y")
             return self.relatorio
         except CamaraDeputadosError:
             raise ModelError("API Câmara dos Deputados indisponível")
@@ -142,15 +152,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 for item in page:
                     dataFim = datetime.now()
                     if item['dataFim'] != None:
-                        try:
-                            # Um belo dia a API retornou Epoch ao invés do formato documentado (YYYY-MM-DD), então...
-                            dataFim = datetime.fromtimestamp(item['dataFim']/1000)
-                        except TypeError:
-                            try:
-                                dataFim = datetime.strptime(item['dataFim'], '%Y-%m-%d')
-                            except ValueError:
-                                #Agora aparentemente ele volta nesse formato aqui... aiai
-                                dataFim = datetime.strptime(item['dataFim'], '%Y-%m-%dT%H:%M')
+                        dataFim = self.obterDatetimeDeStr(item['dataFim'])
                     if (item['dataFim'] == None or dataFim > data_final):
                         orgao = Orgao()
                         if 'nomeOrgao' in item:
@@ -277,7 +279,11 @@ class CamaraDeputadosHandler(CasaLegislativa):
                         proposicao.id = str(item['id'])
                         p = self.prop.obterProposicao(item['id'])
                         if 'dataApresentacao' in p:
-                            proposicao.data_apresentacao = p['dataApresentacao']
+                            try:
+                                proposicao.data_apresentacao = self.obterTimezoneBrasilia(
+                                    self.obterDatetimeDeStr(p['dataApresentacao']))
+                            except ValueError:
+                                pass
                         if 'ementa' in p:
                             proposicao.ementa = p['ementa']
                         if 'numero' in p:
@@ -289,6 +295,25 @@ class CamaraDeputadosHandler(CasaLegislativa):
                         self.relatorio.proposicoes.append(proposicao)
         except CamaraDeputadosError:
             self.relatorio.aviso_dados = 'Não foi possível obter proposições do parlamentar.'
+
+    def obterDatetimeDeStr(self, txt):
+        if txt == None:
+            return txt
+        try:
+            # Um belo dia a API retornou Epoch ao invés do formato documentado (YYYY-MM-DD), então...
+            data = datetime.fromtimestamp(txt/1000)
+        except TypeError:
+            try:
+                data = datetime.strptime(txt, '%Y-%m-%d')
+            except ValueError:
+                #Agora aparentemente ele volta nesse formato aqui... aiai
+                data = datetime.strptime(txt, '%Y-%m-%dT%H:%M')
+        return data
+
+    def obterTimezoneBrasilia(self, date):
+        if date == None:
+            return None
+        return self.brasilia_tz.localize(date)
 
     def obter_parlamentares(self):
         deputados = []

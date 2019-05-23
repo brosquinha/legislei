@@ -19,14 +19,14 @@
             <li class="breadcrumb-item">
                 <a href="/minhasAvaliacoes?parlamentar={{ deputado['id'] }}&parlamentarTipo={{ deputado['cargo'] }}">{{ deputado['nome'] }}</a>
             </li>
-            <li class="breadcrumb-item active text-uppercase" aria-current="page">Relatório {{ relatorio['dataFinal'] }}</li>
+            <li class="breadcrumb-item active text-uppercase" aria-current="page">Relatório {{ relatorio['dataFinal'] | formatDate }}</li>
         </ol>
     </nav>
     <div class="container mb-3 bg-light rounded">
         <div class="media">
             <div class="media-body">
                 <h1 class="text-uppercase">{{ deputado['nome'] }} ({{ deputado['partido'] }}-{{ deputado['uf'] }})</h1>
-                <h5 class="mt-0">{{ relatorio['dataInicial'] }} - {{ relatorio['dataFinal'] }}</h5>
+                <h5 class="mt-0">{{ relatorio['dataInicial'] | formatDate }} - {{ relatorio['dataFinal'] | formatDate  }}</h5>
                 <p class="mb-0">
                     Presença: <span class="collapse multi-collapse">{{ relatorio['presencaTotal'] }}</span>
                     <span class="collapse show multi-collapse">{{ relatorio['presencaRelativa'] }}</span>

@@ -1,7 +1,10 @@
 import json
 import unittest
 import warnings
+from datetime import datetime
 from unittest.mock import patch
+
+import pytz
 
 from legislei.houses.alesp import ALESPHandler
 
@@ -13,6 +16,7 @@ class TestALESPHandlerIntegration(unittest.TestCase):
     
     @patch("builtins.print")
     def test_obter_relatorio(self, mock_print):
+        brasilia_tz = pytz.timezone('America/Sao_Paulo')
         parlamentar = json.loads("""{
             "cargo" : "SP",
             "uf" : "SP",
@@ -21,6 +25,7 @@ class TestALESPHandlerIntegration(unittest.TestCase):
             "nome" : "Carlos Giannazi",
             "id" : "10592"
         }""")
+
         actual = ALESPHandler().obter_relatorio(
             "10592",
             "2018-05-18",
@@ -33,7 +38,7 @@ class TestALESPHandlerIntegration(unittest.TestCase):
         self.assertEqual(len(actual["eventosPresentes"]), 2)
         self.assertEqual(len(actual["eventosPrevistos"]), 0)
         self.assertEqual(len(actual["eventosAusentes"]), 16)
-        self.assertEqual(actual["dataFinal"], "18/05/2018")
+        self.assertEqual(actual["dataFinal"], brasilia_tz.localize(datetime(2018, 5, 18)))
         self.assertEqual(actual["presencaTotal"], "11.11%")
         self.assertEqual(actual["presencaRelativa"], "100.00%")
-        self.assertEqual(actual["dataInicial"], "11/05/2018")
+        self.assertEqual(actual["dataInicial"], brasilia_tz.localize(datetime(2018, 5, 11)))
