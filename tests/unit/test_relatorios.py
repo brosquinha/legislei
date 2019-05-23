@@ -3,6 +3,8 @@ from datetime import datetime
 from mongoengine import connect
 from unittest.mock import patch
 
+import pytz
+
 from legislei.relatorios import Relatorios
 from legislei.models.relatorio import Relatorio, Parlamentar
 
@@ -41,11 +43,22 @@ class TestRelatorios(unittest.TestCase):
         self.assertEqual(len(actual), len(expected))
 
     def test_obter_relatorio_json_existente(self):
+        brasilia_tz = pytz.timezone('America/Sao_Paulo')
         parlamentar = Parlamentar(id='1', cargo='BR1')
-        relatorio = Relatorio(parlamentar=parlamentar, data_final=datetime(2019, 1, 1)).save()
+        relatorio = Relatorio(
+            parlamentar=parlamentar,
+            data_final=brasilia_tz.localize(datetime(2019, 1, 1))
+        ).save()
 
-        actual_response = Relatorios().obter_relatorio('1', '2019-01-01', 'BR1', periodo=7)
+        actual_response = Relatorios().obter_relatorio(
+            '1', '2019-01-01', 'BR1', periodo=7)
 
+        self.maxDiff = None
+        self.assertEqual(
+            brasilia_tz.normalize(actual_response['dataFinal'].replace(tzinfo=pytz.UTC)),
+            relatorio.to_dict()['dataFinal']
+        )
+        actual_response['dataFinal'] = relatorio.to_dict()['dataFinal']
         self.assertEqual(actual_response, relatorio.to_dict())
 
     @patch("legislei.house_selector.house_selector")

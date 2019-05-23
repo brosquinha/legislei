@@ -2,6 +2,8 @@ import json
 from datetime import datetime
 from time import time
 
+import pytz
+
 from legislei.exceptions import ModelError
 from legislei.houses.casa_legislativa import CasaLegislativa
 from legislei.models.relatorio import (Evento, Orgao, Parlamentar, Proposicao,
@@ -20,6 +22,7 @@ class ALESPHandler(CasaLegislativa):
         self.com = Comissoes()
         self.prop = Proposicoes()
         self.relatorio = Relatorio()
+        self.brasilia_tz = pytz.timezone('America/Sao_Paulo')
 
     def obter_relatorio(self, parlamentar_id, data_final=datetime.now(), periodo_dias=7):
         try:
@@ -31,8 +34,8 @@ class ALESPHandler(CasaLegislativa):
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
             print('Iniciando...')
             self.obter_parlamentar(parlamentar_id)
-            self.relatorio.data_inicial = data_inicial
-            self.relatorio.data_final = data_final
+            self.relatorio.data_inicial = self.brasilia_tz.localize(data_inicial)
+            self.relatorio.data_final = self.brasilia_tz.localize(data_final)
             print('Deputado obtido em {0:.5f}'.format(time() - start_time))
             comissoes = self.obterComissoesPorId()
             print('Comissoes por id obtidas em {0:.5f}'.format(time() - start_time))
@@ -116,7 +119,8 @@ class ALESPHandler(CasaLegislativa):
                     self.obterDatetimeDeStr(e["data"]) < data_final):
                 evento = Evento()
                 evento.id = e['id']
-                evento.data_inicial = self.obterDatetimeDeStr(e["data"])
+                evento.data_inicial = self.brasilia_tz.localize(
+                    self.obterDatetimeDeStr(e["data"]))
                 evento.nome = e['convocacao']
                 evento.situacao = e['situacao']
                 if e['id'] in reunioes:
@@ -164,7 +168,7 @@ class ALESPHandler(CasaLegislativa):
                 proposicao.id = propositura['id']
                 proposicao.url_documento = 'https://www.al.sp.gov.br/propositura/?id={}'.format(
                     propositura['id'])
-                proposicao.data_apresentacao = data_prop
+                proposicao.data_apresentacao = self.brasilia_tz.localize(data_prop)
                 proposicao.ementa = propositura['ementa']
                 proposicao.numero = propositura['numero']
                 if propositura['idNatureza']:
@@ -174,5 +178,4 @@ class ALESPHandler(CasaLegislativa):
                 self.relatorio.proposicoes.append(proposicao)
 
     def obterDatetimeDeStr(self, txt):
-        #Isso aqui deveria ser responsabilidade da SDK ALESP, não?
         return datetime.strptime(txt[0:19], "%Y-%m-%dT%H:%M:%S")

@@ -5,6 +5,7 @@ import warnings
 from datetime import datetime
 from unittest.mock import patch
 
+import pytz
 from bson import ObjectId
 from mongoengine import connect
 
@@ -19,6 +20,7 @@ from legislei.models.user import User
 class TestApp(unittest.TestCase):
 
     db = None
+    brasilia_tz = pytz.timezone('America/Sao_Paulo')
     
     @classmethod
     def setUpClass(cls):
@@ -508,8 +510,8 @@ def set_up_db(db):
     eventos_presentes = [Evento(
         id="12345",
         nome="Evento teste",
-        data_inicial=datetime(2019, 1, 1),
-        data_final=datetime(2019, 1, 1),
+        data_inicial=TestApp.brasilia_tz.localize(datetime(2019, 1, 1)),
+        data_final=TestApp.brasilia_tz.localize(datetime(2019, 1, 1)),
         url="http://url.com",
         situacao="Encerrada",
         presenca=0,
@@ -518,8 +520,8 @@ def set_up_db(db):
     eventos_ausentes = [Evento(
         id="123",
         nome="Evento teste",
-        data_inicial=datetime(2019, 1, 1),
-        data_final=datetime(2019, 1, 1),
+        data_inicial=TestApp.brasilia_tz.localize(datetime(2019, 1, 1)),
+        data_final=TestApp.brasilia_tz.localize(datetime(2019, 1, 1)),
         url="http://url.com",
         situacao="Cancelada",
         presenca=1,
@@ -529,8 +531,8 @@ def set_up_db(db):
         pk=ObjectId("5c264b5e3a5efd576ecaf48e"),
         parlamentar=parlamentar_test,
         proposicoes=[],
-        data_inicial=datetime(2019, 1, 1),
-        data_final=datetime(2019, 1, 7),
+        data_inicial=TestApp.brasilia_tz.localize(datetime(2019, 1, 1)),
+        data_final=TestApp.brasilia_tz.localize(datetime(2019, 1, 7)),
         orgaos=[],
         eventos_presentes=eventos_presentes,
         eventos_ausentes=eventos_ausentes,
@@ -543,7 +545,7 @@ def set_up_db(db):
         avaliado={
             "url": "url",
             "situacao": "Cancelada",
-            "dataFinal": datetime(2019, 1, 1),
+            "dataFinal": TestApp.brasilia_tz.localize(datetime(2019, 1, 1)),
             "orgaos": [
                 {
                     "sigla": "OT",
@@ -552,7 +554,7 @@ def set_up_db(db):
                     "cargo": None
                 }
             ],
-            "dataInicial": datetime(2019, 1, 1),
+            "dataInicial": TestApp.brasilia_tz.localize(datetime(2019, 1, 1)),
             "presenca": 1,
             "nome": "Evento teste",
             "id": "123"

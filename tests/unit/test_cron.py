@@ -3,6 +3,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import ANY, call, patch
 
+import pytz
 from flask import render_template
 from mongoengine import connect
 
@@ -32,8 +33,10 @@ class TestCron(unittest.TestCase):
             mock_render_template,
             mock_send_email
     ):
+        brasilia_tz = pytz.timezone('America/Sao_Paulo')
         agora = datetime.now()
         data_final = datetime(agora.year, agora.month, agora.day)
+        data_final = brasilia_tz.localize(data_final)
         parlamentar1 = Parlamentar(id='1', cargo='BR1')
         parlamentar2 = Parlamentar(id='2', cargo='BR2')
         parlamentar3 = Parlamentar(id='3', cargo='BR1')

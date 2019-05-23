@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from time import time
 
+import pytz
 from flask import render_template, request
 
 from legislei.exceptions import ModelError
@@ -22,6 +23,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
         self.prop = Proposicoes()
         self.vot = Votacoes()
         self.relatorio = Relatorio()
+        self.brasilia_tz = pytz.timezone('America/Sao_Paulo')
 
     def obter_relatorio(self, parlamentar_id, data_final=None, periodo_dias=7):
         try:
@@ -35,9 +37,9 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 data_final = datetime.now()
             self.setPeriodoDias(periodo_dias)
             deputado_info = self.obter_parlamentar(parlamentar_id)
-            self.relatorio.data_inicial = self.obterDataInicial(
-                data_final, **self.periodo)
-            self.relatorio.data_final = data_final
+            self.relatorio.data_inicial = self.brasilia_tz.localize(
+                self.obterDataInicial(data_final, **self.periodo))
+            self.relatorio.data_final = self.brasilia_tz.localize(data_final)
             print('Deputado obtido em {0:.5f}'.format(time() - start_time))
             (
                 eventos,
@@ -55,8 +57,10 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 evento = Evento()
                 evento.id = str(e['id'])
                 try:
-                    evento.data_inicial = self.obterDatetimeDeStr(e['dataHoraInicio'])
-                    evento.data_final = self.obterDatetimeDeStr(e['dataHoraFim'])
+                    evento.data_inicial = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraInicio']))
+                    evento.data_final = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraFim']))
                 except ValueError:
                     pass
                 evento.situacao = e['situacao']
@@ -115,8 +119,10 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 else:
                     evento.set_ausencia_evento_nao_esperado()
                 try:
-                    evento.data_inicial = self.obterDatetimeDeStr(e['dataHoraInicio'])
-                    evento.data_final = self.obterDatetimeDeStr(e['dataHoraFim'])
+                    evento.data_inicial = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraInicio']))
+                    evento.data_final = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraFim']))
                 except ValueError:
                     pass
                 evento.nome = e['descricao']
@@ -274,7 +280,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
                         p = self.prop.obterProposicao(item['id'])
                         if 'dataApresentacao' in p:
                             try:
-                                proposicao.data_apresentacao = self.obterDatetimeDeStr(p['dataApresentacao'])
+                                proposicao.data_apresentacao = self.obterTimezoneBrasilia(
+                                    self.obterDatetimeDeStr(p['dataApresentacao']))
                             except ValueError:
                                 pass
                         if 'ementa' in p:
@@ -302,6 +309,11 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 #Agora aparentemente ele volta nesse formato aqui... aiai
                 data = datetime.strptime(txt, '%Y-%m-%dT%H:%M')
         return data
+
+    def obterTimezoneBrasilia(self, date):
+        if date == None:
+            return None
+        return self.brasilia_tz.localize(date)
 
     def obter_parlamentares(self):
         deputados = []

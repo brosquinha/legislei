@@ -4,6 +4,8 @@ import warnings
 from datetime import date, datetime
 from unittest.mock import patch
 
+import pytz
+
 from legislei.houses.camara_deputados import CamaraDeputadosHandler
 
 
@@ -14,6 +16,7 @@ class TestCamaraDeputadosHandlerIntegration(unittest.TestCase):
     
     @patch("builtins.print")
     def test_obter_relatorio(self, mock_print):
+        brasilia_tz = pytz.timezone('America/Sao_Paulo')
         parlamentar = json.loads("""{
             "cargo" : "BR1",
             "uf" : "RJ",
@@ -22,6 +25,7 @@ class TestCamaraDeputadosHandlerIntegration(unittest.TestCase):
             "nome" : "CHICO ALENCAR",
             "id" : "74171"
         }""")
+        
         actual = CamaraDeputadosHandler().obter_relatorio(
             "74171",
             "2018-06-29",
@@ -34,9 +38,9 @@ class TestCamaraDeputadosHandlerIntegration(unittest.TestCase):
         self.assertEqual(len(actual["eventosPresentes"]), 6)
         self.assertEqual(len(actual["proposicoes"]), 4)
         self.assertEqual(len(actual["orgaos"]), 15)
-        self.assertEqual(actual["dataFinal"], datetime(2018, 6, 29))
+        self.assertEqual(actual["dataFinal"], brasilia_tz.localize(datetime(2018, 6, 29)))
         self.assertEqual(actual["eventosAusentesEsperadosTotal"], 9)
-        self.assertEqual(actual["dataInicial"], datetime(2018, 6, 22))
+        self.assertEqual(actual["dataInicial"], brasilia_tz.localize(datetime(2018, 6, 22)))
 
     def test_obter_parlamentares(self):
         expected = 512
