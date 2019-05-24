@@ -199,6 +199,8 @@
                     relatorioItem.appendChild(relatorioLink);
                     document.getElementById("relatoriosContainer").appendChild(relatorioItem);
                 }
+                if (!document.getElementById("relatoriosContainer").innerHTML)
+                    document.getElementById("relatoriosContainer").innerHTML = '<p>Nenhum há nenhum relatório desse parlamentar.</p>'
                 $("#mensagemCarregando").addClass('d-none');
             }
         });
