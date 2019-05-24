@@ -28,7 +28,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
     def obter_relatorio(self, parlamentar_id, data_final=None, periodo_dias=7):
         try:
             self.relatorio = Relatorio()
-            self.relatorio.aviso_dados = u'Dados de votações em sessões não disponíveis.'
+            self.relatorio.aviso_dados = u'Dados de votações em comissões não disponíveis.'
             start_time = time()
             if data_final:
                 data_final = datetime.strptime(data_final, '%Y-%m-%d')
@@ -65,6 +65,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
                     pass
                 evento.situacao = e['situacao']
                 evento.nome = e['descricao']
+                evento.url = e['uri']
                 evento.set_presente()
                 for o in e['orgaos']:
                     orgao = Orgao()
@@ -76,25 +77,34 @@ class CamaraDeputadosHandler(CasaLegislativa):
                     evento.pautas.append(None)
                 else:
                     for pauta in pautas:
-                        if len(pauta['votacao']):
-                            proposicao = Proposicao()
-                            if pauta['proposicao_detalhes'] == [{'error': True}]:
-                                proposicao = None
-                            else:
-                                proposicao.id = str(pauta['proposicao_detalhes']['id'])
-                                proposicao.tipo = pauta['proposicao_detalhes']['siglaTipo']
-                                proposicao.url_documento = \
-                                    pauta['proposicao_detalhes']['urlInteiroTeor']
-                                proposicao.url_autores = \
-                                    pauta['proposicao_detalhes']['uriAutores']
-                                proposicao.pauta = pauta['proposicao_detalhes']['ementa']
-                            if pauta['votacao'] == [{'error': True}]:
-                                proposicao.voto = 'ERROR'
-                            else:
-                                voto = self.obterVotoDeputado(
-                                    pauta['votacao'][0]['id'], deputado_info.id)
-                                proposicao.voto = voto
-                            evento.pautas.append(proposicao)
+                        proposicao = Proposicao()
+                        if pauta['proposicao_detalhes'] == [{'error': True}]:
+                            proposicao = None
+                        else:
+                            proposicao.id = str(pauta['proposicao_detalhes']['id'])
+                            proposicao.tipo = pauta['proposicao_detalhes']['siglaTipo']
+                            proposicao.url_documento = \
+                                pauta['proposicao_detalhes']['urlInteiroTeor']
+                            proposicao.url_autores = \
+                                pauta['proposicao_detalhes']['uriAutores']
+                            proposicao.pauta = pauta['proposicao_detalhes']['ementa']
+                            voto, pauta_votacao = self.obterVotoDeputado(
+                                deputado_info.id,
+                                proposicao={
+                                    'tipo': proposicao.tipo,
+                                    'numero': pauta['proposicao_detalhes']['numero'],
+                                    'ano': pauta['proposicao_detalhes']['ano']
+                                },
+                                datas_evento={
+                                    'data_inicial': self.obterDatetimeDeStr(e['dataHoraInicio']),
+                                    'data_final': self.obterDatetimeDeStr(e['dataHoraFim'])
+                                }
+                            )
+                            proposicao.voto = voto if voto else "ERROR"
+                            if pauta_votacao:
+                                proposicao.pauta = '{} de {}'.format(
+                                    pauta_votacao, proposicao.pauta)
+                        evento.pautas.append(proposicao)
                 self.relatorio.eventos_presentes.append(evento)
             print('Pautas obtidas em {0:.5f}'.format(time() - start_time))
             (
@@ -218,23 +228,35 @@ class CamaraDeputadosHandler(CasaLegislativa):
                             proposicao_id)
                     except CamaraDeputadosError:
                         p['proposicao_detalhes'] = [{'error': True}]
-                    try:
-                        p['votacao'] = self.prop.obterVotacoesProposicao(
-                            proposicao_id)
-                    except CamaraDeputadosError:
-                        p['votacao'] = [{'error': True}]
             return pautas_unicas
         except CamaraDeputadosError:
             return [{'error': True}]
 
-    def obterVotoDeputado(self, vot_id, dep_id):
+    def obterVotoDeputado(self, dep_id, proposicao, datas_evento):
         try:
-            for page in self.vot.obterVotos(vot_id):
-                for v in page:
-                    if str(v['parlamentar']['id']) == dep_id:
-                        return v['voto']
-        except CamaraDeputadosError:
-            return False
+            votos = []
+            pautas = []
+            for votacao in self.prop.obterVotacoesProposicao(
+                tipo=proposicao['tipo'],
+                numero=proposicao['numero'],
+                ano=proposicao['ano']
+            ):
+                data_votacao = datetime.strptime(
+                    "{} {}".format(votacao["data"], votacao["hora"]),
+                    "%d/%m/%Y %H:%M"
+                )
+                if (data_votacao >= datas_evento['data_inicial'] and
+                        data_votacao <= datas_evento['data_final']):
+                    pautas.append(votacao['resumo'])
+                    for voto in votacao['votos']:
+                        if voto['id'] == dep_id:
+                            votos.append(voto['voto'])
+            if votos == [] and pautas != []:
+                return 'Não votou', ','.join(pautas)
+            return ','.join(votos), ','.join(pautas)
+        except (CamaraDeputadosError, ValueError) as e:
+            print(e)
+            return None, None
 
     def obterEventosAusentes(
             self,

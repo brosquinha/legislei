@@ -1,7 +1,8 @@
-from .APIData import APIData
+from .restful import RESTful
+from .webservice import Webservice
 
 
-class Deputados(APIData):
+class Deputados(RESTful):
     """
     Cliente para obtenção de dados de deputados
 
@@ -141,7 +142,7 @@ class Deputados(APIData):
         return self.runThroughAllPages(dep_id, 'eventos', **kwargs)
 
 
-class Eventos(APIData):
+class Eventos(RESTful):
     """
     Cliente para obtenção de dados de eventos da Câmara dos Deputados
 
@@ -259,7 +260,7 @@ class Eventos(APIData):
         return self.getAPISingleRequest(ev_id, 'pauta')
 
 
-class Proposicoes(APIData):
+class Proposicoes(RESTful):
     """
     Cliente para obtenção de dados de proposições
 
@@ -392,7 +393,7 @@ class Proposicoes(APIData):
         """
         return self.getAPISingleRequest(prop_id, 'tramitacoes')
 
-    def obterVotacoesProposicao(self, prop_id):
+    def obterVotacoesProposicao(self, tipo, numero, ano):
         """
         Obtém votações pelas quais a proposição identificada por ``prop_id`` já \
         passou
@@ -401,16 +402,49 @@ class Proposicoes(APIData):
 
             proposicao_votacoes = prop.obterVotacoesProposicao(prop_id)
 
-        :param prop_id: Identificador de proposição
-        :type prop_id: String
+        :param tipo: Tipo da proposição
+        :type tipo: String
+        :param numero: Número da proposição
+        :type numero: String
+        :param ano: Ano da proposição
+        :type ano: String
 
         :return: Lista de votações de proposição
         :rtype: List
         """
-        return self.getAPISingleRequest(prop_id, 'votacoes')
+        votacoes = []
+        webservice = Webservice()
+        root = webservice.get_XML(
+            "Proposicoes.asmx/ObterVotacaoProposicao",
+            tipo=tipo,
+            numero=numero,
+            ano=ano
+        )
+        for child in root:
+            if child.tag == "Votacoes":
+                for v in child:
+                    votacao = {
+                        "resumo": webservice.get_element_attr(v, "Resumo"),
+                        "data": webservice.get_element_attr(v, "Data"),
+                        "hora": webservice.get_element_attr(v, "Hora")
+                    }
+                    votos = v.find("votos")
+                    if votos:
+                        votacao["votos"] = []
+                        for deputado in votos:
+                            if deputado.tag == "Deputado":
+                                votacao["votos"].append({
+                                    "id": webservice.get_element_attr(deputado, "ideCadastro"),
+                                    "nome": webservice.get_element_attr(deputado, "Nome"),
+                                    "partido": webservice.get_element_attr(deputado, "Partido"),
+                                    "uf": webservice.get_element_attr(deputado, "UF"),
+                                    "voto": webservice.get_element_attr(deputado, "Voto")
+                                })
+                    votacoes.append(votacao)
+        return votacoes
 
 
-class Votacoes(APIData):
+class Votacoes(RESTful):
     """
     Cliente para obtenção de dados de votações
 
