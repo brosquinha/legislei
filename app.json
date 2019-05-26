@@ -9,6 +9,9 @@
       "DEBUG": {
         "required": true
       },
+      "EMAIL_ENDPOINT": {
+        "required": true
+      },
       "EMAIL_PORT": {
         "required": true
       },
@@ -25,12 +28,6 @@
         "required": true
       },
       "MONGODB_URI": {
-        "required": true
-      },
-      "SENDGRID_PASSWORD": {
-        "required": true
-      },
-      "SENDGRID_USERNAME": {
         "required": true
       }
     },
