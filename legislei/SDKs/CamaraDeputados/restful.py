@@ -1,13 +1,13 @@
-import certifi
 import json
-import urllib3
-from time import sleep
-from .exceptions import CamaraDeputadosConnectionError, CamaraDeputadosInvalidResponse
+
+from .api import Base
+from .exceptions import (CamaraDeputadosConnectionError,
+                         CamaraDeputadosInvalidResponse)
 
 
-class APIData(object):
+class RESTful(Base):
     """
-    Classe base de operações de rede
+    Classe base de operações da API REST da Câmara de Deputados
 
     Essa classe contém métodos base para chamadas da API REST da Câmera dos Deputados, \
     herdade pelas demais classes do pacote.
@@ -17,11 +17,8 @@ class APIData(object):
     """
 
     def __init__(self, api_section):
+        super().__init__()
         self.camara_dos_deputados_endpoint = 'https://dadosabertos.camara.leg.br/api/v2/'
-        self.http = urllib3.PoolManager(
-            cert_reqs='CERT_REQUIRED',
-            ca_certs=certifi.where()
-        )
         self._api_section = api_section
 
     def runThroughAllPages(self, *args, **kwargs):
@@ -131,21 +128,3 @@ class APIData(object):
             return json.loads(r.data.decode('utf-8'))
         except:
             raise CamaraDeputadosInvalidResponse(r.data.decode('utf-8'))
-
-    def _make_request(self, *args, **kwargs):
-        """
-        Faz requisições HTTP
-
-        Se receber um 429, espera 50ms e depois tenta de novo.
-
-        :param args: Unamed args for urllib3 request
-        :param kwagargs: Named args for urllib3 request
-        :return: Request object
-        """
-        too_many_requests = True
-        while too_many_requests:
-            r = self.http.request(*args, **kwargs)
-            if r.status == 429:
-                sleep(0.05)
-            else:
-                return r
