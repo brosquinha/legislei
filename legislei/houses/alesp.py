@@ -91,6 +91,19 @@ class ALESPHandler(CasaLegislativa):
             resultado[votacao["idReuniao"]].append(votacao)
         return resultado
 
+    def obterVotoDescritivo(self, codigo_voto):
+        codigos = {
+            "F": "Favorável",
+            "C": "Contrário",
+            "S": "Com o voto em separado",
+            "P": "Favorável ao projeto",
+            "T": "Contrário ao projeto",
+            "A": "Abstenção",
+            "B": "Branco",
+            "O": "Outros"
+        }
+        return codigos[codigo_voto] if codigo_voto in codigos else codigo_voto
+
     def obterComissoesDeputado(self, comissoes, dep_id, data_inicial, data_final):
         dep_comissoes_nomes = []
         membros_comissoes = self.com.obterMembrosComissoes()
@@ -130,7 +143,7 @@ class ALESPHandler(CasaLegislativa):
                         proposicao.pauta = r['idDocumento']
                         proposicao.url_documento = \
                             'https://www.al.sp.gov.br/propositura/?id={}'.format(r['idDocumento'])
-                        proposicao.voto = r['voto']
+                        proposicao.voto = self.obterVotoDescritivo(r['voto'])
                         proposicao.tipo = r['idDocumento']
                         evento.pautas.append(proposicao)
                 orgao = Orgao()
