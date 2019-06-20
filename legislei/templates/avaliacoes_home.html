@@ -192,11 +192,15 @@
                     let relatorioItem = document.createElement("div");
                     relatorioItem.setAttribute("class", "p-2");
                     let relatorioLink = document.createElement("a");
+                    let relatorioDataFinal = new Date(data[i].dataFinal.$date);
+                    console.log(relatorioDataFinal);
                     relatorioLink.href = `/relatorio/${data[i]._id.$oid}`;
-                    relatorioLink.innerText = data[i].dataFinal;
+                    relatorioLink.innerText = relatorioDataFinal.toLocaleDateString();
                     relatorioItem.appendChild(relatorioLink);
                     document.getElementById("relatoriosContainer").appendChild(relatorioItem);
                 }
+                if (!document.getElementById("relatoriosContainer").innerHTML)
+                    document.getElementById("relatoriosContainer").innerHTML = '<p>Nenhum há nenhum relatório desse parlamentar.</p>'
                 $("#mensagemCarregando").addClass('d-none');
             }
         });

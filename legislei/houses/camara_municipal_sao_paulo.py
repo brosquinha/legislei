@@ -2,6 +2,7 @@ import json
 from uuid import uuid4
 from datetime import datetime
 
+import pytz
 from flask import render_template, request
 
 from legislei.exceptions import ModelError
@@ -17,6 +18,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
         super().__init__()
         self.ver = CamaraMunicipal()
         self.relatorio = Relatorio()
+        self.brasilia_tz = pytz.timezone('America/Sao_Paulo')
     
     def obter_relatorio(self, parlamentar_id, data_final=datetime.now(), periodo_dias=7):
         try:
@@ -26,8 +28,8 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
             vereador = self.obter_parlamentar(parlamentar_id)
-            self.relatorio.data_inicial = data_inicial
-            self.relatorio.data_final = data_final
+            self.relatorio.data_inicial = self.brasilia_tz.localize(data_inicial)
+            self.relatorio.data_final = self.brasilia_tz.localize(data_final)
             presenca = []
             sessao_total = 0
             presenca_total = 0
@@ -49,8 +51,13 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                         evento.nome = key
                         evento.id = str(uuid4())
                         if value['data']:
-                            evento.data_inicial = value['data']
-                            evento.data_final = value['data']
+                            try:
+                                evento.data_inicial = self.brasilia_tz.localize(
+                                    datetime.strptime(value['data'], "%d/%m/%Y"))
+                                evento.data_final = self.brasilia_tz.localize(
+                                    datetime.strptime(value['data'], "%d/%m/%Y"))
+                            except ValueError:
+                                pass
                         for prop in value['pautas']:
                             proposicao = Proposicao()
                             proposicao.pauta = prop['projeto']
@@ -67,8 +74,6 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                             self.relatorio.eventos_ausentes.append(evento)
             self.relatorio.eventos_ausentes_esperados_total = sessao_total - presenca_total
             self.obter_proposicoes_parlamentar(vereador.id, data_inicial, data_final)
-            self.relatorio.data_final = self.relatorio.data_final.strftime("%d/%m/%Y")
-            self.relatorio.data_inicial = self.relatorio.data_inicial.strftime("%d/%m/%Y")
             return self.relatorio
         except Exception as e:
             print(e)
@@ -86,7 +91,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                     if not(projeto_data >= data_inicial and projeto_data <= data_final):
                         continue
                     proposicao = Proposicao()
-                    proposicao.data_apresentacao = projeto_data
+                    proposicao.data_apresentacao = self.brasilia_tz.localize(projeto_data)
                     proposicao.ementa = projeto['ementa']
                     proposicao.id = projeto['chave']
                     proposicao.tipo = projeto['tipo']

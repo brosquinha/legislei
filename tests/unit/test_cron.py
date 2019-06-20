@@ -3,6 +3,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import ANY, call, patch
 
+import pytz
 from flask import render_template
 from mongoengine import connect
 
@@ -10,6 +11,8 @@ from legislei.cron import send_reports
 from legislei.exceptions import ModelError
 from legislei.house_selector import obter_relatorio
 from legislei.models.relatorio import Parlamentar, Relatorio
+from legislei.models.user import User
+from legislei.models.inscricoes import Inscricoes
 from legislei.send_reports import send_email
 
 customAssertionMsg = '{} differs from expected {}'
@@ -30,7 +33,10 @@ class TestCron(unittest.TestCase):
             mock_render_template,
             mock_send_email
     ):
-        data_final = datetime.now().strftime('%d/%m/%Y')
+        brasilia_tz = pytz.timezone('America/Sao_Paulo')
+        agora = datetime.now()
+        data_final = datetime(agora.year, agora.month, agora.day)
+        data_final = brasilia_tz.localize(data_final)
         parlamentar1 = Parlamentar(id='1', cargo='BR1')
         parlamentar2 = Parlamentar(id='2', cargo='BR2')
         parlamentar3 = Parlamentar(id='3', cargo='BR1')
@@ -39,28 +45,17 @@ class TestCron(unittest.TestCase):
         Relatorio(parlamentar=parlamentar3, data_final=data_final).save()
         mock_render_template.return_value = "<html>Nice</html>"
         mock_send_email.return_value = True
+        user = [User(
+            username='user',
+            password='pwd',
+            email='test@test.com',
+            inscricoes=Inscricoes(
+                parlamentares=[parlamentar1, parlamentar2, parlamentar3],
+                intervalo=7
+            )
+        )]
 
-        data = [
-            {
-                "parlamentares": [
-                    {
-                        'id': '1',
-                        'cargo': 'BR1'
-                    },
-                    {
-                        'id': '2',
-                        'cargo': 'BR2'
-                    },
-                    {
-                        'id': '3',
-                        'cargo': 'BR1'
-                    }
-                ],
-                "intervalo": 7,
-                "email": "test@test.com"
-            }
-        ]
-        send_reports(data)
+        send_reports(user)
 
         self.assertEqual(mock_render_template.call_count, 1)
         mock_send_email.assert_called_once_with(
@@ -77,34 +72,26 @@ class TestCron(unittest.TestCase):
     ):
         class FakeRelatorios():
             def obter_relatorio(self, parlamentar, *args, **kwargs):
-                if parlamentar == 2:
+                if parlamentar == '2':
                     raise ModelError('msg')
                 return {"nice": "JSON"}
         mock_Relatorios.side_effect = FakeRelatorios
         mock_render_template.return_value = "<html>Nice</html>"
         mock_send_email.return_value = True
+        parlamentar1 = Parlamentar(id='1', cargo='BR1')
+        parlamentar2 = Parlamentar(id='2', cargo='BR2')
+        parlamentar3 = Parlamentar(id='3', cargo='BR1')
+        user = [User(
+            username='user',
+            password='pwd',
+            email='test@test.com',
+            inscricoes=Inscricoes(
+                parlamentares=[parlamentar1, parlamentar2, parlamentar3],
+                intervalo=7
+            )
+        )]
 
-        data = [
-            {
-                "parlamentares": [
-                    {
-                        'id': 1,
-                        'cargo': 'BR1'
-                    },
-                    {
-                        'id': 2,
-                        'cargo': 'SP'
-                    },
-                    {
-                        'id': 3,
-                        'cargo': 'BR1'
-                    }
-                ],
-                "intervalo": 7,
-                "email": "test@test.com"
-            }
-        ]
-        send_reports(data)
+        send_reports(user)
 
         self.assertEqual(mock_Relatorios.call_count, 3)
         self.assertEqual(mock_render_template.call_count, 1)
@@ -115,10 +102,7 @@ class TestCron(unittest.TestCase):
             relatorios=[
                 {"nice": "JSON"},
                 {
-                    'parlamentar': {
-                        'id': 2,
-                        'cargo': 'SP'
-                    },
+                    'parlamentar': parlamentar2,
                     'eventosPresentes': None,
                     'eventosPrevistos': None,
                     'proposicoes': None

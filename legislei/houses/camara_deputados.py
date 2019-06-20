@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from time import time
 
+import pytz
 from flask import render_template, request
 
 from legislei.exceptions import ModelError
@@ -22,11 +23,12 @@ class CamaraDeputadosHandler(CasaLegislativa):
         self.prop = Proposicoes()
         self.vot = Votacoes()
         self.relatorio = Relatorio()
+        self.brasilia_tz = pytz.timezone('America/Sao_Paulo')
 
     def obter_relatorio(self, parlamentar_id, data_final=None, periodo_dias=7):
         try:
             self.relatorio = Relatorio()
-            self.relatorio.aviso_dados = u'Dados de votações em sessões não disponíveis.'
+            self.relatorio.aviso_dados = u'Dados de votações em comissões não disponíveis.'
             start_time = time()
             if data_final:
                 data_final = datetime.strptime(data_final, '%Y-%m-%d')
@@ -35,9 +37,9 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 data_final = datetime.now()
             self.setPeriodoDias(periodo_dias)
             deputado_info = self.obter_parlamentar(parlamentar_id)
-            self.relatorio.data_inicial = self.obterDataInicial(
-                data_final, **self.periodo)
-            self.relatorio.data_final = data_final
+            self.relatorio.data_inicial = self.brasilia_tz.localize(
+                self.obterDataInicial(data_final, **self.periodo))
+            self.relatorio.data_final = self.brasilia_tz.localize(data_final)
             print('Deputado obtido em {0:.5f}'.format(time() - start_time))
             (
                 eventos,
@@ -54,10 +56,16 @@ class CamaraDeputadosHandler(CasaLegislativa):
             for e in eventos:
                 evento = Evento()
                 evento.id = str(e['id'])
-                evento.data_inicial = e['dataHoraInicio']
-                evento.data_final = e['dataHoraFim']
+                try:
+                    evento.data_inicial = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraInicio']))
+                    evento.data_final = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraFim']))
+                except ValueError:
+                    pass
                 evento.situacao = e['situacao']
                 evento.nome = e['descricao']
+                evento.url = e['uri']
                 evento.set_presente()
                 for o in e['orgaos']:
                     orgao = Orgao()
@@ -69,25 +77,34 @@ class CamaraDeputadosHandler(CasaLegislativa):
                     evento.pautas.append(None)
                 else:
                     for pauta in pautas:
-                        if len(pauta['votacao']):
-                            proposicao = Proposicao()
-                            if pauta['proposicao_detalhes'] == [{'error': True}]:
-                                proposicao = None
-                            else:
-                                proposicao.id = str(pauta['proposicao_detalhes']['id'])
-                                proposicao.tipo = pauta['proposicao_detalhes']['siglaTipo']
-                                proposicao.url_documento = \
-                                    pauta['proposicao_detalhes']['urlInteiroTeor']
-                                proposicao.url_autores = \
-                                    pauta['proposicao_detalhes']['uriAutores']
-                                proposicao.pauta = pauta['proposicao_detalhes']['ementa']
-                            if pauta['votacao'] == [{'error': True}]:
-                                proposicao.voto = 'ERROR'
-                            else:
-                                voto = self.obterVotoDeputado(
-                                    pauta['votacao'][0]['id'], deputado_info.id)
-                                proposicao.voto = voto
-                            evento.pautas.append(proposicao)
+                        proposicao = Proposicao()
+                        if pauta['proposicao_detalhes'] == [{'error': True}]:
+                            proposicao = None
+                        else:
+                            proposicao.id = str(pauta['proposicao_detalhes']['id'])
+                            proposicao.tipo = pauta['proposicao_detalhes']['siglaTipo']
+                            proposicao.url_documento = \
+                                pauta['proposicao_detalhes']['urlInteiroTeor']
+                            proposicao.url_autores = \
+                                pauta['proposicao_detalhes']['uriAutores']
+                            proposicao.pauta = pauta['proposicao_detalhes']['ementa']
+                            voto, pauta_votacao = self.obterVotoDeputado(
+                                deputado_info.id,
+                                proposicao={
+                                    'tipo': proposicao.tipo,
+                                    'numero': pauta['proposicao_detalhes']['numero'],
+                                    'ano': pauta['proposicao_detalhes']['ano']
+                                },
+                                datas_evento={
+                                    'data_inicial': self.obterDatetimeDeStr(e['dataHoraInicio']),
+                                    'data_final': self.obterDatetimeDeStr(e['dataHoraFim'])
+                                }
+                            )
+                            proposicao.voto = voto if voto else "ERROR"
+                            if pauta_votacao:
+                                proposicao.pauta = '{} de {}'.format(
+                                    pauta_votacao, proposicao.pauta)
+                        evento.pautas.append(proposicao)
                 self.relatorio.eventos_presentes.append(evento)
             print('Pautas obtidas em {0:.5f}'.format(time() - start_time))
             (
@@ -111,8 +128,13 @@ class CamaraDeputadosHandler(CasaLegislativa):
                     evento.set_ausencia_evento_esperado()
                 else:
                     evento.set_ausencia_evento_nao_esperado()
-                evento.data_inicial = e['dataHoraInicio']
-                evento.data_final = e['dataHoraFim']
+                try:
+                    evento.data_inicial = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraInicio']))
+                    evento.data_final = self.obterTimezoneBrasilia(
+                        self.obterDatetimeDeStr(e['dataHoraFim']))
+                except ValueError:
+                    pass
                 evento.nome = e['descricao']
                 evento.situacao = e['situacao']
                 evento.url = e['uri']
@@ -128,8 +150,6 @@ class CamaraDeputadosHandler(CasaLegislativa):
             self.obterProposicoesDeputado(deputado_info, data_final)
             print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
             
-            self.relatorio.data_final = self.relatorio.data_final.strftime("%d/%m/%Y")
-            self.relatorio.data_inicial = self.relatorio.data_inicial.strftime("%d/%m/%Y")
             return self.relatorio
         except CamaraDeputadosError:
             raise ModelError("API Câmara dos Deputados indisponível")
@@ -142,15 +162,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 for item in page:
                     dataFim = datetime.now()
                     if item['dataFim'] != None:
-                        try:
-                            # Um belo dia a API retornou Epoch ao invés do formato documentado (YYYY-MM-DD), então...
-                            dataFim = datetime.fromtimestamp(item['dataFim']/1000)
-                        except TypeError:
-                            try:
-                                dataFim = datetime.strptime(item['dataFim'], '%Y-%m-%d')
-                            except ValueError:
-                                #Agora aparentemente ele volta nesse formato aqui... aiai
-                                dataFim = datetime.strptime(item['dataFim'], '%Y-%m-%dT%H:%M')
+                        dataFim = self.obterDatetimeDeStr(item['dataFim'])
                     if (item['dataFim'] == None or dataFim > data_final):
                         orgao = Orgao()
                         if 'nomeOrgao' in item:
@@ -216,23 +228,35 @@ class CamaraDeputadosHandler(CasaLegislativa):
                             proposicao_id)
                     except CamaraDeputadosError:
                         p['proposicao_detalhes'] = [{'error': True}]
-                    try:
-                        p['votacao'] = self.prop.obterVotacoesProposicao(
-                            proposicao_id)
-                    except CamaraDeputadosError:
-                        p['votacao'] = [{'error': True}]
             return pautas_unicas
         except CamaraDeputadosError:
             return [{'error': True}]
 
-    def obterVotoDeputado(self, vot_id, dep_id):
+    def obterVotoDeputado(self, dep_id, proposicao, datas_evento):
         try:
-            for page in self.vot.obterVotos(vot_id):
-                for v in page:
-                    if str(v['parlamentar']['id']) == dep_id:
-                        return v['voto']
-        except CamaraDeputadosError:
-            return False
+            votos = []
+            pautas = []
+            for votacao in self.prop.obterVotacoesProposicao(
+                tipo=proposicao['tipo'],
+                numero=proposicao['numero'],
+                ano=proposicao['ano']
+            ):
+                data_votacao = datetime.strptime(
+                    "{} {}".format(votacao["data"], votacao["hora"]),
+                    "%d/%m/%Y %H:%M"
+                )
+                if (data_votacao >= datas_evento['data_inicial'] and
+                        data_votacao <= datas_evento['data_final']):
+                    pautas.append(votacao['resumo'])
+                    for voto in votacao['votos']:
+                        if voto['id'] == dep_id:
+                            votos.append(voto['voto'])
+            if votos == [] and pautas != []:
+                return 'Não votou', ','.join(pautas)
+            return ','.join(votos), ','.join(pautas)
+        except (CamaraDeputadosError, ValueError) as e:
+            print(e)
+            return None, None
 
     def obterEventosAusentes(
             self,
@@ -277,7 +301,11 @@ class CamaraDeputadosHandler(CasaLegislativa):
                         proposicao.id = str(item['id'])
                         p = self.prop.obterProposicao(item['id'])
                         if 'dataApresentacao' in p:
-                            proposicao.data_apresentacao = p['dataApresentacao']
+                            try:
+                                proposicao.data_apresentacao = self.obterTimezoneBrasilia(
+                                    self.obterDatetimeDeStr(p['dataApresentacao']))
+                            except ValueError:
+                                pass
                         if 'ementa' in p:
                             proposicao.ementa = p['ementa']
                         if 'numero' in p:
@@ -289,6 +317,25 @@ class CamaraDeputadosHandler(CasaLegislativa):
                         self.relatorio.proposicoes.append(proposicao)
         except CamaraDeputadosError:
             self.relatorio.aviso_dados = 'Não foi possível obter proposições do parlamentar.'
+
+    def obterDatetimeDeStr(self, txt):
+        if txt == None:
+            return txt
+        try:
+            # Um belo dia a API retornou Epoch ao invés do formato documentado (YYYY-MM-DD), então...
+            data = datetime.fromtimestamp(txt/1000)
+        except TypeError:
+            try:
+                data = datetime.strptime(txt, '%Y-%m-%d')
+            except ValueError:
+                #Agora aparentemente ele volta nesse formato aqui... aiai
+                data = datetime.strptime(txt, '%Y-%m-%dT%H:%M')
+        return data
+
+    def obterTimezoneBrasilia(self, date):
+        if date == None:
+            return None
+        return self.brasilia_tz.localize(date)
 
     def obter_parlamentares(self):
         deputados = []

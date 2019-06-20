@@ -106,6 +106,32 @@ cd docs/
 make html
 ```
 
+### Rodando as migrations
+
+Para rodar as migrations de banco de dados, vá para a pasta raíz do projeto e crie a pasta `.migrations`. Nela, crie o arquivo `config.json` com o seguinte conteúdo:
+
+```json
+{
+    "migrations_db_name": "MONGODB_DATABASE",
+    "migrations_coll_name": "migrations",
+    "mongo_uri": "MONGODB_URI"
+}
+```
+
+Substitua `MONGODB_DATABASE` e `MONGODB_URI` pelo seus respectivo valores. Depois, crie hardlinks apontando para as migrations que quer rodar (usando o mesmo nome do arquivo apontado) e rode o seguinte:
+
+```Bash
+cd ..
+docker run -e env=dev -v $(pwd)/.migrations/config.json:/app/src/config/config.dev.json -v $(pwd)/.migrations:/app/src/migrations skynyrd/cikilop
+```
+
+Para reverter as migrations:
+
+```Bash
+cd ..
+docker run -e env=dev -v $(pwd)/.migrations/config.json:/app/src/config/config.dev.json -v $(pwd)/.migrations:/app/src/migrations skynyrd/cikilop --revert
+```
+
 ## Executando no Docker
 
 Para construir a imagem:

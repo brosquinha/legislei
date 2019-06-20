@@ -204,17 +204,6 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
             "98765"
         )
         mock_prop.add_exception("obterProposicao", CamaraDeputadosError, "56789")
-        mock_prop.add_response(
-            "obterVotacoesProposicao",
-            {'votos': '512'},
-            "12345"
-        )
-        mock_prop.add_response(
-            "obterVotacoesProposicao",
-            {'votos': '256'},
-            "98765"
-        )
-        mock_prop.add_exception("obterVotacoesProposicao", CamaraDeputadosError, "56789")
 
         actual_response = self.dep.obterPautaEvento(ev_id)
 
@@ -224,24 +213,21 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
                 'proposicao_': {
                     'id': '12345'
                 },
-                'proposicao_detalhes': {'nome': 'Proposição I'},
-                'votacao': {'votos': '512'}
+                'proposicao_detalhes': {'nome': 'Proposição I'}
             },
             {
                 'codRegime': '987',
                 'proposicao_': {
                     'id': '98765'
                 },
-                'proposicao_detalhes': {'nome': 'Proposição II'},
-                'votacao': {'votos': '256'}
+                'proposicao_detalhes': {'nome': 'Proposição II'}
             },
             {
                 'codRegime': '987',
                 'proposicao_': {
                     'id': '56789'
                 },
-                'proposicao_detalhes': [{'error': True}],
-                'votacao': [{'error': True}]
+                'proposicao_detalhes': [{'error': True}]
             },
         ])
 
@@ -260,38 +246,69 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
     def test_obterVotoDeputado(
             self,
     ):
-        votos = [
+        votacoes = [
             {
-                'parlamentar': {'id': '12345'},
-                'voto': 'Sim'
+                'data': '12/5/2019',
+                'hora': '12:00',
+                'resumo': 'Votação 1',
+                'votos': [
+                    {'id': '23456', 'voto': 'Não'},
+                    {'id': '12345', 'voto': 'Sim'},
+                    {'id': '34567', 'voto': 'Abstenção'},
+                ]
             },
             {
-                'parlamentar': {'id': '23456'},
-                'voto': 'Não'
+                'data': '12/5/2019',
+                'hora': '18:00',
+                'resumo': 'Votação 2',
+                'votos': [
+                    {'id': '23456', 'voto': 'Sim'},
+                    {'id': '12345', 'voto': 'Não'},
+                    {'id': '34567', 'voto': 'Obstrução'},
+                ]
             },
-            {
-                'parlamentar': {'id': '34567'},
-                'voto': 'Abstenção'
-            }
         ]
-        mock = Mocker(self.dep.vot)
+        mock = Mocker(self.dep.prop)
         mock.add_response(
-            "obterVotos",
-            [votos]
+            "obterVotacoesProposicao",
+            votacoes
         )
 
-        actual_response = self.dep.obterVotoDeputado('', '12345')
+        actual_response = self.dep.obterVotoDeputado(
+            '12345',
+            proposicao={
+                'tipo': 'PL',
+                'numero': '1',
+                'ano': '2019'
+            },
+            datas_evento={
+                'data_inicial': datetime(2019, 5, 12, 10),
+                'data_final': datetime(2019, 5, 12, 14)
+            }
+        )
 
-        self.assertEqual('Sim', actual_response)
+        self.assertEqual(('Sim', 'Votação 1'), actual_response)
         mock.assert_no_pending_responses()
 
     def test_obterVotoDeputado_fail_case(self):
-        mock = Mocker(self.dep.vot)
-        mock.add_exception("obterVotos", CamaraDeputadosError, "12345")
+        mock = Mocker(self.dep.prop)
+        mock.add_exception("obterVotacoesProposicao", CamaraDeputadosError)
 
-        actual_response = self.dep.obterVotoDeputado("12345", "67890")
+        actual_response = self.dep.obterVotoDeputado(
+            '12345',
+            proposicao={
+                'tipo': 'PL',
+                'numero': '1',
+                'ano': '2019'
+            },
+            datas_evento={
+                'data_inicial': datetime(2019, 5, 12, 10),
+                'data_final': datetime(2019, 5, 12, 14)
+            }
+        )
 
-        self.assertEqual(actual_response, False)
+        self.assertIsNone(actual_response[0])
+        self.assertIsNone(actual_response[1])
         mock.assert_no_pending_responses()
 
     @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterEventosPrevistosDeputado")

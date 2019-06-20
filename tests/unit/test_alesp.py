@@ -106,6 +106,12 @@ class TestALESPHandler(unittest.TestCase):
         }, actual_response)
         mock.assert_no_pending_responses()
 
+    def test_obterVotoDescritivo(self):
+        self.assertEqual(self.dep.obterVotoDescritivo("F"), "Favorável")
+        self.assertEqual(self.dep.obterVotoDescritivo("C"), "Contrário")
+        self.assertEqual(self.dep.obterVotoDescritivo("S"), "Com o voto em separado")
+        self.assertEqual(self.dep.obterVotoDescritivo("WTF"), "WTF")
+
     @patch("legislei.houses.alesp.ALESPHandler.obterDatetimeDeStr")
     def test_obterComissoesDeputado(
         self,

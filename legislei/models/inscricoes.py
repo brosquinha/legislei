@@ -1,9 +1,8 @@
-from mongoengine import Document, StringField, IntField, EmbeddedDocumentListField
+from mongoengine import StringField, IntField, EmbeddedDocument, EmbeddedDocumentListField
 
 from legislei.models.relatorio import Parlamentar
 
-class Inscricoes(Document):
+class Inscricoes(EmbeddedDocument):
 
-    email = StringField()
     intervalo = IntField()
     parlamentares = EmbeddedDocumentListField(Parlamentar)

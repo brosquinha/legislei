@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import json
+import pytz
 import os
+from datetime import datetime
 
 from flask import Flask, redirect, render_template, request
 from flask_login import LoginManager, current_user, login_required
@@ -66,7 +68,13 @@ def consultar_parlamentar():
             cargo=request.args['parlamentarTipo'],
             periodo=request.args['dias']
         ))
-    except AppError:
+    except AppError as e:
+        return render_template(
+            'erro.html',
+            erro_titulo="500 - Erro interno",
+            erro_descricao=e.message
+        ), 500
+    except KeyError:
         return render_template(
             'erro.html',
             erro_titulo="400 - Requisição incompleta",
@@ -181,7 +189,7 @@ def consultar_deputado_api():
             data_final=request.args['data'],
             cargo=request.args['parlamentarTipo'],
             periodo=request.args['dias'],
-        ))
+        ), default=str)
     except AppError as e:
         return json.dumps({'error': e.message}), 500
     except KeyError:
@@ -356,3 +364,14 @@ def nome_cidade_filter(model):
 @app.template_filter('tojsonforced')
 def tojson_filter(obj):
     return json.dumps(obj, default=str)
+
+@app.template_filter('formatDate')
+def format_date(date, time=False):
+    if not isinstance(date, datetime):
+        return date
+    brasilia_tz = pytz.timezone('America/Sao_Paulo')
+    date = brasilia_tz.normalize(date.replace(tzinfo=pytz.UTC))
+    if time:
+        return date.strftime("%d/%m/%Y %H:%M")
+    else:
+        return date.strftime("%d/%m/%Y")
