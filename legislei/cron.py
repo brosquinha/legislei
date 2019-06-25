@@ -15,11 +15,13 @@ def check_and_send_reports():
     return send_reports(check_reports_to_send())
 
 
-def send_reports(data):
+def send_reports(data, data_final = datetime.now()):
+    numero_semana = int(data_final.strftime("%V"))
     for user in data:
         reports = []
         inscricao = user.inscricoes
-        data_final = datetime.now()
+        if (numero_semana % (inscricao["intervalo"]/7) != 0):
+            continue
         data_inicial = (data_final - timedelta(days=int(inscricao["intervalo"])))
         for par in inscricao["parlamentares"]:
             try:
