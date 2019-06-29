@@ -1,6 +1,6 @@
 import json
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import ANY, call, patch
 
 import pytz
@@ -37,12 +37,25 @@ class TestCron(unittest.TestCase):
         agora = datetime.now()
         data_final = datetime(agora.year, agora.month, agora.day)
         data_final = brasilia_tz.localize(data_final)
+        data_inicial = data_final - timedelta(days=7)
         parlamentar1 = Parlamentar(id='1', cargo='BR1')
         parlamentar2 = Parlamentar(id='2', cargo='BR2')
         parlamentar3 = Parlamentar(id='3', cargo='BR1')
-        Relatorio(parlamentar=parlamentar1, data_final=data_final).save()
-        Relatorio(parlamentar=parlamentar2, data_final=data_final).save()
-        Relatorio(parlamentar=parlamentar3, data_final=data_final).save()
+        Relatorio(
+            parlamentar=parlamentar1,
+            data_final=data_final,
+            data_inicial=data_inicial
+        ).save()
+        Relatorio(
+            parlamentar=parlamentar2,
+            data_final=data_final,
+            data_inicial=data_inicial
+        ).save()
+        Relatorio(
+            parlamentar=parlamentar3,
+            data_final=data_final,
+            data_inicial=data_inicial
+        ).save()
         mock_render_template.return_value = "<html>Nice</html>"
         mock_send_email.return_value = True
         user = [User(
@@ -55,7 +68,7 @@ class TestCron(unittest.TestCase):
             )
         )]
 
-        send_reports(user)
+        send_reports(user, data_final=agora)
 
         self.assertEqual(mock_render_template.call_count, 1)
         mock_send_email.assert_called_once_with(
@@ -71,7 +84,21 @@ class TestCron(unittest.TestCase):
         data_final = datetime(agora.year, agora.month, agora.day)
         data_final = brasilia_tz.localize(data_final)
         parlamentar1 = Parlamentar(id='1', cargo='BR1')
-        Relatorio(parlamentar=parlamentar1, data_final=data_final).save()
+        Relatorio(
+            parlamentar=parlamentar1,
+            data_final=data_final,
+            data_inicial=data_final - timedelta(days=7)
+        ).save()
+        Relatorio(
+            parlamentar=parlamentar1,
+            data_final=data_final,
+            data_inicial=data_final - timedelta(days=14)
+        ).save()
+        Relatorio(
+            parlamentar=parlamentar1,
+            data_final=data_final,
+            data_inicial=data_final - timedelta(days=28)
+        ).save()
         mock_render_template.return_value = "<html>Nice</html>"
         mock_send_email.return_value = True
         users = [
