@@ -531,7 +531,7 @@ def set_up_db(db):
         pk=ObjectId("5c264b5e3a5efd576ecaf48e"),
         parlamentar=parlamentar_test,
         proposicoes=[],
-        data_inicial=TestApp.brasilia_tz.localize(datetime(2019, 1, 1)),
+        data_inicial=TestApp.brasilia_tz.localize(datetime(2018, 12, 31)),
         data_final=TestApp.brasilia_tz.localize(datetime(2019, 1, 7)),
         orgaos=[],
         eventos_presentes=eventos_presentes,

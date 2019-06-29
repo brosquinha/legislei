@@ -290,7 +290,8 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         self.assertEqual(('Sim', 'Votação 1'), actual_response)
         mock.assert_no_pending_responses()
 
-    def test_obterVotoDeputado_fail_case(self):
+    @patch("builtins.print")
+    def test_obterVotoDeputado_fail_case(self, mock_print):
         mock = Mocker(self.dep.prop)
         mock.add_exception("obterVotacoesProposicao", CamaraDeputadosError)
 

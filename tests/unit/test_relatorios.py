@@ -47,11 +47,12 @@ class TestRelatorios(unittest.TestCase):
         parlamentar = Parlamentar(id='1', cargo='BR1')
         relatorio = Relatorio(
             parlamentar=parlamentar,
-            data_final=brasilia_tz.localize(datetime(2019, 1, 1))
+            data_final=brasilia_tz.localize(datetime(2019, 1, 8)),
+            data_inicial=brasilia_tz.localize(datetime(2019, 1, 1)),
         ).save()
 
         actual_response = Relatorios().obter_relatorio(
-            '1', '2019-01-01', 'BR1', periodo=7)
+            '1', '2019-01-08', 'BR1', periodo=7)
 
         self.maxDiff = None
         self.assertEqual(
@@ -59,6 +60,11 @@ class TestRelatorios(unittest.TestCase):
             relatorio.to_dict()['dataFinal']
         )
         actual_response['dataFinal'] = relatorio.to_dict()['dataFinal']
+        self.assertEqual(
+            brasilia_tz.normalize(actual_response['dataInicial'].replace(tzinfo=pytz.UTC)),
+            relatorio.to_dict()['dataInicial']
+        )
+        actual_response['dataInicial'] = relatorio.to_dict()['dataInicial']
         self.assertEqual(actual_response, relatorio.to_dict())
 
     @patch("legislei.house_selector.house_selector")
@@ -78,3 +84,32 @@ class TestRelatorios(unittest.TestCase):
         relatorio.pk = 'id'
 
         self.assertEqual(actual_response, relatorio.to_dict())
+
+    @patch("legislei.house_selector.house_selector")
+    def test_obter_relatorio_json_inexistente_por_periodos_diferentes(
+        self,
+        mock_model_selector
+    ):
+        parlamentar = Parlamentar(id='1', cargo='BR1')
+        brasilia_tz = pytz.timezone('America/Sao_Paulo')
+        relatorio_inicial = Relatorio(
+            parlamentar=parlamentar,
+            data_final=brasilia_tz.localize(datetime(2019, 6, 29)),
+            data_inicial=brasilia_tz.localize(datetime(2019, 6, 15))
+        ).save()
+        relatorio_gerado = Relatorio(
+            parlamentar=parlamentar,
+            data_final=datetime(2019, 6, 29),
+            data_inicial=datetime(2019, 6, 22)
+        )
+        class FakeModel:
+            def obter_relatorio(self, *args, **kwargs):
+                return relatorio_gerado
+        mock_model_selector.return_value = FakeModel
+
+        actual_response = Relatorios().obter_relatorio('1', '2019-06-29', 'BR1', periodo=7)
+        actual_response['_id'] = 'id'
+        relatorio_gerado.pk = 'id'
+
+        self.assertEqual(mock_model_selector.call_count, 1)
+        self.assertEqual(actual_response, relatorio_gerado.to_dict())

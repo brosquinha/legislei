@@ -87,15 +87,15 @@
                 </div>
                 <div class="modal-body">
                     <label>
-                        Período de relatórios (em dias)
-                        <input
-                            type="number"
-                            min="7"
-                            max="28"
+                        Período de relatórios
+                        <select
                             name="periodo"
-                            value="{{ periodo }}"
                             id="configPeriodo"
-                            class="form-control" />
+                            class="form-control">
+                                <option value="7" {{ "selected" if periodo == 7 }}>Semanalmente</option>
+                                <option value="14" {{ "selected" if periodo == 14 }}>A cada duas semanas</option>
+                                <option value="28" {{ "selected" if periodo == 28 }}>Mensalmente</option>
+                        </select>
                     </label>
                 </div>
                 <div class="modal-footer">
@@ -170,7 +170,7 @@
                 alert('Houve o seguinte erro ao salvar: '+txtStatus);
             },
             success: () => {
-                alert('Opção em desenvolvimento.');
+                alert('Configurações alteradas.');
             }
         });
     }

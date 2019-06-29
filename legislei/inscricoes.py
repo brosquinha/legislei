@@ -42,5 +42,5 @@ class Inscricao():
             pull__inscricoes__parlamentares={'cargo': cargo, 'id': parlamentar_id})
 
     def alterar_configs(self, periodo, email):
-        if periodo >= 7 and periodo <= 28:
+        if periodo in [7, 14, 21, 28]:
             User.objects(email=email).update_one(set__inscricoes__intervalo=periodo)

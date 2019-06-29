@@ -4,5 +4,5 @@ from legislei.models.relatorio import Parlamentar
 
 class Inscricoes(EmbeddedDocument):
 
-    intervalo = IntField()
+    intervalo = IntField(choices=[7, 14, 21, 28])
     parlamentares = EmbeddedDocumentListField(Parlamentar)
