@@ -114,7 +114,7 @@ def obter_parlamentares(model):
     :type model: String
 
     :return: Lista de parlamentares
-    :rtype: List
+    :rtype: List of Parlamentar
     """
     modelClass = house_selector(model)
     if modelClass == None:

@@ -40,12 +40,38 @@ class TestALESPHandler(unittest.TestCase):
 
     def test_obterParlamentares(self):
         mock = Mocker(self.dep.dep)
-        expected_response = [
-            {'id': '12'},
-            {'id': '11'},
-            {'id': '14', 'nome': 'Teste'},
+        mock_response = [
+            {'id': '12', 'nome': 'Teste2', 'siglaPartido': 'P1'},
+            {'id': '11', 'nome': 'Teste1', 'siglaPartido': 'P2'},
+            {'id': '14', 'nome': 'Teste4', 'siglaPartido': 'P1'},
         ]
-        mock.add_response("obterTodosDeputados", expected_response)
+        expected_response = [
+            Parlamentar(
+                id='12',
+                nome='Teste2',
+                partido='P1',
+                cargo='SP',
+                uf='SP',
+                foto=None
+            ),
+            Parlamentar(
+                id='11',
+                nome='Teste1',
+                partido='P2',
+                cargo='SP',
+                uf='SP',
+                foto=None
+            ),
+            Parlamentar(
+                id='14',
+                nome='Teste4',
+                partido='P1',
+                cargo='SP',
+                uf='SP',
+                foto=None
+            )
+        ]
+        mock.add_response("obterTodosDeputados", mock_response)
 
         actual_response = self.dep.obter_parlamentares()
 

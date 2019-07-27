@@ -142,10 +142,12 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
         lista = []
         for v in vereadores:
             lista.append(
-                {
-                    'nome': v['nome'],
-                    'id': v['chave'],
-                    'siglaPartido': v['mandatos'][0]['partido']['sigla']
-                }
+                Parlamentar(
+                    id=v['chave'],
+                    nome=v['nome'],
+                    partido=v['mandatos'][0]['partido']['sigla'],
+                    uf='SP',
+                    cargo='SÃO PAULO'
+                )
             )
         return lista
