@@ -1,6 +1,8 @@
+import threading
 import unittest
 from datetime import datetime
 from mongoengine import connect
+from time import sleep
 from unittest.mock import patch
 
 import pytz
@@ -83,6 +85,7 @@ class TestRelatorios(unittest.TestCase):
         actual_response['_id'] = 'id'
         relatorio.pk = 'id'
 
+        self.assertEqual(mock_model_selector.call_count, 1)
         self.assertEqual(actual_response, relatorio.to_dict())
 
     @patch("legislei.house_selector.house_selector")
@@ -113,3 +116,50 @@ class TestRelatorios(unittest.TestCase):
 
         self.assertEqual(mock_model_selector.call_count, 1)
         self.assertEqual(actual_response, relatorio_gerado.to_dict())
+
+    def test_solicitar_geracao_relatorio_relatorio_existente(self):
+        parlamentar = Parlamentar(id='1', cargo='BR1')
+        brasilia_tz = pytz.timezone('America/Sao_Paulo')
+        relatorio_inicial = Relatorio(
+            parlamentar=parlamentar,
+            data_final=brasilia_tz.localize(datetime(2019, 6, 29)),
+            data_inicial=brasilia_tz.localize(datetime(2019, 6, 22))
+        ).save()
+
+        actual_response = Relatorios().solicitar_geracao_relatorio('1', '2019-06-29', 'BR1', 7)
+
+        self.assertEqual(actual_response, relatorio_inicial)
+
+    @patch("legislei.house_selector.house_selector")
+    def test_solicitar_geracao_relatorio_nova_thread(
+        self,
+        mock_model_selector
+    ):
+        brasilia_tz = pytz.timezone('America/Sao_Paulo')
+        parlamentar = Parlamentar(id='1', cargo='BR1')
+        relatorio_gerado = Relatorio(
+            parlamentar=parlamentar,
+            data_final=brasilia_tz.localize(datetime(2019, 6, 29)),
+            data_inicial=brasilia_tz.localize(datetime(2019, 6, 22))
+        )
+        class FakeModel:
+            def obter_relatorio(self, *args, **kwargs):
+                return relatorio_gerado
+        mock_model_selector.return_value = FakeModel
+
+        actual_response = Relatorios().solicitar_geracao_relatorio('1', '2019-06-29', 'BR1', 7)
+
+        self.assertEqual(actual_response, True)
+
+    def test_solicitar_geracao_relatorio_relatorio_ja_sendo_gerado(self):
+        def fakeLongThread():
+            sleep(0.1)
+        thread_existente = threading.Thread(
+            name='1BR12019-06-297',
+            target=fakeLongThread
+        )
+
+        thread_existente.start()
+        actual_response = Relatorios().solicitar_geracao_relatorio('1', '2019-06-29', 'BR1', 7)
+
+        self.assertEqual(actual_response, False)
