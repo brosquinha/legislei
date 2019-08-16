@@ -11,73 +11,73 @@ from legislei.inscricoes import Inscricao
 
 
 _new_subscription_dto = rest_api_v1.model('AssemblymanId', {
-    'house': fields.String(description="Legislative house id"),
-    'assemblyman': fields.String(description="Assemblyman id")
+    'casa': fields.String(description="Id de casa legislativa"),
+    'parlamentar': fields.String(description="Id de parlamentar")
 })
 _subscription_config = rest_api_v1.model('SubscriptionConfig', {
-    'interval': fields.Integer(description="Interval in days of subscriptions updates")
+    'intervalo': fields.Integer(description="Intervalo em dias de atualização dos relatórios da inscrição")
 })
 
 
-@rest_api_v1.route("/users/subscriptions")
+@rest_api_v1.route("/usuarios/inscricoes")
 class SubscriptionList(Resource):
     @login_required
     @rest_api_v1.doc(
-        description="Gets all of current user's subscriptions",
+        description="Retorna todas as inscrições do usuário",
         security='apikey',
         responses={
-            200: 'Success',
-            401: 'Unauthorized'
+            200: 'Sucesso',
+            401: 'Sem autorização'
         }
     )
     @rest_api_v1.marshal_with(subscription_dto)
     def get(self):
         parlamentares, intervalo = Inscricao().obter_minhas_inscricoes(current_user.email)
         parlamentares_dicts = [json.loads(x.to_json()) for x in parlamentares]
-        return {'interval': intervalo, 'assemblymen': parlamentares_dicts}
+        return {'intervalo': intervalo, 'parlamentares': parlamentares_dicts}
 
     @login_required
     @rest_api_v1.doc(
-        description="Creates a new assemblyman subscription",
+        description="Cria uma nova inscrição de atividades parlamentares",
         security='apikey',
-        responses={201: 'Created', 401: 'Unauthorized'}
+        responses={201: 'Criada', 401: 'Sem autorização'}
     )
     @rest_api_v1.expect(_new_subscription_dto, validate=True)
     def post(self):
         Inscricao().nova_inscricao(
-            request.json['house'],
-            request.json['assemblyman'],
+            request.json['casa'],
+            request.json['parlamentar'],
             current_user.email
         )
-        return {'message': 'Created'}, 201
+        return {'message': 'Criada'}, 201
     
     @login_required
     @rest_api_v1.doc(
-        description="Updates user's subscriptions settings",
+        description="Atualiza as configurações de inscrições do usuário",
         security="apikey",
         responses={
-            200: 'Success',
-            401: 'Unauthorized'
+            200: 'Sucesso',
+            401: 'Sem autorização'
         }
     )
     @rest_api_v1.expect(_subscription_config, validate=True)
     def put(self):
-        Inscricao().alterar_configs(request.json["interval"], current_user.email)
-        return {'message': 'Subscriptions settings updated'}
+        Inscricao().alterar_configs(request.json["intervalo"], current_user.email)
+        return {'message': 'Configurações de inscrições atualizadas'}
 
-@rest_api_v1.route("/users/subscriptions/<house>/<assemblyman>")
+@rest_api_v1.route("/usuarios/inscricoes/<casa>/<parlamentar>")
 class Subscription(Resource):
     @login_required
     @rest_api_v1.doc(
-        description="Deletes a subscription",
+        description="Deleta uma inscrição",
         security='apikey',
         responses={
-            200: 'Success',
-            401: 'Unauthorized'
+            200: 'Sucesso',
+            401: 'Sem autorização'
         }
     )
-    def delete(self, house, assemblyman):
-        if not check_if_house_exists(house):
-            return {'message': 'Invalid house id'}, 400
-        Inscricao().remover_inscricao(house, assemblyman, current_user.email)
-        return {'message': 'Subscription deleted'}, 200
+    def delete(self, casa, parlamentar):
+        if not check_if_house_exists(casa):
+            return {'message': 'Id de casa legislativa inválido'}, 400
+        Inscricao().remover_inscricao(casa, parlamentar, current_user.email)
+        return {'message': 'Inscrição deletada'}, 200

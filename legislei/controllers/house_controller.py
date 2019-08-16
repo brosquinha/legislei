@@ -4,23 +4,23 @@ from legislei.app import rest_api_v1
 from legislei.house_selector import casas_estaduais, casas_municipais
 
 _response_model = rest_api_v1.model('HouseList', {
-    'houses': fields.List(fields.String(description='House id')),
+    'casas': fields.List(fields.String(description='House id')),
 })
 
-@rest_api_v1.route("/houses/states")
+@rest_api_v1.route("/casas/estados")
 class StatesHouses(Resource):
     @rest_api_v1.doc(
-        description="Gets all state houses registered in Legislei",
+        description="Retorna todas as casas legislativas estaduais registradas no Legislei",
         model=_response_model
     )
     def get(self):
-        return {'houses': casas_estaduais()}, 200
+        return {'casas': casas_estaduais()}, 200
 
-@rest_api_v1.route("/houses/counties")
+@rest_api_v1.route("/casas/municipios")
 class CountiesHouses(Resource):
     @rest_api_v1.doc(
-        description="Gets all counties houses registered in Legislei",
+        description="Retorna todas as casas legislativas municipais registradas no Legislei",
         model=_response_model
     )
     def get(self):
-        return {'houses': casas_municipais()}, 200
+        return {'casas': casas_municipais()}, 200

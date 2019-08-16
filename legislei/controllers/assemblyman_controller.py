@@ -10,58 +10,57 @@ from legislei.exceptions import AppError, InvalidModelId
 from legislei.house_selector import obter_parlamentar, obter_parlamentares
 
 
-@rest_api_v1.route("/assemblymen/<house>/")
+@rest_api_v1.route("/parlamentares/<casa>/")
 class AssemblymenList(Resource):
     @rest_api_v1.doc(
-        description="Gets all assemblymen of given legislative house",
-        params={'house': 'A legislative house ID'},
-        responses={400: 'Invalid house id'}
+        description="Retorna todos os parlamentaresd de uma dada casa legislativa",
+        params={'casa': 'Id de uma casa legislativa'},
+        responses={400: 'Id de casa legislativa inválido'}
     )
     @rest_api_v1.marshal_list_with(assemblymen_dto)
-    def get(self, house):
+    def get(self, casa):
         try:
-            return obter_parlamentares(house), 200
+            return obter_parlamentares(casa), 200
         except InvalidModelId:
-            abort(400, message="Invalid house id")
+            abort(400, message="Id de casa legislativa inválido")
         except AppError as e:
             abort(500, message=str(e))
 
 
-@rest_api_v1.route("/assemblymen/<house>/<assemblyman>/")
+@rest_api_v1.route("/parlamentares/<casa>/<parlamentar>/")
 class Assemblymen(Resource):
     @rest_api_v1.doc(
-        description="Gets information about given assemblyman of given legislative house",
-        params={'assemblyman': 'An assemblyman ID', 'house': 'A legislative house ID'},
-        responses={400: 'Invalid house id', 422: 'Invalid assemblyman id'}
+        description="Retorna informações sobre um dado parlamentar de uma dada casa legislativa",
+        params={'parlamentar': 'Id de parlamentar', 'casa': 'Id de casa legislativa'},
+        responses={400: 'Id de casa legislativa inválido', 422: 'Id de parlamentar inválido'}
     )
     @rest_api_v1.marshal_with(assemblymen_dto)
-    def get(self, house, assemblyman):
+    def get(self, casa, parlamentar):
         try:
-            parlamentar = obter_parlamentar(house, assemblyman)
+            parlamentar = obter_parlamentar(casa, parlamentar)
             if parlamentar == None:
-                return {'error': 'Invalid assemblyman id'}, 422
+                return {'message': 'Id de parlamentar inválido'}, 422
             return json.loads(parlamentar.to_json()), 200
         except InvalidModelId:
-            return {"error": "Invalid house id"}, 400
+            return {"message": "Id de casa legislativa inválido"}, 400
         except AppError as e:
-            return {"error": str(e)}, 500
+            return {"message": str(e)}, 500
 
 
-@rest_api_v1.route("/assemblymen/<house>/<assemblyman>/ratings")
+@rest_api_v1.route("/parlamentares/<casa>/<parlamentar>/avaliacoes")
 class AssemblymenRatings(Resource):
     @login_required
     @rest_api_v1.doc(
         security='apikey',
-        params={'assemblyman': 'An assemblyman ID', 'house': 'A legislative house ID'},
-        description="Gets all ratings given to an assemblyman by the current user",
+        params={'parlamentar': 'Id de parlamentar', 'casa': 'Id de casa legislativa'},
+        description="Retorna todas as avaliações dadas a um dado parlamentar pelo usuário",
         responses={
-            200: 'Success',
-            401: 'Unauthorized'
+            401: 'Sem autorização'
         }
     )
     @rest_api_v1.marshal_list_with(rating_dto)
-    def get(self, house, assemblyman):
-        return json.loads(Avaliacao().minhas_avaliacoes(house, assemblyman, current_user.email).to_json()), 200
+    def get(self, casa, parlamentar):
+        return json.loads(Avaliacao().minhas_avaliacoes(casa, parlamentar, current_user.email).to_json()), 200
 
 
 def _select_dto_attribute(obj, list):
