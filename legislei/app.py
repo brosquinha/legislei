@@ -4,8 +4,10 @@ import pytz
 import os
 from datetime import datetime
 
-from flask import Flask, redirect, render_template, request
+from flask import Flask, g, redirect, render_template, request
+from flask.sessions import SecureCookieSessionInterface
 from flask_login import LoginManager, current_user, login_required
+from flask_restplus import Api, Namespace
 
 from legislei import settings
 from legislei.avaliacoes import Avaliacao
@@ -25,14 +27,54 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return Usuario().obter_por_id(user_id)
-
-
 @app.route('/')
 def home():
     return render_template('home.html'), 200
+
+
+rest_api = Api(
+    doc="/swagger/",
+    title="Legislei API",
+    version="0.1.0",
+    authorizations={
+        'apikey': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization'
+        }
+    }
+)
+rest_api_v1 = Namespace('v1', description='Legislei API')
+rest_api.add_namespace(rest_api_v1, "/v1")
+rest_api.init_app(app)
+
+
+class CustomSessionInterface(SecureCookieSessionInterface):
+    """
+    Custom session interface for preventing using cookies for REST API
+    """
+    def save_session(self, *args, **kwargs):
+        if g.get('login_via_header'):
+            return
+        return super().save_session(*args, **kwargs)
+
+
+app.session_interface = CustomSessionInterface()
+
+
+@login_manager.request_loader
+def load_user_from_request(request):
+    token = request.headers.get('Authorization')
+    if token:
+        user = Usuario().verify_auth_token(token)
+        if user:
+            return user
+    return None
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return Usuario().obter_por_id(user_id)
 
 
 @app.route('/consultar')
