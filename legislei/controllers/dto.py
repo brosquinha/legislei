@@ -35,6 +35,25 @@ class CustomPresence(fields.Raw):
             return 'Ausente em evento programado'
         return None
 
+class MongoRaw(fields.Raw):
+    def format(self, value):
+        def check_dict_for_mongo_values(item):
+            for k, v in item.items():
+                try:
+                    if "$date" in v:
+                        item[k] = MongoDateTime().format(v)
+                    elif "$oid" in v:
+                        item[k] = MongoId().format(v)
+                    elif type(v) is dict:
+                        item[k] = check_dict_for_mongo_values(v)
+                    elif type(v) is list:
+                        for l in v:
+                            l = check_dict_for_mongo_values(l)
+                except TypeError:
+                    continue
+            return item
+        return check_dict_for_mongo_values(value)
+
 assemblymen_dto = rest_api_v1.model("Assemblyman", {
     'id': fields.String(description="Id de parlamentar", attribute='id'),
     'nome': fields.String(description="Nome do parlamentar", attribute='nome'),
@@ -50,7 +69,7 @@ subscription_dto = rest_api_v1.model('Subscription', {
 rating_dto = rest_api_v1.model("Rating", {
     'parlamentar': fields.Nested(assemblymen_dto, attribute='parlamentar'),
     'avaliacao': fields.String(description="Avaliação numérica dada ao item", attribute='avaliacao'),
-    'item_avaliado': fields.Raw(description="Item avaliado", attribute='avaliado'),
+    'item_avaliado': MongoRaw(description="Item avaliado", attribute='avaliado'),
     'relatorio_id': MongoId(description="Id do relatório ao qual o item avaliado pertence", attribute='relatorioId')
 })
 commissions_dto = rest_api_v1.model('Commission', {
