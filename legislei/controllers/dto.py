@@ -32,7 +32,7 @@ class CustomPresence(fields.Raw):
         elif value == 2:
             return 'Ausente em evento esperado'
         elif value == 3:
-            return 'Ausenet em evento programado'
+            return 'Ausente em evento programado'
         return None
 
 assemblymen_dto = rest_api_v1.model("Assemblyman", {

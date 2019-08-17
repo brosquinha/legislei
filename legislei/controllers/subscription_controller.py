@@ -6,16 +6,20 @@ from flask_restplus import fields, Resource
 
 from legislei.app import current_user, rest_api_v1
 from legislei.controllers.dto import subscription_dto
+from legislei.exceptions import InvalidModelId
 from legislei.house_selector import check_if_house_exists
 from legislei.inscricoes import Inscricao
 
 
 _new_subscription_dto = rest_api_v1.model('AssemblymanId', {
-    'casa': fields.String(description="Id de casa legislativa"),
-    'parlamentar': fields.String(description="Id de parlamentar")
+    'casa': fields.String(description="Id de casa legislativa", required=True),
+    'parlamentar': fields.String(description="Id de parlamentar", required=True)
 })
 _subscription_config = rest_api_v1.model('SubscriptionConfig', {
-    'intervalo': fields.Integer(description="Intervalo em dias de atualização dos relatórios da inscrição")
+    'intervalo': fields.Integer(
+        description="Intervalo em dias de atualização dos relatórios da inscrição (valores válidos: 7, 14, 21 e 28)",
+        required=True
+    )
 })
 
 
@@ -40,16 +44,23 @@ class SubscriptionList(Resource):
     @rest_api_v1.doc(
         description="Cria uma nova inscrição de atividades parlamentares",
         security='apikey',
-        responses={201: 'Criada', 401: 'Sem autorização'}
+        responses={
+            201: 'Criada',
+            401: 'Sem autorização',
+            400: 'Parâmetros inválidos ou incompletos'
+        }
     )
     @rest_api_v1.expect(_new_subscription_dto, validate=True)
     def post(self):
-        Inscricao().nova_inscricao(
-            request.json['casa'],
-            request.json['parlamentar'],
-            current_user.email
-        )
-        return {'message': 'Criada'}, 201
+        try:
+            Inscricao().nova_inscricao(
+                request.json['casa'],
+                request.json['parlamentar'],
+                current_user.email
+            )
+            return {'message': 'Criada'}, 201
+        except InvalidModelId:
+            return {'message': 'Id de casa legislativa inválido'}, 400
     
     @login_required
     @rest_api_v1.doc(
@@ -57,6 +68,7 @@ class SubscriptionList(Resource):
         security="apikey",
         responses={
             200: 'Sucesso',
+            400: 'Parâmetros inválidos ou incompletos',
             401: 'Sem autorização'
         }
     )
@@ -73,6 +85,7 @@ class Subscription(Resource):
         security='apikey',
         responses={
             200: 'Sucesso',
+            400: 'Parâmetros inválidos',
             401: 'Sem autorização'
         }
     )

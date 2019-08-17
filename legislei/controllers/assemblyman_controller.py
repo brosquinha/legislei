@@ -10,7 +10,7 @@ from legislei.exceptions import AppError, InvalidModelId
 from legislei.house_selector import obter_parlamentar, obter_parlamentares
 
 
-@rest_api_v1.route("/parlamentares/<casa>/")
+@rest_api_v1.route("/parlamentares/<casa>")
 class AssemblymenList(Resource):
     @rest_api_v1.doc(
         description="Retorna todos os parlamentaresd de uma dada casa legislativa",
@@ -27,7 +27,7 @@ class AssemblymenList(Resource):
             abort(500, message=str(e))
 
 
-@rest_api_v1.route("/parlamentares/<casa>/<parlamentar>/")
+@rest_api_v1.route("/parlamentares/<casa>/<parlamentar>")
 class Assemblymen(Resource):
     @rest_api_v1.doc(
         description="Retorna informações sobre um dado parlamentar de uma dada casa legislativa",
@@ -39,12 +39,12 @@ class Assemblymen(Resource):
         try:
             parlamentar = obter_parlamentar(casa, parlamentar)
             if parlamentar == None:
-                return {'message': 'Id de parlamentar inválido'}, 422
+                abort(422, message='Id de parlamentar inválido')
             return json.loads(parlamentar.to_json()), 200
         except InvalidModelId:
-            return {"message": "Id de casa legislativa inválido"}, 400
+            abort(400, message="Id de casa legislativa inválido")
         except AppError as e:
-            return {"message": str(e)}, 500
+            abort(500, message=str(e))
 
 
 @rest_api_v1.route("/parlamentares/<casa>/<parlamentar>/avaliacoes")
@@ -61,20 +61,3 @@ class AssemblymenRatings(Resource):
     @rest_api_v1.marshal_list_with(rating_dto)
     def get(self, casa, parlamentar):
         return json.loads(Avaliacao().minhas_avaliacoes(casa, parlamentar, current_user.email).to_json()), 200
-
-
-def _select_dto_attribute(obj, list):
-    """
-    Private helper to select DTO property based
-    on possible attribute list
-
-    :param obj: Object to be marshelled
-    :type obj: Dict
-    :param list: List of possible attribute names
-    :type list: List
-    :return: Object value
-    :rtype: Any
-    """
-    for l in list:
-        if l in obj:
-            return obj[l]

@@ -5,7 +5,7 @@ from datetime import datetime
 
 from flask import request
 from flask_login import login_required
-from flask_restplus import fields, reqparse, Resource
+from flask_restplus import abort, fields, reqparse, Resource
 
 from legislei.app import current_user, rest_api_v1
 from legislei.avaliacoes import Avaliacao
@@ -20,24 +20,29 @@ _reports_query_parser = reqparse.RequestParser()
 _reports_query_parser.add_argument('casa', required=True, help="Id de casa legislativa")
 _reports_query_parser.add_argument('parlamentar', required=True, help="Id de parlamentar")
 _request_report = rest_api_v1.model("RequestReport", {
-    'casa': fields.String(description="Id de casa legislativa"),
-    'parlamentar': fields.String(description="Id de parlamentar"),
-    'data_final': fields.String(description="Data final para o fim do relatório"),
-    'intervalo': fields.Integer(description="Intervalo em dias do relatório")
+    'casa': fields.String(description="Id de casa legislativa", required=True),
+    'parlamentar': fields.String(description="Id de parlamentar", required=True),
+    'data_final': fields.String(description="Data final para o fim do relatório", required=True),
+    'intervalo': fields.Integer(description="Intervalo em dias do relatório", required=True)
 })
 _report_item_rating = rest_api_v1.model("ReportItemRating", {
-    'item_id': fields.String(description="Id de item de relatório"),
-    'avaliacao': fields.String(description="Avaliação numérica dada ao item")
+    'item_id': fields.String(description="Id de item de relatório", required=True),
+    'avaliacao': fields.String(description="Avaliação numérica dada ao item", required=True)
 })
 
 @rest_api_v1.route("/relatorios/<relatorio_id>")
 class Report(Resource):
     @rest_api_v1.doc(
-        description="Retorna o relatório informado pelo id"
+        description="Retorna o relatório informado pelo id",
+        responses={400: "Id de relatório inválido"}
     )
     @rest_api_v1.marshal_with(reports_dto)
     def get(self, relatorio_id):
-        return json.loads(Relatorios().obter_por_id(relatorio_id).first().to_json())
+        relatorio = Relatorios().obter_por_id(relatorio_id)
+        if relatorio:
+            return json.loads(relatorio.to_json())
+        else:
+            abort(400, message="Id de relatório inválido")
 
 
 @rest_api_v1.route("/relatorios/<relatorio_id>/avaliacoes")
@@ -76,9 +81,9 @@ class ReportList(Resource):
         house = request.args.get("casa")
         assemblyman = request.args.get("parlamentar")
         if not check_if_house_exists(house):
-            return {"message": "Id de casa legislativa inválido"}, 400
+            abort(400, message="Id de casa legislativa inválido")
         resultado = Relatorios().buscar_por_parlamentar(house, assemblyman)
-        return resultado
+        return resultado if resultado else []
 
     @rest_api_v1.doc(
         description="Solicita um relatório sobre um dado parlamentar dentro da dada janela de tempo",

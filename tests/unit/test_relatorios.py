@@ -26,7 +26,7 @@ class TestRelatorios(unittest.TestCase):
         
         actual = Relatorios().obter_por_id(relatorio.pk)
 
-        self.assertEqual(relatorio, actual.first())
+        self.assertEqual(relatorio, actual)
 
     def test_buscar_por_parlamentar(self):
         parlamentar_1 = Parlamentar(id='1', cargo='BR1')
@@ -130,7 +130,7 @@ class TestRelatorios(unittest.TestCase):
 
         self.assertEqual(actual_response, relatorio_inicial)
 
-    @patch("legislei.house_selector.house_selector")
+    @patch("legislei.controllers.report_controller.Relatorios.obter_relatorio")
     def test_solicitar_geracao_relatorio_nova_thread(
         self,
         mock_model_selector
@@ -142,10 +142,9 @@ class TestRelatorios(unittest.TestCase):
             data_final=brasilia_tz.localize(datetime(2019, 6, 29)),
             data_inicial=brasilia_tz.localize(datetime(2019, 6, 22))
         )
-        class FakeModel:
-            def obter_relatorio(self, *args, **kwargs):
-                return relatorio_gerado
-        mock_model_selector.return_value = FakeModel
+        def obter_relatorio(self, *args, **kwargs):
+            return relatorio_gerado
+        mock_model_selector.return_value = obter_relatorio
 
         actual_response = Relatorios().solicitar_geracao_relatorio('1', '2019-06-29', 'BR1', 7)
 

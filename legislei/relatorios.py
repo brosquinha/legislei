@@ -3,6 +3,7 @@ import threading
 from datetime import datetime, timedelta
 
 import pytz
+from mongoengine.errors import ValidationError
 
 from legislei import house_selector
 from legislei.models.relatorio import Relatorio
@@ -11,7 +12,10 @@ from legislei.models.relatorio import Relatorio
 class Relatorios():
 
     def obter_por_id(self, relatorio_id):
-        return Relatorio.objects(pk=relatorio_id)
+        try:
+            return Relatorio.objects(pk=relatorio_id).first()
+        except ValidationError:
+            return None
 
     def buscar_por_parlamentar(self, cargo, parlamentar_id):
         return json.loads(Relatorio.objects(

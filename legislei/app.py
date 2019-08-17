@@ -128,7 +128,7 @@ def consultar_parlamentar():
 def obter_relatorio_por_id(id):
     relatorio = Relatorios().obter_por_id(id)
     if relatorio:
-        return modelar_pagina_relatorio(relatorio.first().to_dict())
+        return modelar_pagina_relatorio(relatorio.to_dict())
     else:
         return render_template(
             'erro.html',

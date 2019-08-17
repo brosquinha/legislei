@@ -10,8 +10,8 @@ from legislei.usuarios import Usuario
 
 
 _access_token_dto = rest_api_v1.model("AccessToken", {
-    'username': fields.String(description="Nome de usuário"),
-    'senha': fields.String(description="Senha do usuário")
+    'username': fields.String(description="Nome de usuário", required=True),
+    'senha': fields.String(description="Senha do usuário", required=True)
 })
 
 
