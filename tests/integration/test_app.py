@@ -39,6 +39,10 @@ class TestApp(ControllerHelperTester):
         self.assertEqual(actual.status_code, 200)
         self.assertIn(b"ParlamentarTeste", actual.data)
 
+    def test_relatorio_not_in_db(self):
+        actual = self.app.get("/relatorio?parlamentar=123&data=2019-01-07&parlamentarTipo=BR3&dias=7")
+        self.assertEqual(actual.status_code, 400)
+
     def test_get_relatorio_by_id(self):
         actual = self.app.get("/relatorio/5c264b5e3a5efd576ecaf48e")
         self.assertEqual(actual.status_code, 200)

@@ -115,12 +115,19 @@ def modelar_pagina_relatorio(relatorio, template='consulta_deputado.html'):
 @app.route('/relatorio')
 def consultar_parlamentar():
     try:
-        return modelar_pagina_relatorio(Relatorios().obter_relatorio(
+        relatorio = Relatorios().verificar_relatorio(
             parlamentar=request.args['parlamentar'],
             data_final=request.args['data'],
             cargo=request.args['parlamentarTipo'],
             periodo=request.args['dias']
-        ))
+        )
+        if isinstance(relatorio, Relatorio):
+            return modelar_pagina_relatorio(relatorio)
+        return render_template(
+            'erro.html',
+            erro_titulo="Relatório não encontrado",
+            erro_descricao="Esse relatório não existe."
+        ), 400
     except AppError as e:
         return render_template(
             'erro.html',
