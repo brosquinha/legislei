@@ -135,8 +135,10 @@
             let avaliado = $(button).attr('data-rating-id');
             const relatorioId = $("#relatorioId").text();
             $.post({
-                url: "/avaliar",
-                data: {id: relatorioId, avaliado: avaliado, avaliacao: avaliacao},
+                url: `/v1/relatorios/${relatorioId}/avaliacoes`,
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify({item_id: avaliado, avaliacao: avaliacao}),
                 error: (jqXHR, txtStatus) => {
                     console.warn(txtStatus);
                 },

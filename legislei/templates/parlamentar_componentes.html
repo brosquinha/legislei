@@ -14,8 +14,8 @@
     <option value="">Escolher...</option>
     <option value="BR1">Deputado federal</option>
     <!--option value="BR2">Senador</option-->
-    <option value="estaduais">Deputado estadual</option>
-    <option value="municipais">Vereador</option>
+    <option value="estados">Deputado estadual</option>
+    <option value="municipios">Vereador</option>
 </select>
 {%- endmacro %}
 
@@ -48,13 +48,12 @@
 {% macro script() -%}
 <script>
     let preencherDatalist = (data) => {
-        data = JSON.parse(data);
         document.getElementById("listaPoliticos").innerHTML = '';
         for (let i=0; i<data.length; i++) {
             deputadoOption = document.createElement("option");
             deputadoOption.setAttribute("value", data[i].id);
-            deputadoOption.innerText = data[i].nome + " (" + data[i].siglaPartido +
-            ((document.getElementById('parlamentarTipo1').value == 'BR1') ? "-" + data[i].siglaUf : '') + ")";
+            deputadoOption.innerText = data[i].nome + " (" + data[i].partido +
+            ((document.getElementById('parlamentarTipo1').value == 'BR1') ? "-" + data[i].uf : '') + ")";
             document.getElementById("listaPoliticos").appendChild(deputadoOption);
         }
         document.getElementById('parlamentarIdInput').removeAttribute('disabled');
@@ -66,10 +65,10 @@
         $("#parlamentarIdInput").removeClass('rounded-left');
         document.getElementById('parlamentarIdInput').setAttribute('disabled', 'true');
         if (sessionStorage.getItem(tipo)) {
-            preencherDatalist(sessionStorage.getItem(tipo));
+            preencherDatalist(JSON.parse(sessionStorage.getItem(tipo)));
         } else {
             $.ajax({
-                url: "/API/parlamentares/"+tipo,
+                url: "/v1/parlamentares/"+tipo,
                 method: "GET",
                 error: (jqXHR, txtStatus) => {
                     console.warn(txtStatus);
@@ -77,7 +76,7 @@
                     $("#parlamentarIdInput").addClass('rounded-left');
                 },
                 success: (data) => {
-                    sessionStorage.setItem(tipo, data);
+                    sessionStorage.setItem(tipo, JSON.stringify(data));
                     preencherDatalist(data);
                 }
             });
@@ -91,18 +90,17 @@
         document.getElementById('parlamentarTipo2').innerHTML = '<option value>Escolher...</option>';
         if (parTipo != 'BR1' && parTipo != 'BR2') {
             $.ajax({
-                url: "/API/models/" + document.getElementById('parlamentarTipo1').value,
+                url: "/v1/casas/" + document.getElementById('parlamentarTipo1').value,
                 method: "GET",
                 error: (jqXHR, txtStatus) => {
                     console.log(jqXHR);
                 },
                 success: (data) => {
                     document.getElementById('parlamentarTipo2').removeAttribute('disabled');
-                    data = JSON.parse(data);
-                    for (let i=0; i<data.models.length; i++) {
+                    for (let i=0; i<data.casas.length; i++) {
                         let modelOption = document.createElement('option');
-                        modelOption.setAttribute('value', data.models[i]);
-                        modelOption.innerText = data.models[i];
+                        modelOption.setAttribute('value', data.casas[i]);
+                        modelOption.innerText = data.casas[i];
                         document.getElementById('parlamentarTipo2').appendChild(modelOption);
                     }
                     document.getElementById('parlamentarTipo2').onchange = (e) => {
