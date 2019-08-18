@@ -4,7 +4,7 @@ import pytz
 import os
 from datetime import datetime
 
-from flask import Flask, g, redirect, render_template, request
+from flask import Flask, g, redirect, render_template, request, url_for
 from flask.sessions import SecureCookieSessionInterface
 from flask_login import LoginManager, current_user, login_required
 from flask_restplus import Api, Namespace
@@ -32,7 +32,18 @@ def home():
     return render_template('home.html'), 200
 
 
-rest_api = Api(
+class CustomApi(Api):
+    @property
+    def specs_url(self):
+        '''
+        The Swagger specifications absolute url (ie. `swagger.json`)
+
+        :rtype: String
+        '''
+        return url_for(self.endpoint('specs'), _external=False)
+
+
+rest_api = CustomApi(
     doc="/swagger/",
     title="Legislei API",
     version="0.1.0",

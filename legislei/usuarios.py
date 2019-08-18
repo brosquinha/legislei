@@ -58,12 +58,5 @@ class Usuario():
             return None
         return User.objects(pk=data['id']).first()
     
-    # def token_login(self, token):
-    #     user = self.verify_auth_token(token)
-    #     if user:
-    #         login_user(user, remember=False)
-    #         return True
-    #     return False
-    
     def logout(self):
         logout_user()
