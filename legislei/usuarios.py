@@ -1,9 +1,15 @@
+import os
+
 from flask_login import login_user, logout_user
+from itsdangerous import BadSignature, SignatureExpired
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from mongoengine.errors import NotUniqueError, ValidationError
 from passlib.hash import pbkdf2_sha256
 
-from legislei.exceptions import UsernameOrEmailAlreadyExistis, RequirementsNotMet, InvalidEmail
+from legislei.exceptions import (InvalidEmail, RequirementsNotMet,
+                                 UsernameOrEmailAlreadyExistis)
 from legislei.models.user import User
+
 
 class Usuario():
 
@@ -37,5 +43,20 @@ class Usuario():
             return True
         return False
 
+    def generate_auth_token(self, user, expiration=15*60):
+        s = Serializer(
+            os.environ.get('APP_SECRET_KEY'),
+            expires_in=expiration
+        )
+        return s.dumps({'id': user.get_id()})
+
+    def verify_auth_token(self, token):
+        s = Serializer(os.environ.get('APP_SECRET_KEY'))
+        try:
+            data = s.loads(token)
+        except (BadSignature, SignatureExpired):
+            return None
+        return User.objects(pk=data['id']).first()
+    
     def logout(self):
         logout_user()

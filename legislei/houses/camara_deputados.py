@@ -341,7 +341,13 @@ class CamaraDeputadosHandler(CasaLegislativa):
         deputados = []
         for page in self.dep.obterTodosDeputados():
             for item in page:
-                deputados.append(item)
+                parlamentar = Parlamentar()
+                parlamentar.id = str(item['id'])
+                parlamentar.nome = item['nome']
+                parlamentar.partido = item['siglaPartido']
+                parlamentar.uf = item['siglaUf']
+                parlamentar.foto = item['urlFoto']
+                deputados.append(parlamentar)
         return deputados
 
     def obter_parlamentar(self, parlamentar_id):

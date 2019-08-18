@@ -49,6 +49,10 @@ class TestAvaliacao(unittest.TestCase):
         with self.assertRaises(ItemNotFound):
             Avaliacao().avaliar('123', '1', 'test@email.com', relatorio.pk)
 
+    def test_avaliar_invalid_report_id(self):
+        with self.assertRaises(ReportNotFound):
+            Avaliacao().avaliar('123', '1', 'test@email.com', "invalid_id")
+
     def test_minhas_avaliacoes(self):
         parlamentar = Parlamentar(id='id', cargo='BR1')
         avaliacao = Avaliacoes(parlamentar=parlamentar, email='test@email.com')

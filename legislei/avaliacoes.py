@@ -1,4 +1,5 @@
 from bson.objectid import ObjectId
+from mongoengine.errors import ValidationError
 
 from legislei.exceptions import ItemNotFound, ReportNotFound
 from legislei.models.avaliacoes import Avaliacoes
@@ -9,7 +10,10 @@ class Avaliacao():
 
     def avaliar(self, avaliado, avaliacao_valor, email, relatorio_id):
         avaliacao = Avaliacoes()
-        relatorio = Relatorio.objects(pk=relatorio_id).first()
+        try:
+            relatorio = Relatorio.objects(pk=relatorio_id).first()
+        except ValidationError:
+            raise ReportNotFound()
         if relatorio == None:
             raise ReportNotFound()
         for tipo in ['eventosAusentes', 'eventosPresentes', 'proposicoes']:
