@@ -123,11 +123,7 @@ def consultar_parlamentar():
         )
         if isinstance(relatorio, Relatorio):
             return modelar_pagina_relatorio(relatorio)
-        return render_template(
-            'erro.html',
-            erro_titulo="Relatório não encontrado",
-            erro_descricao="Esse relatório não existe."
-        ), 400
+        return render_template('relatorio_background.html')
     except AppError as e:
         return render_template(
             'erro.html',
