@@ -149,7 +149,7 @@
         $("#modalConfirmarRemocao").modal('show');
         $("#modalConfirmarRemocao button.btn-danger").one("click", () => {
             $.ajax({
-                url: `/API/minhasInscricoes/${cargo}/${parlamentar}`,
+                url: `/v1/usuarios/inscricoes/${cargo}/${parlamentar}`,
                 method: "DELETE",
                 error: (jqXHr, txtStatus) => {
                     alert(txtStatus);
@@ -163,9 +163,11 @@
     }
     let enviarConfig = () => {
         $.ajax({
-            url: '/API/minhasInscricoes/config',
-            method: 'POST',
-            data: {periodo: document.getElementById("configPeriodo").value},
+            url: '/v1/usuarios/inscricoes',
+            method: 'PUT',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify({intervalo: parseInt(document.getElementById("configPeriodo").value)}),
             error: (jqXHR, txtStatus) => {
                 alert('Houve o seguinte erro ao salvar: '+txtStatus);
             },
@@ -180,21 +182,22 @@
         $("#mensagemCarregando").removeClass('d-none');
         $("#modalRelatorios").modal('show');
         $.ajax({
-            url: `/API/relatorios/${cargo}/${parlamentar}`,
+            url: "/v1/relatorios",
+            data: {casa: cargo, parlamentar: parlamentar},
+            headers: {"X-Fields": "id,data_final"},
             method: "GET",
             error: (jqXHr, txtStatus) => {
                 alert(txtStatus);
                 $("#modalRelatorios").modal('hide');
             },
             success: (data) => {
-                data = JSON.parse(data);
                 for (let i=0; i<data.length; i++) {
                     let relatorioItem = document.createElement("div");
                     relatorioItem.setAttribute("class", "p-2");
                     let relatorioLink = document.createElement("a");
-                    let relatorioDataFinal = new Date(data[i].dataFinal.$date);
+                    let relatorioDataFinal = new Date(Date.parse(data[i].data_final));
                     console.log(relatorioDataFinal);
-                    relatorioLink.href = `/relatorio/${data[i]._id.$oid}`;
+                    relatorioLink.href = `/relatorio/${data[i].id}`;
                     relatorioLink.innerText = relatorioDataFinal.toLocaleDateString();
                     relatorioItem.appendChild(relatorioLink);
                     document.getElementById("relatoriosContainer").appendChild(relatorioItem);
