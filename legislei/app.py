@@ -1,25 +1,26 @@
 # -*- coding: utf-8 -*-
 import json
-import pytz
 import os
 from datetime import datetime
 
+import pytz
 from flask import Flask, g, redirect, render_template, request, url_for
 from flask.sessions import SecureCookieSessionInterface
 from flask_login import LoginManager, current_user, login_required
 from flask_restplus import Api, Namespace
 
 from legislei import settings
-from legislei.avaliacoes import Avaliacao
-from legislei.exceptions import AppError, AvaliacoesModuleError, InvalidModelId, UsersModuleError
+from legislei.exceptions import (AppError, AvaliacoesModuleError,
+                                 InvalidModelId, UsersModuleError)
 from legislei.house_selector import (casas_estaduais, casas_municipais,
                                      check_if_house_exists, obter_parlamentar,
                                      obter_parlamentares)
-from legislei.inscricoes import Inscricao
 from legislei.models.relatorio import Relatorio
 from legislei.models.user import User
-from legislei.relatorios import Relatorios
-from legislei.usuarios import Usuario
+from legislei.services.avaliacoes import Avaliacao
+from legislei.services.inscricoes import Inscricao
+from legislei.services.relatorios import Relatorios
+from legislei.services.usuarios import Usuario
 
 app = Flask(__name__, static_url_path='/static')
 app.secret_key = os.environ.get('APP_SECRET_KEY')

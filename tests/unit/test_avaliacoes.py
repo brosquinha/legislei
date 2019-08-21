@@ -2,10 +2,11 @@ import unittest
 
 from mongoengine import connect
 
-from legislei.avaliacoes import Avaliacao
 from legislei.exceptions import ItemNotFound, ReportNotFound
 from legislei.models.avaliacoes import Avaliacoes
-from legislei.models.relatorio import Relatorio, Parlamentar, Evento
+from legislei.models.relatorio import Evento, Parlamentar, Relatorio
+from legislei.services.avaliacoes import Avaliacao
+
 
 class TestAvaliacao(unittest.TestCase):
 

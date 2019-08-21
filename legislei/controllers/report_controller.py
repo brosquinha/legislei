@@ -1,20 +1,19 @@
 import json
 import os
-import pytz
 from datetime import datetime
 
+import pytz
 from flask import request
 from flask_login import login_required
-from flask_restplus import abort, fields, reqparse, Resource
+from flask_restplus import Resource, abort, fields, reqparse
 
 from legislei.app import current_user, rest_api_v1
-from legislei.avaliacoes import Avaliacao
 from legislei.controllers.dto import reports_dto
 from legislei.exceptions import AvaliacoesModuleError
 from legislei.house_selector import check_if_house_exists
 from legislei.models.relatorio import Relatorio
-from legislei.relatorios import Relatorios
-
+from legislei.services.avaliacoes import Avaliacao
+from legislei.services.relatorios import Relatorios
 
 _reports_query_parser = reqparse.RequestParser()
 _reports_query_parser.add_argument('casa', required=True, help="Id de casa legislativa")

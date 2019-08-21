@@ -22,7 +22,7 @@ class TestSubscriptionController(ControllerHelperTester):
         self.assertEqual(actual.status_code, 401)
         self.assertIn("message", actual_data)
 
-    @patch("legislei.inscricoes.obter_parlamentar")    
+    @patch("legislei.services.inscricoes.obter_parlamentar")    
     def test_post_usuarios_inscricoes_sucesso(self, mock_obter_parlamentar):
         warnings.simplefilter("ignore")
         mock_obter_parlamentar.return_value = Parlamentar(id="12345", cargo="BR1")

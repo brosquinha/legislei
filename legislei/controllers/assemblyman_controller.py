@@ -1,13 +1,13 @@
 import json
 
 from flask_login import login_required
-from flask_restplus import abort, fields, Resource
+from flask_restplus import Resource, abort, fields
 
 from legislei.app import current_user, rest_api_v1
-from legislei.avaliacoes import Avaliacao
 from legislei.controllers.dto import assemblymen_dto, rating_dto
 from legislei.exceptions import AppError, InvalidModelId
 from legislei.house_selector import obter_parlamentar, obter_parlamentares
+from legislei.services.avaliacoes import Avaliacao
 
 
 @rest_api_v1.route("/parlamentares/<casa>")

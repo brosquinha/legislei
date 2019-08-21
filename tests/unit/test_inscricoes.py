@@ -5,10 +5,11 @@ from unittest.mock import patch
 from mongoengine import connect
 
 from legislei.exceptions import UserDoesNotExist
-from legislei.inscricoes import Inscricao
 from legislei.models.inscricoes import Inscricoes
 from legislei.models.relatorio import Parlamentar
 from legislei.models.user import User
+from legislei.services.inscricoes import Inscricao
+
 
 class TestInscricao(unittest.TestCase):
     
@@ -81,7 +82,7 @@ class TestInscricao(unittest.TestCase):
         with self.assertRaises(UserDoesNotExist):
             Inscricao().obter_minhas_inscricoes('test@email.com')
 
-    @patch("legislei.inscricoes.obter_parlamentar")
+    @patch("legislei.services.inscricoes.obter_parlamentar")
     def test_nova_inscricao_primeira_inscricao(self, mock_obter_parlamentar):
         warnings.simplefilter("ignore")
         mock_obter_parlamentar.return_value = self.parlamentar1
@@ -105,7 +106,7 @@ class TestInscricao(unittest.TestCase):
             )
         )
 
-    @patch("legislei.inscricoes.obter_parlamentar")
+    @patch("legislei.services.inscricoes.obter_parlamentar")
     def test_nova_inscricao_outra_inscricao(self, mock_obter_parlamentar):
         warnings.simplefilter("ignore")
         mock_obter_parlamentar.return_value = self.parlamentar1

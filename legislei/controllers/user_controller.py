@@ -1,13 +1,12 @@
 from functools import wraps
 
 from flask import g, request
-from flask_restplus import fields, Resource
+from flask_restplus import Resource, fields
 
 from legislei.app import current_user, rest_api_v1
 from legislei.controllers.dto import users_dto
 from legislei.exceptions import UsersModuleError
-from legislei.usuarios import Usuario
-
+from legislei.services.usuarios import Usuario
 
 _access_token_dto = rest_api_v1.model("AccessToken", {
     'username': fields.String(description="Nome de usuário", required=True),

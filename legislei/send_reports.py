@@ -6,7 +6,7 @@ from email.header import Header
 from email.mime.text import MIMEText
 
 from legislei import settings
-from legislei.inscricoes import Inscricao
+from legislei.services.inscricoes import Inscricao
 
 smtp_server = os.environ.get("EMAIL_ENDPOINT", "smtp.gmail.com")
 smtp_server_port = os.environ.get("EMAIL_PORT", "587")
