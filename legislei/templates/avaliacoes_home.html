@@ -160,6 +160,9 @@
                 }
             });
         });
+        $("#modalConfirmarRemocao button.btn-secondary").one("click", () => {
+            $("#modalConfirmarRemocao button.btn-danger").off("click");
+        });
     }
     let enviarConfig = () => {
         $.ajax({

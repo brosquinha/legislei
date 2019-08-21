@@ -45,7 +45,7 @@ class Report(Resource):
 
 
 @rest_api_v1.route("/relatorios/<relatorio_id>/avaliacoes")
-class ReportRating(Resource):
+class ReportRatingList(Resource):
     @login_required
     @rest_api_v1.doc(
         description="Envia uma avaliação a um item de um dado relatório",
@@ -66,6 +66,27 @@ class ReportRating(Resource):
             return {'message': 'Criado'}, 201
         except AvaliacoesModuleError as e:
             return {'message': e.message}, 400
+
+
+@rest_api_v1.route("/relatorios/<relatorio_id>/avaliacoes/<avaliacao_id>")
+class ReportRating(Resource):
+    @login_required
+    @rest_api_v1.doc(
+        description="Deleta uma avaliação de usuário",
+        security="apikey",
+        responses={
+            200: 'Sucesso',
+            400: 'Parâmetros inválidos',
+            401: 'Sem autorização'
+        }
+    )
+    def delete(self, relatorio_id, avaliacao_id):
+        try:
+            Avaliacao().deletar_avaliacao(avaliacao_id)
+            return {'message': 'Avaliação deletada'}, 200
+        except AvaliacoesModuleError as e:
+            return {'message': 'Id de avaliação inválido'}, 400
+
 
 @rest_api_v1.route("/relatorios")
 class ReportList(Resource):

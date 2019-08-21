@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 from mongoengine import connect
 
@@ -54,6 +55,26 @@ class TestAvaliacao(unittest.TestCase):
         with self.assertRaises(ReportNotFound):
             Avaliacao().avaliar('123', '1', 'test@email.com', "invalid_id")
 
+    def test_deletar_avaliacao_sucesso(self):
+        warnings.simplefilter("ignore")
+        parlamentar = Parlamentar(id='id', cargo='BR1')
+        avaliacao = Avaliacoes(parlamentar=parlamentar, email='test@email.com')
+        avaliacao.save()
+        avaliacao_id = str(avaliacao.pk)
+
+        Avaliacao().deletar_avaliacao(avaliacao_id)
+        actual = Avaliacoes.objects()
+
+        self.assertEqual(len(actual), 0)
+
+    def test_deletar_avaliacao_inexistente(self):
+        with self.assertRaises(ItemNotFound):
+            Avaliacao().deletar_avaliacao("5c54ecb08f2fa300049d1809")
+
+    def test_deletar_avaliacao_id_invalido(self):
+        with self.assertRaises(ItemNotFound):
+            Avaliacao().deletar_avaliacao("id_invalido")
+    
     def test_minhas_avaliacoes(self):
         parlamentar = Parlamentar(id='id', cargo='BR1')
         avaliacao = Avaliacoes(parlamentar=parlamentar, email='test@email.com')
