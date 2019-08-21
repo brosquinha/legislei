@@ -1,14 +1,14 @@
 import threading
 import unittest
 from datetime import datetime
-from mongoengine import connect
 from time import sleep
 from unittest.mock import patch
 
 import pytz
+from mongoengine import connect
 
-from legislei.relatorios import Relatorios
-from legislei.models.relatorio import Relatorio, Parlamentar
+from legislei.models.relatorio import Parlamentar, Relatorio
+from legislei.services.relatorios import Relatorios
 
 
 class TestRelatorios(unittest.TestCase):

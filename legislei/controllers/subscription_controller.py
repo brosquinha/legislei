@@ -2,14 +2,13 @@ import json
 
 from flask import request
 from flask_login import login_required
-from flask_restplus import fields, Resource
+from flask_restplus import Resource, fields
 
 from legislei.app import current_user, rest_api_v1
 from legislei.controllers.dto import subscription_dto
 from legislei.exceptions import InvalidModelId
 from legislei.house_selector import check_if_house_exists
-from legislei.inscricoes import Inscricao
-
+from legislei.services.inscricoes import Inscricao
 
 _new_subscription_dto = rest_api_v1.model('AssemblymanId', {
     'casa': fields.String(description="Id de casa legislativa", required=True),

@@ -8,7 +8,7 @@ from pytz import timezone
 from legislei.app import app
 from legislei.exceptions import ModelError
 from legislei.send_reports import check_reports_to_send, send_email
-from legislei.relatorios import Relatorios
+from legislei.services.relatorios import Relatorios
 
 
 def check_and_send_reports():

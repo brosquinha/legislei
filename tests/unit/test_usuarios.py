@@ -3,9 +3,11 @@ from unittest.mock import patch
 
 from mongoengine import connect
 
-from legislei.exceptions import InvalidEmail, RequirementsNotMet, UsernameOrEmailAlreadyExistis
-from legislei.usuarios import Usuario
+from legislei.exceptions import (InvalidEmail, RequirementsNotMet,
+                                 UsernameOrEmailAlreadyExistis)
 from legislei.models.user import User
+from legislei.services.usuarios import Usuario
+
 
 class TestUsuario(unittest.TestCase):
 
@@ -88,7 +90,7 @@ class TestUsuario(unittest.TestCase):
         with self.assertRaises(RequirementsNotMet):
             Usuario().registrar('u', '1234', '1234', 'test2@email.com')
 
-    @patch("legislei.usuarios.login_user")
+    @patch("legislei.services.usuarios.login_user")
     def test_login_sucesso(self, mock_login):
         user = User(
             username='user',
@@ -126,7 +128,7 @@ class TestUsuario(unittest.TestCase):
 
         self.assertFalse(actual)
 
-    @patch("legislei.usuarios.logout_user")
+    @patch("legislei.services.usuarios.logout_user")
     def test_logout(self, mock_logout):
         Usuario().logout()
         
