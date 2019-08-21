@@ -110,6 +110,7 @@ def set_up_db(db):
         eventos_previstos=[],
     ).save()
     Avaliacoes(
+        pk=ObjectId("5c5116f5c3acc80004eada0a"),
         email="test@email.com",
         parlamentar=parlamentar_test,
         avaliacao="1",

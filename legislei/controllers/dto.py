@@ -67,6 +67,7 @@ subscription_dto = rest_api_v1.model('Subscription', {
     'parlamentares': fields.List(fields.Nested(assemblymen_dto))
 })
 rating_dto = rest_api_v1.model("Rating", {
+    'id': MongoId(description="Id de avaliação", attribute='_id'),
     'parlamentar': fields.Nested(assemblymen_dto, attribute='parlamentar'),
     'avaliacao': fields.String(description="Avaliação numérica dada ao item", attribute='avaliacao'),
     'item_avaliado': MongoRaw(description="Item avaliado", attribute='avaliado'),

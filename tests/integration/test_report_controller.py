@@ -1,4 +1,5 @@
 import json
+import warnings
 from threading import Thread
 from time import sleep
 from unittest.mock import patch
@@ -81,6 +82,35 @@ class TestReportController(ControllerHelperTester):
         self.assertEqual(actual.status_code, 400)
         self.assertEqual(actual_data, {'message': 'Item not found'})
 
+    def test_delete_relatorios_relatorio_id_avaliacoes_avaliacao_id_sucesso(self):
+        warnings.simplefilter("ignore")
+        login_header = login_api(self.app, "test", "123")
+        actual = self.app.delete(
+            "/v1/relatorios/5c264b5e3a5efd576ecaf48e/avaliacoes/5c5116f5c3acc80004eada0a",
+            headers=login_header
+        )
+        actual_data = json.loads(actual.data.decode("utf-8"))
+        self.assertEqual(actual.status_code, 200)
+        self.assertEqual(actual_data, {'message': 'Avaliação deletada'})
+
+    def test_delete_relatorios_relatorio_id_avaliacoes_avaliacao_id_avaliacao_inexistente(self):
+        login_header = login_api(self.app, "test", "123")
+        actual = self.app.delete(
+            "/v1/relatorios/5c264b5e3a5efd576ecaf48e/avaliacoes/nao_existe",
+            headers=login_header
+        )
+        actual_data = json.loads(actual.data.decode("utf-8"))
+        self.assertEqual(actual.status_code, 400)
+        self.assertEqual(actual_data, {'message': 'Id de avaliação inválido'})
+
+    def test_delete_relatorios_relatorio_id_avaliacoes_avaliacao_id_sem_login(self):
+        actual = self.app.delete(
+            "/v1/relatorios/5c264b5e3a5efd576ecaf48e/avaliacoes/5c5116f5c3acc80004eada0a",
+        )
+        actual_data = json.loads(actual.data.decode("utf-8"))
+        self.assertEqual(actual.status_code, 401)
+        self.assertIn("message", actual_data)
+    
     def test_get_relatorios_sucesso(self):
         actual = self.app.get("/v1/relatorios?casa=BR1&parlamentar=123")
         actual_data = json.loads(actual.data.decode("utf-8"))

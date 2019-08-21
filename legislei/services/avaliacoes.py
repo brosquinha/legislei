@@ -41,6 +41,12 @@ class Avaliacao():
         else:
             avaliacao.save()
 
+    def deletar_avaliacao(self, avaliacao_id):
+        try:
+            Avaliacoes.objects(pk=avaliacao_id).first().delete()
+        except (ValidationError, AttributeError):
+            raise ItemNotFound()
+    
     def minhas_avaliacoes(self, cargo, parlamentar, email):
         avaliacoes = Avaliacoes.objects(
             parlamentar__id__=parlamentar,
