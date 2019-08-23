@@ -45,7 +45,7 @@ class CustomApi(Api):
 
 
 rest_api = CustomApi(
-    doc="/swagger/",
+    doc="/swagger",
     title="Legislei API",
     version="0.1.0",
     authorizations={
@@ -123,7 +123,7 @@ def consultar_parlamentar():
             periodo=request.args['dias']
         )
         if isinstance(relatorio, Relatorio):
-            return modelar_pagina_relatorio(relatorio)
+            return modelar_pagina_relatorio(relatorio.to_dict())
         return render_template('relatorio_background.html')
     except AppError as e:
         return render_template(
