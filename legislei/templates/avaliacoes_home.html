@@ -87,15 +87,15 @@
                 </div>
                 <div class="modal-body">
                     <label>
-                        Período de relatórios (em dias)
-                        <input
-                            type="number"
-                            min="7"
-                            max="28"
+                        Período de relatórios
+                        <select
                             name="periodo"
-                            value="{{ periodo }}"
                             id="configPeriodo"
-                            class="form-control" />
+                            class="form-control">
+                                <option value="7" {{ "selected" if periodo == 7 }}>Semanalmente</option>
+                                <option value="14" {{ "selected" if periodo == 14 }}>A cada duas semanas</option>
+                                <option value="28" {{ "selected" if periodo == 28 }}>Mensalmente</option>
+                        </select>
                     </label>
                 </div>
                 <div class="modal-footer">
@@ -149,7 +149,7 @@
         $("#modalConfirmarRemocao").modal('show');
         $("#modalConfirmarRemocao button.btn-danger").one("click", () => {
             $.ajax({
-                url: `/API/minhasInscricoes/${cargo}/${parlamentar}`,
+                url: `/v1/usuarios/inscricoes/${cargo}/${parlamentar}`,
                 method: "DELETE",
                 error: (jqXHr, txtStatus) => {
                     alert(txtStatus);
@@ -160,17 +160,22 @@
                 }
             });
         });
+        $("#modalConfirmarRemocao button.btn-secondary").one("click", () => {
+            $("#modalConfirmarRemocao button.btn-danger").off("click");
+        });
     }
     let enviarConfig = () => {
         $.ajax({
-            url: '/API/minhasInscricoes/config',
-            method: 'POST',
-            data: {periodo: document.getElementById("configPeriodo").value},
+            url: '/v1/usuarios/inscricoes',
+            method: 'PUT',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify({intervalo: parseInt(document.getElementById("configPeriodo").value)}),
             error: (jqXHR, txtStatus) => {
                 alert('Houve o seguinte erro ao salvar: '+txtStatus);
             },
             success: () => {
-                alert('Opção em desenvolvimento.');
+                alert('Configurações alteradas.');
             }
         });
     }
@@ -180,21 +185,22 @@
         $("#mensagemCarregando").removeClass('d-none');
         $("#modalRelatorios").modal('show');
         $.ajax({
-            url: `/API/relatorios/${cargo}/${parlamentar}`,
+            url: "/v1/relatorios",
+            data: {casa: cargo, parlamentar: parlamentar},
+            headers: {"X-Fields": "id,data_final"},
             method: "GET",
             error: (jqXHr, txtStatus) => {
                 alert(txtStatus);
                 $("#modalRelatorios").modal('hide');
             },
             success: (data) => {
-                data = JSON.parse(data);
                 for (let i=0; i<data.length; i++) {
                     let relatorioItem = document.createElement("div");
                     relatorioItem.setAttribute("class", "p-2");
                     let relatorioLink = document.createElement("a");
-                    let relatorioDataFinal = new Date(data[i].dataFinal.$date);
+                    let relatorioDataFinal = new Date(Date.parse(data[i].data_final));
                     console.log(relatorioDataFinal);
-                    relatorioLink.href = `/relatorio/${data[i]._id.$oid}`;
+                    relatorioLink.href = `/relatorio/${data[i].id}`;
                     relatorioLink.innerText = relatorioDataFinal.toLocaleDateString();
                     relatorioItem.appendChild(relatorioLink);
                     document.getElementById("relatoriosContainer").appendChild(relatorioItem);

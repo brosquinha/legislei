@@ -8,18 +8,20 @@ from pytz import timezone
 from legislei.app import app
 from legislei.exceptions import ModelError
 from legislei.send_reports import check_reports_to_send, send_email
-from legislei.relatorios import Relatorios
+from legislei.services.relatorios import Relatorios
 
 
 def check_and_send_reports():
     return send_reports(check_reports_to_send())
 
 
-def send_reports(data):
+def send_reports(data, data_final = datetime.now()):
+    numero_semana = int(data_final.strftime("%V"))
     for user in data:
         reports = []
         inscricao = user.inscricoes
-        data_final = datetime.now()
+        if (numero_semana % (inscricao["intervalo"]/7) != 0):
+            continue
         data_inicial = (data_final - timedelta(days=int(inscricao["intervalo"])))
         for par in inscricao["parlamentares"]:
             try:

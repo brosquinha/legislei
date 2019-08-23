@@ -3,6 +3,7 @@ from datetime import datetime
 from unittest.mock import patch
 
 from legislei.houses.camara_municipal_sao_paulo import CamaraMunicipalSaoPauloHandler
+from legislei.models.relatorio import Parlamentar
 
 class TestCamaraMunicipalSaoPauloHandler(unittest.TestCase):
 
@@ -126,8 +127,8 @@ class TestCamaraMunicipalSaoPauloHandler(unittest.TestCase):
         actual = self.cmsp.obter_parlamentares()
 
         self.assertEqual(actual, [
-            {'nome': 'Fulano', 'id': '1', 'siglaPartido': 'TESTE'},
-            {'nome': 'Fulana', 'id': '2', 'siglaPartido': 'TESTE'},
-            {'nome': 'Joana', 'id': '3', 'siglaPartido': 'TESTE'}
+            Parlamentar(**{'nome': 'Fulano', 'id': '1', 'partido': 'TESTE', 'uf': 'SP', 'cargo': 'SÃO PAULO'}),
+            Parlamentar(**{'nome': 'Fulana', 'id': '2', 'partido': 'TESTE', 'uf': 'SP', 'cargo': 'SÃO PAULO'}),
+            Parlamentar(**{'nome': 'Joana', 'id': '3', 'partido': 'TESTE', 'uf': 'SP', 'cargo': 'SÃO PAULO'})
         ])
 

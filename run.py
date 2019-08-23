@@ -1,5 +1,7 @@
+#!/usr/bin/env python
 import os
 
+from legislei import controllers
 from legislei import settings
 from legislei.app import app
 from legislei.cron import scheduler

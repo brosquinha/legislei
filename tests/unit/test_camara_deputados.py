@@ -17,16 +17,58 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
 
     def test_obterParlamentares(self):
         def fakeObterDeputados():
-            yield [{'nome': 'CESAR DA SILVA'}, {'nome': 'FULANO PESSOA'}]
-            yield [{'nome': 'SICRANO PINTO'}]
+            yield [
+                {
+                    'nome': 'CESAR DA SILVA',
+                    'id': '1',
+                    'siglaPartido': 'P1',
+                    'siglaUf': 'UF',
+                    'urlFoto': 'foto',
+                },
+                {
+                    'nome': 'FULANO PESSOA',
+                    'id': '2',
+                    'siglaPartido': 'P2',
+                    'siglaUf': 'UF',
+                    'urlFoto': 'foto2',
+                }
+            ]
+            yield [
+                {
+                    'nome': 'SICRANO PINTO',
+                    'id': '3',
+                    'siglaPartido': 'P1',
+                    'siglaUf': 'UF2',
+                    'urlFoto': 'foto3',
+                }
+            ]
+        expected = [
+            Parlamentar(
+                nome='CESAR DA SILVA',
+                id='1',
+                partido='P1',
+                uf='UF',
+                foto='foto',
+            ),
+            Parlamentar(
+                nome='FULANO PESSOA',
+                id='2',
+                partido='P2',
+                uf='UF',
+                foto='foto2',
+            ),
+            Parlamentar(
+                nome='SICRANO PINTO',
+                id='3',
+                partido='P1',
+                uf='UF2',
+                foto='foto3',
+            )
+        ]
         mock = Mocker(self.dep.dep)
         mock.add_response('obterTodosDeputados', fakeObterDeputados())
         actual_response = self.dep.obter_parlamentares()
-        self.assertEqual(actual_response, [
-            {'nome': 'CESAR DA SILVA'},
-            {'nome': 'FULANO PESSOA'},
-            {'nome': 'SICRANO PINTO'}
-        ])
+        self.assertEqual(actual_response, expected)
 
     @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicialEFinal")
     def test_obterOrgaosDeputado(
@@ -290,7 +332,8 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         self.assertEqual(('Sim', 'Votação 1'), actual_response)
         mock.assert_no_pending_responses()
 
-    def test_obterVotoDeputado_fail_case(self):
+    @patch("builtins.print")
+    def test_obterVotoDeputado_fail_case(self, mock_print):
         mock = Mocker(self.dep.prop)
         mock.add_exception("obterVotacoesProposicao", CamaraDeputadosError)
 

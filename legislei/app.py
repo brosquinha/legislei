@@ -1,23 +1,26 @@
 # -*- coding: utf-8 -*-
 import json
-import pytz
 import os
 from datetime import datetime
 
-from flask import Flask, redirect, render_template, request
+import pytz
+from flask import Flask, g, redirect, render_template, request, url_for
+from flask.sessions import SecureCookieSessionInterface
 from flask_login import LoginManager, current_user, login_required
+from flask_restplus import Api, Namespace
 
 from legislei import settings
-from legislei.avaliacoes import Avaliacao
-from legislei.exceptions import AppError, AvaliacoesModuleError, InvalidModelId, UsersModuleError
+from legislei.exceptions import (AppError, AvaliacoesModuleError,
+                                 InvalidModelId, UsersModuleError)
 from legislei.house_selector import (casas_estaduais, casas_municipais,
                                      check_if_house_exists, obter_parlamentar,
                                      obter_parlamentares)
-from legislei.inscricoes import Inscricao
 from legislei.models.relatorio import Relatorio
 from legislei.models.user import User
-from legislei.relatorios import Relatorios
-from legislei.usuarios import Usuario
+from legislei.services.avaliacoes import Avaliacao
+from legislei.services.inscricoes import Inscricao
+from legislei.services.relatorios import Relatorios
+from legislei.services.usuarios import Usuario
 
 app = Flask(__name__, static_url_path='/static')
 app.secret_key = os.environ.get('APP_SECRET_KEY')
@@ -25,14 +28,65 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return Usuario().obter_por_id(user_id)
-
-
 @app.route('/')
 def home():
     return render_template('home.html'), 200
+
+
+class CustomApi(Api):
+    @property
+    def specs_url(self):
+        '''
+        The Swagger specifications absolute url (ie. `swagger.json`)
+
+        :rtype: String
+        '''
+        return url_for(self.endpoint('specs'), _external=False)
+
+
+rest_api = CustomApi(
+    doc="/swagger",
+    title="Legislei API",
+    version="0.1.0",
+    authorizations={
+        'apikey': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization'
+        }
+    }
+)
+rest_api_v1 = Namespace('v1', description='Legislei API')
+rest_api.add_namespace(rest_api_v1, "/v1")
+rest_api.init_app(app)
+
+
+class CustomSessionInterface(SecureCookieSessionInterface):
+    """
+    Custom session interface for preventing using cookies for REST API
+    """
+    def save_session(self, *args, **kwargs):
+        if g.get('login_via_header'):
+            return
+        return super().save_session(*args, **kwargs)
+
+
+app.session_interface = CustomSessionInterface()
+
+
+@login_manager.request_loader
+def load_user_from_request(request):
+    token = request.headers.get('Authorization')
+    if token:
+        user = Usuario().verify_auth_token(token)
+        if user:
+            return user
+    return None
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return Usuario().obter_por_id(user_id)
 
 
 @app.route('/consultar')
@@ -62,12 +116,15 @@ def modelar_pagina_relatorio(relatorio, template='consulta_deputado.html'):
 @app.route('/relatorio')
 def consultar_parlamentar():
     try:
-        return modelar_pagina_relatorio(Relatorios().obter_relatorio(
+        relatorio = Relatorios().verificar_relatorio(
             parlamentar=request.args['parlamentar'],
             data_final=request.args['data'],
             cargo=request.args['parlamentarTipo'],
             periodo=request.args['dias']
-        ))
+        )
+        if isinstance(relatorio, Relatorio):
+            return modelar_pagina_relatorio(relatorio.to_dict())
+        return render_template('relatorio_background.html')
     except AppError as e:
         return render_template(
             'erro.html',
@@ -86,30 +143,13 @@ def consultar_parlamentar():
 def obter_relatorio_por_id(id):
     relatorio = Relatorios().obter_por_id(id)
     if relatorio:
-        return modelar_pagina_relatorio(relatorio.first().to_dict())
+        return modelar_pagina_relatorio(relatorio.to_dict())
     else:
         return render_template(
             'erro.html',
             erro_titulo="Relatório não encontrado",
             erro_descricao="Esse relatório não existe."
         ), 400
-
-
-@app.route('/avaliar', methods=['POST'])
-@login_required
-def avaliar():
-    try:
-        relatorio = request.form.get('id')
-        avaliacao_valor = request.form.get('avaliacao')
-        avaliado = request.form.get('avaliado')
-    except KeyError:
-        return 'Missing arguments', 400
-    try:
-        email = current_user.email
-        Avaliacao().avaliar(avaliado, avaliacao_valor, email, relatorio)
-        return 'Created', 201
-    except AvaliacoesModuleError as e:
-        return e.message, 400
 
 
 @app.route('/minhasAvaliacoes')
@@ -142,151 +182,9 @@ def nova_inscricao():
     return render_template('nova_inscricao.html')
 
 
-@app.route('/novaInscricao', methods=['POST'])
-@login_required
-def nova_inscricao_post():
-    try:
-        Inscricao().nova_inscricao(
-            request.form.get('parlamentarTipo'),
-            request.form.get('parlamentar'),
-            current_user.email
-        )
-        return redirect('{}/minhasAvaliacoes'.format(os.environ.get('HOST_ENDPOINT', request.url_root[:-1])))
-    except AppError as e:
-        print(e)
-        return 'Erro do modelo', 500
-
-
-def api_error_handler(func):
-    def treat_error(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            return json.dumps({'error': str(e)}), 500
-    return treat_error
-
-
-@api_error_handler
-@app.route('/API/minhasAvaliacoes')
-@login_required
-def avaliacoes_api():
-    #Por ser API, o método de autenticacao deve ser diferente deste por cookies
-    try:
-        cargo = request.args['parlamentarTipo']
-        parlamentar = request.args['parlamentar']
-    except KeyError:
-        return json.dumps({'error': 'Missing arguments'}), 400
-    return json.dumps(Avaliacao().minhas_avaliacoes(cargo, parlamentar, current_user.email).to_json(), default=str), 200
-
-
-@api_error_handler
-@app.route('/API/relatorio')
-def consultar_deputado_api():
-    # TODO Melhorar obter_relatorio para poder apresentar o erro em JSON, não em template
-    try:
-        return json.dumps(Relatorios().obter_relatorio(
-            parlamentar=request.args['parlamentar'],
-            data_final=request.args['data'],
-            cargo=request.args['parlamentarTipo'],
-            periodo=request.args['dias'],
-        ), default=str)
-    except AppError as e:
-        return json.dumps({'error': e.message}), 500
-    except KeyError:
-        return json.dumps({'error': 'Missing parameters'}), 400
-
-
-@api_error_handler
-@app.route('/API/minhasInscricoes/<model>/<par_id>', methods=['DELETE'])
-@login_required
-def remover_inscricao(model, par_id):
-    if not check_if_house_exists(model):
-        return '{"error": "Cargo não existe"}', 400
-    try:
-        Inscricao().remover_inscricao(model, par_id, current_user.email)
-        return '{"message": "Ok"}', 200
-    except AttributeError:
-        return '{"error": "Erro de modelo"}', 500
-
-
-@api_error_handler
-@app.route('/API/minhasInscricoes/config', methods=['POST'])
-@login_required
-def alterar_inscricoes_config():
-    try:
-        periodo = int(request.form.get('periodo'))
-        Inscricao().alterar_configs(periodo, current_user.email)
-        return json.dumps({"message": "Ok {}".format(periodo)}), 200
-    except (TypeError, ValueError):
-        return '{"error": "Periodo deve ser int"}', 400
-
-
-@api_error_handler
-@app.route('/API/models/estaduais')
-def obter_modelos_estaduais():
-    return json.dumps({'models': casas_estaduais()}), 200
-
-
-@api_error_handler
-@app.route('/API/models/municipais')
-def obter_modelos_municipais():
-    return json.dumps({'models': casas_municipais()}), 200
-
-
-@api_error_handler
-@app.route('/API/parlamentares/<model>')
-def obter_parlamentares_api(model):
-    try:
-        return json.dumps(obter_parlamentares(model)), 200
-    except InvalidModelId:
-        return '{"error": "Cargo não existe"}', 400
-    except AppError as e:
-        return json.dumps({"error": str(e)}), 500
-
-
-@api_error_handler
-@app.route('/API/parlamentares/<model>/<par_id>')
-def obter_parlamentar_api(model, par_id):
-    try:
-        return obter_parlamentar(model, par_id).to_json(), 200
-    except InvalidModelId:
-        return '{"error": "Cargo não existe"}', 400
-    except AppError as e:
-        return json.dumps({"error": str(e)}), 500
-
-
-@api_error_handler
-@app.route('/API/relatorios/<model>/<par_id>')
-def buscar_relatorios_parlamentar(model, par_id):
-    if not check_if_house_exists(model):
-        return '{"error": "Cargo não existe"}', 400
-    try:
-        resultado = Relatorios().buscar_por_parlamentar(model, par_id)
-        return json.dumps(resultado, default=str), 200
-    except AttributeError: 
-        return '{"error": "Erro de configuração de dados desse cargo"}', 500
-
-
 @app.route('/registrar')
 def new_user_page():
     return render_template('registrar.html')
-
-
-@app.route('/registrar', methods=['POST'])
-def new_user():
-    try:
-        try:
-            Usuario().registrar(
-                nome=request.form['name'].lower(),
-                senha=request.form['password'],
-                senha_confirmada=request.form['password_confirmed'],
-                email=request.form['email']
-            )
-            return redirect('{}/login'.format(os.environ.get('HOST_ENDPOINT', request.url_root[:-1])))
-        except UsersModuleError as e:
-            return render_template('registrar.html', mensagem=e.message)
-    except KeyError:
-        return render_template('registrar.html', mensagem='Preencha todo o formulário')
 
 
 @app.route('/login')

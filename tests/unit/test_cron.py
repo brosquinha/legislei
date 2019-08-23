@@ -1,6 +1,6 @@
 import json
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import ANY, call, patch
 
 import pytz
@@ -28,7 +28,7 @@ class TestCron(unittest.TestCase):
     
     @patch("legislei.cron.send_email")
     @patch("legislei.cron.render_template")
-    def test_send_reports(
+    def test_send_reports_multiplos_parlamentares(
             self,
             mock_render_template,
             mock_send_email
@@ -37,12 +37,25 @@ class TestCron(unittest.TestCase):
         agora = datetime.now()
         data_final = datetime(agora.year, agora.month, agora.day)
         data_final = brasilia_tz.localize(data_final)
+        data_inicial = data_final - timedelta(days=7)
         parlamentar1 = Parlamentar(id='1', cargo='BR1')
         parlamentar2 = Parlamentar(id='2', cargo='BR2')
         parlamentar3 = Parlamentar(id='3', cargo='BR1')
-        Relatorio(parlamentar=parlamentar1, data_final=data_final).save()
-        Relatorio(parlamentar=parlamentar2, data_final=data_final).save()
-        Relatorio(parlamentar=parlamentar3, data_final=data_final).save()
+        Relatorio(
+            parlamentar=parlamentar1,
+            data_final=data_final,
+            data_inicial=data_inicial
+        ).save()
+        Relatorio(
+            parlamentar=parlamentar2,
+            data_final=data_final,
+            data_inicial=data_inicial
+        ).save()
+        Relatorio(
+            parlamentar=parlamentar3,
+            data_final=data_final,
+            data_inicial=data_inicial
+        ).save()
         mock_render_template.return_value = "<html>Nice</html>"
         mock_send_email.return_value = True
         user = [User(
@@ -55,12 +68,137 @@ class TestCron(unittest.TestCase):
             )
         )]
 
-        send_reports(user)
+        send_reports(user, data_final=agora)
 
         self.assertEqual(mock_render_template.call_count, 1)
         mock_send_email.assert_called_once_with(
             "test@test.com", "<html>Nice</html>")
 
+    def _test_send_reports_multiplos_intervalos(
+        self,
+        agora,
+        mock_render_template,
+        mock_send_email
+    ):
+        brasilia_tz = pytz.timezone('America/Sao_Paulo')
+        data_final = datetime(agora.year, agora.month, agora.day)
+        data_final = brasilia_tz.localize(data_final)
+        parlamentar1 = Parlamentar(id='1', cargo='BR1')
+        Relatorio(
+            parlamentar=parlamentar1,
+            data_final=data_final,
+            data_inicial=data_final - timedelta(days=7)
+        ).save()
+        Relatorio(
+            parlamentar=parlamentar1,
+            data_final=data_final,
+            data_inicial=data_final - timedelta(days=14)
+        ).save()
+        Relatorio(
+            parlamentar=parlamentar1,
+            data_final=data_final,
+            data_inicial=data_final - timedelta(days=28)
+        ).save()
+        mock_render_template.return_value = "<html>Nice</html>"
+        mock_send_email.return_value = True
+        users = [
+            User(
+                username='user1',
+                password='pwd',
+                email='test1@test.com',
+                inscricoes=Inscricoes(
+                    parlamentares=[parlamentar1],
+                    intervalo=7
+                )
+            ),
+            User(
+                username='user2',
+                password='pwd',
+                email='test2@test.com',
+                inscricoes=Inscricoes(
+                    parlamentares=[parlamentar1],
+                    intervalo=14
+                )
+            ),
+            User(
+                username='user4',
+                password='pwd',
+                email='test4@test.com',
+                inscricoes=Inscricoes(
+                    parlamentares=[parlamentar1],
+                    intervalo=28
+                )
+            )
+        ]
+
+        send_reports(users, data_final=agora)
+    
+    @patch("legislei.cron.send_email")
+    @patch("legislei.cron.render_template")
+    def test_send_reports_multiplos_intervalos_sem_4_semanas(
+            self,
+            mock_render_template,
+            mock_send_email
+    ):
+        self._test_send_reports_multiplos_intervalos(
+            agora=datetime(2019, 6, 29),
+            mock_render_template=mock_render_template,
+            mock_send_email=mock_send_email
+        )
+
+        self.assertEqual(mock_render_template.call_count, 2)
+        self.assertEqual(mock_send_email.call_count, 2)
+        mock_send_email.assert_has_calls(
+            [
+                call("test1@test.com", "<html>Nice</html>"),
+                call("test2@test.com", "<html>Nice</html>")
+            ]
+        )
+
+    @patch("legislei.cron.send_email")
+    @patch("legislei.cron.render_template")
+    def test_send_reports_multiplos_intervalos_com_4_semanas(
+            self,
+            mock_render_template,
+            mock_send_email
+    ):
+        self._test_send_reports_multiplos_intervalos(
+            agora=datetime(2019, 6, 15),
+            mock_render_template=mock_render_template,
+            mock_send_email=mock_send_email
+        )
+
+        self.assertEqual(mock_render_template.call_count, 3)
+        self.assertEqual(mock_send_email.call_count, 3)
+        mock_send_email.assert_has_calls(
+            [
+                call("test1@test.com", "<html>Nice</html>"),
+                call("test2@test.com", "<html>Nice</html>"),
+                call("test4@test.com", "<html>Nice</html>")
+            ]
+        )
+
+    @patch("legislei.cron.send_email")
+    @patch("legislei.cron.render_template")
+    def test_send_reports_multiplos_intervalos_semana_impar(
+            self,
+            mock_render_template,
+            mock_send_email
+    ):
+        self._test_send_reports_multiplos_intervalos(
+            agora=datetime(2019, 6, 8),
+            mock_render_template=mock_render_template,
+            mock_send_email=mock_send_email
+        )
+
+        self.assertEqual(mock_render_template.call_count, 1)
+        self.assertEqual(mock_send_email.call_count, 1)
+        mock_send_email.assert_has_calls(
+            [
+                call("test1@test.com", "<html>Nice</html>")
+            ]
+        )
+    
     @patch("legislei.cron.send_email")
     @patch("legislei.cron.render_template")
     @patch("legislei.cron.Relatorios")

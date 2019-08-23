@@ -14,9 +14,14 @@
     {%- endmacro %}
         {% set avaliado = avaliacao['avaliado'] %}
         {% if 'tipo' in avaliado %}
-            {{ relatorio.proposicaoCard(avaliado, cardsFooter) }}
+            {{ relatorio.proposicaoCard(avaliado, cardsFooter, close_card=avaliacao['_id']) }}
         {% else %}
-            {{ relatorio.eventoCard(avaliado, cardsFooter, collapse=False) }}
+            {{ relatorio.eventoCard(
+                avaliado,
+                cardsFooter,
+                collapse=False,
+                close_card=avaliacao['_id']
+            ) }}
         {% endif %}
     {% endfor %}
 {%- endmacro %}
@@ -58,6 +63,50 @@
                 {{ cards('-2') }}
             </div>
         </div>
+        <div class="modal" role="dialog" id="modalConfirmarRemocao">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Apagar avaliação</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Tem certeza de que pretende apagar essa avaliação?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <button class="btn btn-danger">Apagar avaliação</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            $(".card button.close").click(function() {
+                let card = this;
+                confirmarRemocao("sim", $(card).attr("data-item-id"));
+            });
+            let confirmarRemocao = (relatorioId, itemId) => {
+                $("#modalConfirmarRemocao").modal('show');
+                $("#modalConfirmarRemocao button.btn-danger").one("click", () => {
+                    $.ajax({
+                        url: `/v1/relatorios/${relatorioId}/avaliacoes/${itemId}`,
+                        method: "DELETE",
+                        error: (jqXHr, txtStatus) => {
+                            alert(txtStatus);
+                            $("#modalConfirmarRemocao").modal('hide');
+                        },
+                        success: () => {
+                            window.location.reload();
+                        }
+                    });
+                });
+                $("#modalConfirmarRemocao button.btn-secondary").one("click", () => {
+                    $("#modalConfirmarRemocao button.btn-danger").off("click");
+                });
+            }
+        </script>
     {% else %}
         <h5>Nenhuma avaliação para esse parlamentar</h5>
     {% endif %}

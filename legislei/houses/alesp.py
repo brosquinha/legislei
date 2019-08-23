@@ -69,7 +69,17 @@ class ALESPHandler(CasaLegislativa):
     
     def obter_parlamentares(self):
         try:
-            return self.dep.obterTodosDeputados()
+            parlamentares = []
+            for deputado in self.dep.obterTodosDeputados():
+                parlamentar = Parlamentar()
+                parlamentar.cargo = 'SP'
+                parlamentar.id = deputado['id']
+                parlamentar.nome = deputado['nome']
+                parlamentar.partido = deputado['siglaPartido']
+                parlamentar.uf = 'SP'
+                parlamentar.foto = deputado['urlFoto'] if 'urlFoto' in deputado else None
+                parlamentares.append(parlamentar)
+            return parlamentares
         except ALESPError:
             raise ModelError("Erro da API da ALESP")
 
