@@ -21,7 +21,7 @@ _reports_query_parser.add_argument('parlamentar', required=True, help="Id de par
 _request_report = rest_api_v1.model("RequestReport", {
     'casa': fields.String(description="Id de casa legislativa", required=True),
     'parlamentar': fields.String(description="Id de parlamentar", required=True),
-    'data_final': fields.String(description="Data final para o fim do relatório", required=True),
+    'data_final': fields.String(description="Data final para o fim do relatório (formato: YYYY-MM-DD)", required=True),
     'intervalo': fields.Integer(description="Intervalo em dias do relatório", required=True)
 })
 _report_item_rating = rest_api_v1.model("ReportItemRating", {
@@ -119,6 +119,16 @@ class ReportList(Resource):
         house = request.json['casa']
         final_datetime = request.json['data_final']
         interval = request.json['intervalo']
+
+        try:
+            datetime.strptime(final_datetime, '%Y-%m-%d')
+        except ValueError as e:
+            return {
+                'errors': {
+                    'data_final': 'Should be in %Y-%m-%d format'
+                },
+                'message': 'Input payload validation failed'
+            }, 422
 
         relatorio = Relatorios().solicitar_geracao_relatorio(
             parlamentar=assemblyman,
