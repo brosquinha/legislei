@@ -131,11 +131,11 @@ def consultar_parlamentar():
             erro_titulo="500 - Erro interno",
             erro_descricao=e.message
         ), 500
-    except KeyError:
+    except (ValueError, KeyError):
         return render_template(
             'erro.html',
             erro_titulo="400 - Requisição incompleta",
-            erro_descricao="Ae, faltaram parâmetros."
+            erro_descricao="Parâmetros incompletos ou incorretos."
         ), 400
 
 
