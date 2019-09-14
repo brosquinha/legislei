@@ -18,6 +18,12 @@ class ALESPConnectionError(ALESPError):
     Exceção para falhas de conexão com o endpoint da API da Assembleia \
     Legislativa do Estado de São Paulo
     """
+    def __init__(self, response):
+        self.url = response.geturl()
+        self.status_code = response.status_code
+        super().__init__("Could not connect to {}, received {}".format(
+            self.url, self.status_code
+        ))
 
 class ALESPInvalidResponse(ALESPError):
     """

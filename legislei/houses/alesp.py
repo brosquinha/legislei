@@ -54,7 +54,8 @@ class ALESPHandler(CasaLegislativa):
             self.obterProposicoesDeputado(parlamentar_id, data_inicial, data_final)
             logging.info('[ALESP] Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
             return self.relatorio
-        except ALESPError:
+        except ALESPError as e:
+            logging.error("[ALESP] {}".format(e))
             raise ModelError('Erro')
     
     def obter_parlamentar(self, parlamentar_id):
@@ -83,7 +84,8 @@ class ALESPHandler(CasaLegislativa):
                 parlamentar.foto = deputado['urlFoto'] if 'urlFoto' in deputado else None
                 parlamentares.append(parlamentar)
             return parlamentares
-        except ALESPError:
+        except ALESPError as e:
+            logging.error("[ALESP] {}".format(e))
             raise ModelError("Erro da API da ALESP")
 
     def obterComissoesPorId(self):

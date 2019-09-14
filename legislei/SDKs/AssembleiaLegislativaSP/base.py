@@ -39,7 +39,7 @@ class Base():
             "{}{}".format(self.api_endpoint, path)
         )
         if r.status != 200:
-            raise ALESPConnectionError()
+            raise ALESPConnectionError(r)
         else:
             try:
                 return ET.fromstring(r.data.decode('utf-8'))
@@ -107,7 +107,7 @@ class Base():
                 "{}{}".format(self.api_endpoint, path)
             )
             if r.status != 200:
-                raise ALESPConnectionError()
+                raise ALESPConnectionError(r)
             else:
                 try:
                     logging.debug('Baixando arquivo...')
