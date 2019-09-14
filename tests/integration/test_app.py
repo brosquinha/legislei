@@ -28,7 +28,7 @@ class TestApp(ControllerHelperTester):
     def test_consultar_page(self):
         actual = self.app.get("/consultar")
         self.assertEqual(actual.status_code, 200)
-        self.assertIn(u"Consultar político".encode('utf-8'), actual.data)
+        self.assertIn(u"Gerar relatório".encode('utf-8'), actual.data)
 
     def test_relatorio_no_params(self):
         actual = self.app.get("/relatorio")
