@@ -1,3 +1,4 @@
+import logging
 import unittest
 import warnings
 from datetime import datetime
@@ -11,9 +12,12 @@ class TestCamaraMunicipalSaoPauloHandlerIntegration(unittest.TestCase):
     
     def setUp(self):
         warnings.simplefilter("ignore")
+        logging.disable(logging.CRITICAL)
 
-    @patch("builtins.print")
-    def test_obter_relatorio(self, mock_print):
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
+
+    def test_obter_relatorio(self):
         brasilia_tz = pytz.timezone('America/Sao_Paulo')
 
         actual = CamaraMunicipalSaoPauloHandler().obter_relatorio(

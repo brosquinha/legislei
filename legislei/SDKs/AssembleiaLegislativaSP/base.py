@@ -1,10 +1,14 @@
-import certifi
+import logging
 import os
-import urllib3
 import xml.etree.ElementTree as ET
 import zipfile
 from time import time
+
+import certifi
+import urllib3
+
 from .exceptions import ALESPConnectionError, ALESPInvalidResponse
+
 
 class Base():
     """
@@ -106,7 +110,7 @@ class Base():
                 raise ALESPConnectionError()
             else:
                 try:
-                    print('Baixando arquivo...')
+                    logging.debug('Baixando arquivo...')
                     arqName = int(time())
                     arq = open('{}.zip'.format(arqName), 'wb')
                     arq.write(r.data)

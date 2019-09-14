@@ -1,4 +1,5 @@
 import json
+import logging
 from uuid import uuid4
 from datetime import datetime
 
@@ -27,6 +28,9 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
             self.setPeriodoDias(periodo_dias)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
+            logging.info('[CMSP] Parlamentar: {}'.format(parlamentar_id))
+            logging.info('[CMSP] Data final: {}'.format(data_final))
+            logging.info('[CMSP] Intervalo: {}'.format(periodo_dias))
             vereador = self.obter_parlamentar(parlamentar_id)
             self.relatorio.data_inicial = self.brasilia_tz.localize(data_inicial)
             self.relatorio.data_final = self.brasilia_tz.localize(data_final)
@@ -76,8 +80,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
             self.obter_proposicoes_parlamentar(vereador.id, data_inicial, data_final)
             return self.relatorio
         except Exception as e:
-            print(e)
-            #raise e
+            logging.error(e)
             raise ModelError(str(e))
 
     def obter_proposicoes_parlamentar(self, parlamentar_id, data_inicial, data_final):
@@ -87,7 +90,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
             try:
                 if '{}{}{}'.format(projeto['tipo'], projeto['numero'], projeto['ano']) in projetos_ids:
                     projeto_data = datetime.strptime(projeto['data'], '%Y-%m-%dT%H:%M:%S')
-                    print(projeto_data)
+                    logging.debug(projeto_data)
                     if not(projeto_data >= data_inicial and projeto_data <= data_final):
                         continue
                     proposicao = Proposicao()
@@ -107,7 +110,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                     self.relatorio.proposicoes.append(proposicao)
             except Exception as e:
                 #TODO
-                print(e)
+                logging.error(e)
 
     def obter_parlamentar(self, parlamentar_id):
         for item in self.ver.obterVereadores():

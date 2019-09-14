@@ -1,4 +1,5 @@
 import json
+import logging
 import unittest
 import warnings
 from datetime import date, datetime
@@ -13,9 +14,12 @@ class TestCamaraDeputadosHandlerIntegration(unittest.TestCase):
 
     def setUp(self):
         warnings.simplefilter("ignore")
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
     
-    @patch("builtins.print")
-    def test_obter_relatorio(self, mock_print):
+    def test_obter_relatorio(self):
         brasilia_tz = pytz.timezone('America/Sao_Paulo')
         parlamentar = json.loads("""{
             "cargo" : "BR1",
