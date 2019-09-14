@@ -24,7 +24,8 @@ class Webservice(Base):
             fields=kwargs
         )
         if r.status != 200:
-            raise CamaraDeputadosConnectionError('{}{}'.format(r.geturl(), kwargs), r.status)
+            raise CamaraDeputadosConnectionError(
+                self._build_url(r.geturl(), kwargs), r.status)
         else:
             try:
                 return ET.fromstring(r.data.decode('utf-8'))

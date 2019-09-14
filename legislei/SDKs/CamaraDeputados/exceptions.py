@@ -27,6 +27,8 @@ class CamaraDeputadosConnectionError(CamaraDeputadosError):
         super().__init__("Could not connect to {}, received {}".format(
             url, status_code
         ))
+        self.url = url
+        self.status_code = status_code
 
 
 class CamaraDeputadosInvalidResponse(CamaraDeputadosError):
@@ -37,3 +39,4 @@ class CamaraDeputadosInvalidResponse(CamaraDeputadosError):
 
     def __init__(self, data):
         super().__init__("Could not parse {} response".format(data))
+        self.text = data

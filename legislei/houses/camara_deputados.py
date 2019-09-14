@@ -154,7 +154,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
             logging.info('[BR1] Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
             
             return self.relatorio
-        except CamaraDeputadosError:
+        except CamaraDeputadosError as e:
+            logging.error("[BR1] {}".format(e))
             raise ModelError("API Câmara dos Deputados indisponível")
 
     def obterOrgaosDeputado(self, deputado_id, data_final=datetime.now()):
@@ -177,7 +178,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
                         self.relatorio.orgaos.append(orgao)
                         orgaos.append(item)
             return orgaos
-        except CamaraDeputadosError:
+        except CamaraDeputadosError as e:
+            logging.error("[BR1] {}".format(e))
             return [{'nomeOrgao': None}]
 
     def procurarEventosComDeputado(self, deputado_id, data_final=datetime.now()):
@@ -211,7 +213,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 for item in page:
                     eventos.append(item)
             return eventos
-        except CamaraDeputadosError:
+        except CamaraDeputadosError as e:
+            logging.error("[BR1] {}".format(e))
             return [{'id': None}]
 
     def obterPautaEvento(self, ev_id):
@@ -229,10 +232,12 @@ class CamaraDeputadosHandler(CasaLegislativa):
                     try:
                         p['proposicao_detalhes'] = self.prop.obterProposicao(
                             proposicao_id)
-                    except CamaraDeputadosError:
+                    except CamaraDeputadosError as e:
+                        logging.warning("[BR1] {}".format(e))
                         p['proposicao_detalhes'] = [{'error': True}]
             return pautas_unicas
-        except CamaraDeputadosError:
+        except CamaraDeputadosError as e:
+            logging.error("[BR1] {}".format(e))
             return [{'error': True}]
 
     def obterVotoDeputado(self, dep_id, proposicao, datas_evento):
@@ -318,7 +323,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
                         if 'urlInteiroTeor' in p:
                             proposicao.url_documento = p['urlInteiroTeor']
                         self.relatorio.proposicoes.append(proposicao)
-        except CamaraDeputadosError:
+        except CamaraDeputadosError as e:
+            logging.error("[BR1] {}".format(e))
             self.relatorio.aviso_dados = 'Não foi possível obter proposições do parlamentar.'
 
     def obterDatetimeDeStr(self, txt):
