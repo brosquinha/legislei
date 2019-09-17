@@ -2,6 +2,7 @@ from time import sleep
 
 import certifi
 import urllib3
+from urllib3.request import urlencode
 
 class Base(object):
     """
@@ -31,3 +32,16 @@ class Base(object):
                 sleep(0.05)
             else:
                 return r
+
+    def _build_url(self, base_url, query_args):
+        """
+        Builds a URL string with given query parameters
+
+        :param base_url: URL base
+        :type base_url: String
+        :param query_args: URL Query parameters
+        :type query_args: Dict
+        :returns: URL with query parameters
+        :rtype: String
+        """
+        return '{}?{}'.format(base_url, urlencode(query_args))

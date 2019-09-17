@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+import logging
 import os
 from datetime import datetime
 
@@ -26,6 +27,10 @@ app = Flask(__name__, static_url_path='/static')
 app.secret_key = os.environ.get('APP_SECRET_KEY')
 login_manager = LoginManager()
 login_manager.init_app(app)
+logging.basicConfig(
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    level=logging.DEBUG if os.environ.get('DEBUG', 'True').lower() == 'true' else logging.INFO
+)
 
 
 @app.route('/')

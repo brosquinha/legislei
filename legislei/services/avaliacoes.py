@@ -1,3 +1,5 @@
+import logging
+
 from bson.objectid import ObjectId
 from mongoengine.errors import ValidationError
 
@@ -66,7 +68,7 @@ class Avaliacao():
                 avaliacoes_dados[avaliacao.avaliacao].append(
                     avaliacao.to_mongo().to_dict())
             except KeyError:
-                print(avaliacao)
+                logging.error("Avaliação inválida: {}".format(avaliacao))
         nota = (
             10 * len(avaliacoes_dados['2']) +
             len(avaliacoes_dados['1']) -

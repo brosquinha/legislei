@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 from time import time
 
@@ -32,26 +33,30 @@ class ALESPHandler(CasaLegislativa):
             self.setPeriodoDias(periodo_dias)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
-            print('Iniciando...')
+            logging.info('[ALESP] Parlamentar: {}'.format(parlamentar_id))
+            logging.info('[ALESP] Data final: {}'.format(data_final))
+            logging.info('[ALESP] Intervalo: {}'.format(periodo_dias))
             self.obter_parlamentar(parlamentar_id)
             self.relatorio.data_inicial = self.brasilia_tz.localize(data_inicial)
             self.relatorio.data_final = self.brasilia_tz.localize(data_final)
-            print('Deputado obtido em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Deputado obtido em {0:.5f}s'.format(time() - start_time))
             comissoes = self.obterComissoesPorId()
-            print('Comissoes por id obtidas em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Comissoes por id obtidas em {0:.5f}s'.format(time() - start_time))
             votacoes = self.obterVotacoesPorReuniao(parlamentar_id)
-            print('Votos do deputado obtidos em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Votos do deputado obtidos em {0:.5f}s'.format(time() - start_time))
             orgaos_nomes = self.obterComissoesDeputado(
                 comissoes, parlamentar_id, data_inicial, data_final)
-            print('Comissoes do deputado obtidas em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Comissoes do deputado obtidas em {0:.5f}s'.format(time() - start_time))
             self.obterEventosPresentes(
                 parlamentar_id, data_inicial, data_final, votacoes, comissoes, orgaos_nomes)
             self.relatorio.eventos_ausentes_esperados_total = len(self.relatorio.eventos_previstos)
-            print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Eventos obtidos em {0:.5f}s'.format(time() - start_time))
             self.obterProposicoesDeputado(parlamentar_id, data_inicial, data_final)
-            print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Proposicoes obtidas em {0:.5f}s'.format(time() - start_time))
+            logging.info('[ALESP] Relatorio obtido em {0:.5f}s'.format(time() - start_time))
             return self.relatorio
-        except ALESPError:
+        except ALESPError as e:
+            logging.error("[ALESP] {}".format(e))
             raise ModelError('Erro')
     
     def obter_parlamentar(self, parlamentar_id):
@@ -80,7 +85,8 @@ class ALESPHandler(CasaLegislativa):
                 parlamentar.foto = deputado['urlFoto'] if 'urlFoto' in deputado else None
                 parlamentares.append(parlamentar)
             return parlamentares
-        except ALESPError:
+        except ALESPError as e:
+            logging.error("[ALESP] {}".format(e))
             raise ModelError("Erro da API da ALESP")
 
     def obterComissoesPorId(self):
@@ -173,14 +179,14 @@ class ALESPHandler(CasaLegislativa):
 
     def obterProposicoesDeputado(self, dep_id, data_inicial, data_final):
         proposicoes_deputado = []
-        print('Obtendo tipos de documentos...')
+        logging.debug('[ALESP] Obtendo tipos de documentos...')
         tipos_documentos = self.prop.obterNaturezaDocumentos()
-        print('Obtendo autores...')
+        logging.debug('[ALESP] Obtendo autores...')
         for autor in self.prop.obterTodosAutoresProposicoes():
             if str(autor['idAutor']) == str(dep_id):
                 proposicoes_deputado.append(autor['idDocumento'])
-        print(len(proposicoes_deputado))
-        print('Obtendo proposicoes...')
+        logging.debug('[ALESP] {} proposições obtidas'.format(len(proposicoes_deputado)))
+        logging.debug('[ALESP] Obtendo proposicoes...')
         for propositura in self.prop.obterTodasProposicoes():
             if not(propositura['dataEntrada']):
                 continue

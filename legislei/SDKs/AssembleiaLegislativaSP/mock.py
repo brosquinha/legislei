@@ -83,11 +83,9 @@ class Mocker():
         """
         Verifica que todas as chamadas registradas no mock foram chamadas
         """
-        # print(self._methods)
         for method_name, method_info in self._methods.items():
             for calls in method_info["calls"]:
                 m_args = calls["args"]
-                # print(method_info["mock"].mock_calls)
                 if m_args:
                     self.obj.__getattribute__(method_name).assert_any_call(
                         *m_args[0], **m_args[1])

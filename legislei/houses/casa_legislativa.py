@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from legislei.exceptions import ModelError
@@ -21,7 +22,7 @@ class CasaLegislativa():
                     data.month,
                     data.day),)
             except Exception as e:
-                print(e)
+                logging.error("Data inválida: {}".format(e))
         return resultado
 
         

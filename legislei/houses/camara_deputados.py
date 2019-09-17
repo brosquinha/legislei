@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 from time import time
 
@@ -32,15 +33,17 @@ class CamaraDeputadosHandler(CasaLegislativa):
             start_time = time()
             if data_final:
                 data_final = datetime.strptime(data_final, '%Y-%m-%d')
-                print(data_final)
             else:
                 data_final = datetime.now()
+            logging.info('[BR1] Parlamentar: {}'.format(parlamentar_id))
+            logging.info('[BR1] Data final: {}'.format(data_final))
+            logging.info('[BR1] Intervalo: {}'.format(periodo_dias))
             self.setPeriodoDias(periodo_dias)
             deputado_info = self.obter_parlamentar(parlamentar_id)
             self.relatorio.data_inicial = self.brasilia_tz.localize(
                 self.obterDataInicial(data_final, **self.periodo))
             self.relatorio.data_final = self.brasilia_tz.localize(data_final)
-            print('Deputado obtido em {0:.5f}'.format(time() - start_time))
+            logging.info('[BR1] Deputado obtido em {0:.5f}s'.format(time() - start_time))
             (
                 eventos,
                 _presenca_total,
@@ -49,9 +52,9 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 deputado_info.id,
                 data_final
             )
-            print('Eventos obtidos em {0:.5f}'.format(time() - start_time))
+            logging.info('[BR1] Eventos obtidos em {0:.5f}s'.format(time() - start_time))
             orgaos = self.obterOrgaosDeputado(deputado_info.id, data_final)
-            print('Orgaos obtidos em {0:.5f}'.format(time() - start_time))
+            logging.info('[BR1] Orgaos obtidos em {0:.5f}s'.format(time() - start_time))
             orgaos_nomes = [orgao['nomeOrgao'] for orgao in orgaos]
             for e in eventos:
                 evento = Evento()
@@ -106,7 +109,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
                                     pauta_votacao, proposicao.pauta)
                         evento.pautas.append(proposicao)
                 self.relatorio.eventos_presentes.append(evento)
-            print('Pautas obtidas em {0:.5f}'.format(time() - start_time))
+            logging.info('[BR1] Pautas obtidas em {0:.5f}s'.format(time() - start_time))
             (
                 eventos_ausentes,
                 eventos_ausentes_total,
@@ -146,12 +149,13 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 self.relatorio.eventos_ausentes.append(evento)
                 if evento.presenca > 1:
                     self.relatorio.eventos_previstos.append(evento)
-            print('Ausencias obtidas em {0:.5f}'.format(time() - start_time))
+            logging.info('[BR1] Ausencias obtidas em {0:.5f}s'.format(time() - start_time))
             self.obterProposicoesDeputado(deputado_info, data_final)
-            print('Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
-            
+            logging.info('[BR1] Proposicoes obtidas em {0:.5f}s'.format(time() - start_time))
+            logging.info('[BR1] Relatorio obtido em {0:.5f}s'.format(time() - start_time))
             return self.relatorio
-        except CamaraDeputadosError:
+        except CamaraDeputadosError as e:
+            logging.error("[BR1] {}".format(e))
             raise ModelError("API Câmara dos Deputados indisponível")
 
     def obterOrgaosDeputado(self, deputado_id, data_final=datetime.now()):
@@ -174,7 +178,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
                         self.relatorio.orgaos.append(orgao)
                         orgaos.append(item)
             return orgaos
-        except CamaraDeputadosError:
+        except CamaraDeputadosError as e:
+            logging.error("[BR1] {}".format(e))
             return [{'nomeOrgao': None}]
 
     def procurarEventosComDeputado(self, deputado_id, data_final=datetime.now()):
@@ -208,7 +213,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 for item in page:
                     eventos.append(item)
             return eventos
-        except CamaraDeputadosError:
+        except CamaraDeputadosError as e:
+            logging.error("[BR1] {}".format(e))
             return [{'id': None}]
 
     def obterPautaEvento(self, ev_id):
@@ -226,10 +232,12 @@ class CamaraDeputadosHandler(CasaLegislativa):
                     try:
                         p['proposicao_detalhes'] = self.prop.obterProposicao(
                             proposicao_id)
-                    except CamaraDeputadosError:
+                    except CamaraDeputadosError as e:
+                        logging.warning("[BR1] {}".format(e))
                         p['proposicao_detalhes'] = [{'error': True}]
             return pautas_unicas
-        except CamaraDeputadosError:
+        except CamaraDeputadosError as e:
+            logging.error("[BR1] {}".format(e))
             return [{'error': True}]
 
     def obterVotoDeputado(self, dep_id, proposicao, datas_evento):
@@ -255,7 +263,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 return 'Não votou', ','.join(pautas)
             return ','.join(votos), ','.join(pautas)
         except (CamaraDeputadosError, ValueError) as e:
-            print(e)
+            logging.debug(e)
             return None, None
 
     def obterEventosAusentes(
@@ -315,7 +323,8 @@ class CamaraDeputadosHandler(CasaLegislativa):
                         if 'urlInteiroTeor' in p:
                             proposicao.url_documento = p['urlInteiroTeor']
                         self.relatorio.proposicoes.append(proposicao)
-        except CamaraDeputadosError:
+        except CamaraDeputadosError as e:
+            logging.error("[BR1] {}".format(e))
             self.relatorio.aviso_dados = 'Não foi possível obter proposições do parlamentar.'
 
     def obterDatetimeDeStr(self, txt):

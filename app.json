@@ -38,7 +38,8 @@
     },
     "addons": [
       "mongolab",
-      "sendgrid"
+      "sendgrid",
+      "timber-logging"
     ],
     "buildpacks": [
       {
