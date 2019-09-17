@@ -43,7 +43,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
             self.relatorio.data_inicial = self.brasilia_tz.localize(
                 self.obterDataInicial(data_final, **self.periodo))
             self.relatorio.data_final = self.brasilia_tz.localize(data_final)
-            logging.info('[BR1] Deputado obtido em {0:.5f}'.format(time() - start_time))
+            logging.info('[BR1] Deputado obtido em {0:.5f}s'.format(time() - start_time))
             (
                 eventos,
                 _presenca_total,
@@ -52,9 +52,9 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 deputado_info.id,
                 data_final
             )
-            logging.info('[BR1] Eventos obtidos em {0:.5f}'.format(time() - start_time))
+            logging.info('[BR1] Eventos obtidos em {0:.5f}s'.format(time() - start_time))
             orgaos = self.obterOrgaosDeputado(deputado_info.id, data_final)
-            logging.info('[BR1] Orgaos obtidos em {0:.5f}'.format(time() - start_time))
+            logging.info('[BR1] Orgaos obtidos em {0:.5f}s'.format(time() - start_time))
             orgaos_nomes = [orgao['nomeOrgao'] for orgao in orgaos]
             for e in eventos:
                 evento = Evento()
@@ -109,7 +109,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
                                     pauta_votacao, proposicao.pauta)
                         evento.pautas.append(proposicao)
                 self.relatorio.eventos_presentes.append(evento)
-            logging.info('[BR1] Pautas obtidas em {0:.5f}'.format(time() - start_time))
+            logging.info('[BR1] Pautas obtidas em {0:.5f}s'.format(time() - start_time))
             (
                 eventos_ausentes,
                 eventos_ausentes_total,
@@ -149,10 +149,10 @@ class CamaraDeputadosHandler(CasaLegislativa):
                 self.relatorio.eventos_ausentes.append(evento)
                 if evento.presenca > 1:
                     self.relatorio.eventos_previstos.append(evento)
-            logging.info('[BR1] Ausencias obtidas em {0:.5f}'.format(time() - start_time))
+            logging.info('[BR1] Ausencias obtidas em {0:.5f}s'.format(time() - start_time))
             self.obterProposicoesDeputado(deputado_info, data_final)
-            logging.info('[BR1] Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
-            logging.info('[BR1] Relatorio obtido em {0:.5f}'.format(time() - start_time))
+            logging.info('[BR1] Proposicoes obtidas em {0:.5f}s'.format(time() - start_time))
+            logging.info('[BR1] Relatorio obtido em {0:.5f}s'.format(time() - start_time))
             return self.relatorio
         except CamaraDeputadosError as e:
             logging.error("[BR1] {}".format(e))

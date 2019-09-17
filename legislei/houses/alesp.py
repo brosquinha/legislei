@@ -39,21 +39,21 @@ class ALESPHandler(CasaLegislativa):
             self.obter_parlamentar(parlamentar_id)
             self.relatorio.data_inicial = self.brasilia_tz.localize(data_inicial)
             self.relatorio.data_final = self.brasilia_tz.localize(data_final)
-            logging.info('[ALESP] Deputado obtido em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Deputado obtido em {0:.5f}s'.format(time() - start_time))
             comissoes = self.obterComissoesPorId()
-            logging.info('[ALESP] Comissoes por id obtidas em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Comissoes por id obtidas em {0:.5f}s'.format(time() - start_time))
             votacoes = self.obterVotacoesPorReuniao(parlamentar_id)
-            logging.info('[ALESP] Votos do deputado obtidos em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Votos do deputado obtidos em {0:.5f}s'.format(time() - start_time))
             orgaos_nomes = self.obterComissoesDeputado(
                 comissoes, parlamentar_id, data_inicial, data_final)
-            logging.info('[ALESP] Comissoes do deputado obtidas em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Comissoes do deputado obtidas em {0:.5f}s'.format(time() - start_time))
             self.obterEventosPresentes(
                 parlamentar_id, data_inicial, data_final, votacoes, comissoes, orgaos_nomes)
             self.relatorio.eventos_ausentes_esperados_total = len(self.relatorio.eventos_previstos)
-            logging.info('[ALESP] Eventos obtidos em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Eventos obtidos em {0:.5f}s'.format(time() - start_time))
             self.obterProposicoesDeputado(parlamentar_id, data_inicial, data_final)
-            logging.info('[ALESP] Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
-            logging.info('[ALESP] Relatorio obtido em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Proposicoes obtidas em {0:.5f}s'.format(time() - start_time))
+            logging.info('[ALESP] Relatorio obtido em {0:.5f}s'.format(time() - start_time))
             return self.relatorio
         except ALESPError as e:
             logging.error("[ALESP] {}".format(e))

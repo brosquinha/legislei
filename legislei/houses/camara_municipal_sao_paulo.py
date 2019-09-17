@@ -34,7 +34,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
             logging.info('[SAO PAULO] Data final: {}'.format(data_final))
             logging.info('[SAO PAULO] Intervalo: {}'.format(periodo_dias))
             vereador = self.obter_parlamentar(parlamentar_id)
-            logging.info('[SAO PAULO] Vereador obtido em {0:.5f}'.format(time() - start_time))
+            logging.info('[SAO PAULO] Vereador obtido em {0:.5f}s'.format(time() - start_time))
             self.relatorio.data_inicial = self.brasilia_tz.localize(data_inicial)
             self.relatorio.data_final = self.brasilia_tz.localize(data_final)
             presenca = []
@@ -79,11 +79,11 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                         else:
                             evento.set_ausencia_evento_esperado()
                             self.relatorio.eventos_ausentes.append(evento)
-            logging.info('[SAO PAULO] Eventos obtidos em {0:.5f}'.format(time() - start_time))
+            logging.info('[SAO PAULO] Eventos obtidos em {0:.5f}s'.format(time() - start_time))
             self.relatorio.eventos_ausentes_esperados_total = sessao_total - presenca_total
             self.obter_proposicoes_parlamentar(vereador.id, data_inicial, data_final)
-            logging.info('[SAO PAULO] Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
-            logging.info('[SAO PAULO] Relatorio obtido em {0:.5f}'.format(time() - start_time))
+            logging.info('[SAO PAULO] Proposicoes obtidas em {0:.5f}s'.format(time() - start_time))
+            logging.info('[SAO PAULO] Relatorio obtido em {0:.5f}s'.format(time() - start_time))
             return self.relatorio
         except Exception as e:
             logging.error(e)

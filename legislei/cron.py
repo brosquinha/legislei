@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime, timedelta
 
@@ -21,8 +22,11 @@ def send_reports(data, data_final = datetime.now()):
         reports = []
         inscricao = user.inscricoes
         if (numero_semana % (inscricao["intervalo"]/7) != 0):
+            logging.info("Pulando {} (intervalo de inscricao: {})".format(
+                user.username, inscricao["intervalo"]))
             continue
         data_inicial = (data_final - timedelta(days=int(inscricao["intervalo"])))
+        logging.info("Obtendo relatorios para {}".format(user.username))
         for par in inscricao["parlamentares"]:
             try:
                 reports.append(Relatorios().obter_relatorio(
