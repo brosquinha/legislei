@@ -152,7 +152,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
             logging.info('[BR1] Ausencias obtidas em {0:.5f}'.format(time() - start_time))
             self.obterProposicoesDeputado(deputado_info, data_final)
             logging.info('[BR1] Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
-            
+            logging.info('[BR1] Relatorio obtido em {0:.5f}'.format(time() - start_time))
             return self.relatorio
         except CamaraDeputadosError as e:
             logging.error("[BR1] {}".format(e))

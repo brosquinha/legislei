@@ -1,7 +1,8 @@
 import json
 import logging
-from uuid import uuid4
 from datetime import datetime
+from time import time
+from uuid import uuid4
 
 import pytz
 from flask import render_template, request
@@ -23,15 +24,17 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
     
     def obter_relatorio(self, parlamentar_id, data_final=datetime.now(), periodo_dias=7):
         try:
+            start_time = time()
             self.relatorio = Relatorio()
             self.relatorio.aviso_dados = u'Dados de sessões de comissões não disponível.'
             self.setPeriodoDias(periodo_dias)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
-            logging.info('[CMSP] Parlamentar: {}'.format(parlamentar_id))
-            logging.info('[CMSP] Data final: {}'.format(data_final))
-            logging.info('[CMSP] Intervalo: {}'.format(periodo_dias))
+            logging.info('[SAO PAULO] Parlamentar: {}'.format(parlamentar_id))
+            logging.info('[SAO PAULO] Data final: {}'.format(data_final))
+            logging.info('[SAO PAULO] Intervalo: {}'.format(periodo_dias))
             vereador = self.obter_parlamentar(parlamentar_id)
+            logging.info('[SAO PAULO] Vereador obtido em {0:.5f}'.format(time() - start_time))
             self.relatorio.data_inicial = self.brasilia_tz.localize(data_inicial)
             self.relatorio.data_final = self.brasilia_tz.localize(data_final)
             presenca = []
@@ -76,8 +79,11 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                         else:
                             evento.set_ausencia_evento_esperado()
                             self.relatorio.eventos_ausentes.append(evento)
+            logging.info('[SAO PAULO] Eventos obtidos em {0:.5f}'.format(time() - start_time))
             self.relatorio.eventos_ausentes_esperados_total = sessao_total - presenca_total
             self.obter_proposicoes_parlamentar(vereador.id, data_inicial, data_final)
+            logging.info('[SAO PAULO] Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
+            logging.info('[SAO PAULO] Relatorio obtido em {0:.5f}'.format(time() - start_time))
             return self.relatorio
         except Exception as e:
             logging.error(e)

@@ -53,6 +53,7 @@ class ALESPHandler(CasaLegislativa):
             logging.info('[ALESP] Eventos obtidos em {0:.5f}'.format(time() - start_time))
             self.obterProposicoesDeputado(parlamentar_id, data_inicial, data_final)
             logging.info('[ALESP] Proposicoes obtidas em {0:.5f}'.format(time() - start_time))
+            logging.info('[ALESP] Relatorio obtido em {0:.5f}'.format(time() - start_time))
             return self.relatorio
         except ALESPError as e:
             logging.error("[ALESP] {}".format(e))
