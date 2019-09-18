@@ -31,6 +31,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%dT%H:%M:%SZ%z',
     level=logging.DEBUG if os.environ.get('DEBUG', 'True').lower() == 'true' else logging.INFO
 )
 sentry_dsn = os.environ.get("SENTRY_DSN")
