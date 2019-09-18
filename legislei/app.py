@@ -5,10 +5,12 @@ import os
 from datetime import datetime
 
 import pytz
+import sentry_sdk
 from flask import Flask, g, redirect, render_template, request, url_for
 from flask.sessions import SecureCookieSessionInterface
 from flask_login import LoginManager, current_user, login_required
 from flask_restplus import Api, Namespace
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 from legislei import settings
 from legislei.exceptions import (AppError, AvaliacoesModuleError,
@@ -31,6 +33,12 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     level=logging.DEBUG if os.environ.get('DEBUG', 'True').lower() == 'true' else logging.INFO
 )
+sentry_dsn = os.environ.get("SENTRY_DSN")
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        integrations=[FlaskIntegration()]
+    )
 
 
 @app.route('/')
