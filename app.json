@@ -42,7 +42,7 @@
     "addons": [
       "mongolab",
       "sendgrid",
-      "timber-logging"
+      "papertrail"
     ],
     "buildpacks": [
       {
