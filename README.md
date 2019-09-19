@@ -40,6 +40,7 @@ A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` dentro da past
 | MONGODB_HOST | Host de conexão para o MongoDB (normalmente utilizado em desenvolvimento) |
 | MONGODB_PORT | Porta da conexão para o MongoDB (normalmente utilizado em desenvolvimento) |
 | MONGODB_DBNAME | Nome do banco de dados da aplicação no MongoDB |
+| SENTRY_DSN | DSN do Sentry |
 
 ### Instalar pacotes Python 3.5+ e virtualenv
 
