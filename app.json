@@ -29,6 +29,9 @@
       },
       "MONGODB_URI": {
         "required": true
+      },
+      "SENTRY_DSN": {
+        "required": true
       }
     },
     "formation": {
@@ -38,7 +41,8 @@
     },
     "addons": [
       "mongolab",
-      "sendgrid"
+      "sendgrid",
+      "papertrail"
     ],
     "buildpacks": [
       {

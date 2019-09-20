@@ -54,7 +54,7 @@ class Deputados(Base):
             "{}/alesp/deputado/?matricula={}".format(self.api_host, matricula)
         )
         if r.status != 200:
-            raise ALESPConnectionError()
+            raise ALESPConnectionError(r)
         else:
             item = re.search(r"\&idAutor\=(\d+)", r.data.decode("ISO-8859-1"))
             if item == None:
@@ -75,7 +75,7 @@ class Deputados(Base):
             "{}/alesp/pesquisa-proposicoes/".format(self.api_host)
         )
         if r.status != 200:
-            raise ALESPConnectionError()
+            raise ALESPConnectionError(r)
         else:
             return r.data.decode("ISO-8859-1")
 

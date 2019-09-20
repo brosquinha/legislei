@@ -1,6 +1,8 @@
 import json
-from uuid import uuid4
+import logging
 from datetime import datetime
+from time import time
+from uuid import uuid4
 
 import pytz
 from flask import render_template, request
@@ -22,12 +24,17 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
     
     def obter_relatorio(self, parlamentar_id, data_final=datetime.now(), periodo_dias=7):
         try:
+            start_time = time()
             self.relatorio = Relatorio()
             self.relatorio.aviso_dados = u'Dados de sessões de comissões não disponível.'
             self.setPeriodoDias(periodo_dias)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
+            logging.info('[SAO PAULO] Parlamentar: {}'.format(parlamentar_id))
+            logging.info('[SAO PAULO] Data final: {}'.format(data_final))
+            logging.info('[SAO PAULO] Intervalo: {}'.format(periodo_dias))
             vereador = self.obter_parlamentar(parlamentar_id)
+            logging.info('[SAO PAULO] Vereador obtido em {0:.5f}s'.format(time() - start_time))
             self.relatorio.data_inicial = self.brasilia_tz.localize(data_inicial)
             self.relatorio.data_final = self.brasilia_tz.localize(data_final)
             presenca = []
@@ -72,12 +79,14 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                         else:
                             evento.set_ausencia_evento_esperado()
                             self.relatorio.eventos_ausentes.append(evento)
+            logging.info('[SAO PAULO] Eventos obtidos em {0:.5f}s'.format(time() - start_time))
             self.relatorio.eventos_ausentes_esperados_total = sessao_total - presenca_total
             self.obter_proposicoes_parlamentar(vereador.id, data_inicial, data_final)
+            logging.info('[SAO PAULO] Proposicoes obtidas em {0:.5f}s'.format(time() - start_time))
+            logging.info('[SAO PAULO] Relatorio obtido em {0:.5f}s'.format(time() - start_time))
             return self.relatorio
         except Exception as e:
-            print(e)
-            #raise e
+            logging.error(e)
             raise ModelError(str(e))
 
     def obter_proposicoes_parlamentar(self, parlamentar_id, data_inicial, data_final):
@@ -87,7 +96,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
             try:
                 if '{}{}{}'.format(projeto['tipo'], projeto['numero'], projeto['ano']) in projetos_ids:
                     projeto_data = datetime.strptime(projeto['data'], '%Y-%m-%dT%H:%M:%S')
-                    print(projeto_data)
+                    logging.debug(projeto_data)
                     if not(projeto_data >= data_inicial and projeto_data <= data_final):
                         continue
                     proposicao = Proposicao()
@@ -107,7 +116,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                     self.relatorio.proposicoes.append(proposicao)
             except Exception as e:
                 #TODO
-                print(e)
+                logging.error(e)
 
     def obter_parlamentar(self, parlamentar_id):
         for item in self.ver.obterVereadores():

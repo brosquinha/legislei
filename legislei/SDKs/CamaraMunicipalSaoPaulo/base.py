@@ -1,9 +1,12 @@
+import json
+import logging
+import re
+import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta
+
 import certifi
 import urllib3
-import xml.etree.ElementTree as ET
-import json
-import re
-from datetime import timedelta, datetime
+
 
 class CamaraMunicipal(object):
     """ Base class
@@ -26,7 +29,7 @@ class CamaraMunicipal(object):
                 )
             )
             if r.status != 200:
-                print("Sem relatorio nesse dia")
+                logging.debug("Sem relatorio nesse dia")
                 presenca = None
             else:
                 presenca = {'vereadores': [], 'sessoes': {}}
@@ -71,7 +74,7 @@ class CamaraMunicipal(object):
             )
         )
         if r.status != 200:
-            print("Sem votacoes nesse dia")
+            logging.debug("Sem votacoes nesse dia")
         else:
             root = ET.fromstring(r.data.decode('utf-8'))
             for child in root:

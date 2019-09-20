@@ -28,7 +28,7 @@ class TestApp(ControllerHelperTester):
     def test_consultar_page(self):
         actual = self.app.get("/consultar")
         self.assertEqual(actual.status_code, 200)
-        self.assertIn(u"Consultar político".encode('utf-8'), actual.data)
+        self.assertIn(u"Gerar relatório".encode('utf-8'), actual.data)
 
     def test_relatorio_no_params(self):
         actual = self.app.get("/relatorio")
@@ -43,6 +43,11 @@ class TestApp(ControllerHelperTester):
         actual = self.app.get("/relatorio?parlamentar=123&data=2019-01-07&parlamentarTipo=BR3&dias=7")
         self.assertEqual(actual.status_code, 200)
         self.assertIn(u"Gerando relatório".encode("utf-8"), actual.data)
+
+    def test_relatorio_invalid_date(self):
+        actual = self.app.get("/relatorio?parlamentar=123&data=invalid-date&parlamentarTipo=BR3&dias=7")
+        self.assertEqual(actual.status_code, 400)
+        self.assertIn(u"Requisição incompleta".encode("utf-8"), actual.data)
 
     def test_get_relatorio_by_id(self):
         actual = self.app.get("/relatorio/5c264b5e3a5efd576ecaf48e")

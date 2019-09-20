@@ -212,3 +212,20 @@ class TestReportController(ControllerHelperTester):
         self.assertIn("message", actual_data)
         self.assertIn("errors", actual_data)
         self.assertIn("data_final", actual_data["errors"])
+
+    def test_post_relatorios_data_final_invalida(self):
+        actual = self.app.post(
+            "/v1/relatorios",
+            data=json.dumps({
+                'parlamentar': '123',
+                'casa': 'BR1',
+                'data_final': 'data-invalida',
+                'intervalo': 7
+            }),
+            content_type='application/json'
+        )
+        actual_data = json.loads(actual.data.decode('utf-8'))
+        self.assertEqual(actual.status_code, 422)
+        self.assertIn("message", actual_data)
+        self.assertIn("errors", actual_data)
+        self.assertIn("data_final", actual_data["errors"])

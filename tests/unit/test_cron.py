@@ -1,4 +1,5 @@
 import json
+import logging
 import unittest
 from datetime import datetime, timedelta
 from unittest.mock import ANY, call, patch
@@ -7,13 +8,16 @@ import pytz
 from flask import render_template
 from mongoengine import connect
 
+logging.disable(logging.CRITICAL)
+
 from legislei.cron import send_reports
 from legislei.exceptions import ModelError
 from legislei.house_selector import obter_relatorio
+from legislei.models.inscricoes import Inscricoes
 from legislei.models.relatorio import Parlamentar, Relatorio
 from legislei.models.user import User
-from legislei.models.inscricoes import Inscricoes
 from legislei.send_reports import send_email
+
 
 customAssertionMsg = '{} differs from expected {}'
 
@@ -22,9 +26,11 @@ class TestCron(unittest.TestCase):
 
     def setUp(self):
         connect('mongoenginetest', host='mongomock://localhost')
+        logging.disable(logging.CRITICAL)
 
     def tearDown(self):
         Relatorio.drop_collection()
+        logging.disable(logging.NOTSET)
     
     @patch("legislei.cron.send_email")
     @patch("legislei.cron.render_template")

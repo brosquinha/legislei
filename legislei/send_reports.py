@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import smtplib
 from datetime import datetime
@@ -30,7 +31,7 @@ def send_email(email, report):
     msg['To'] = email
     s.sendmail(from_email, email, msg.as_string())
     s.quit()
-    print('Enviado')
+    logging.info('Email enviado para {}'.format(email))
 
 
 def check_reports_to_send():

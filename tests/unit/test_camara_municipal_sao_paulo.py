@@ -1,23 +1,28 @@
+import logging
 import unittest
 from datetime import datetime
 from unittest.mock import patch
 
-from legislei.houses.camara_municipal_sao_paulo import CamaraMunicipalSaoPauloHandler
+from legislei.houses.camara_municipal_sao_paulo import \
+    CamaraMunicipalSaoPauloHandler
 from legislei.models.relatorio import Parlamentar
+
 
 class TestCamaraMunicipalSaoPauloHandler(unittest.TestCase):
 
     def setUp(self):
         self.cmsp = CamaraMunicipalSaoPauloHandler()
+        logging.disable(logging.CRITICAL)
 
-    @patch("builtins.print")
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
+
     @patch("legislei.SDKs.CamaraMunicipalSaoPaulo.base.CamaraMunicipal.obterProjetosDetalhes")
     @patch("legislei.SDKs.CamaraMunicipalSaoPaulo.base.CamaraMunicipal.obterProjetosParlamentar")
     def test_obter_proposicoes_parlamentar(
             self,
             mock_obterProjetosParlamentar,
-            mock_obterProjetosDetalhes,
-            mock_print
+            mock_obterProjetosDetalhes
     ):
         mock_obterProjetosParlamentar.return_value = [
             {'tipo': 'PL', 'numero': '1', 'ano': '2019'},
@@ -131,4 +136,3 @@ class TestCamaraMunicipalSaoPauloHandler(unittest.TestCase):
             Parlamentar(**{'nome': 'Fulana', 'id': '2', 'partido': 'TESTE', 'uf': 'SP', 'cargo': 'SÃO PAULO'}),
             Parlamentar(**{'nome': 'Joana', 'id': '3', 'partido': 'TESTE', 'uf': 'SP', 'cargo': 'SÃO PAULO'})
         ])
-

@@ -1,3 +1,4 @@
+import logging
 import smtplib
 import unittest
 from unittest.mock import patch
@@ -7,12 +8,16 @@ from legislei.send_reports import send_email, uses_ssl
 
 class TestSendReports(unittest.TestCase):
 
-    @patch("builtins.print")
+    def setUp(self):
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
+    
     @patch("smtplib.SMTP_SSL" if uses_ssl else "smtplib.SMTP")
     def test_send_email(
             self,
-            mock_SMTP,
-            mock_print
+            mock_SMTP
     ):
         #Não consegui nem encontrei como mockar Header e MIMEText...
         class FakeSMTP():

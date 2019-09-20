@@ -56,7 +56,10 @@ class RESTful(Base):
                 headers={'accept': 'application/json'}
             )
             if r.status != 200:
-                raise CamaraDeputadosConnectionError(url_path, r.status)
+                raise CamaraDeputadosConnectionError(
+                    self._build_url(url_path, url_args),
+                    r.status
+                )
             
             try:
                 page = json.loads(r.data.decode('utf-8'))
@@ -123,7 +126,10 @@ class RESTful(Base):
             headers={'accept': 'application/json'}
         )
         if r.status != 200:
-            raise CamaraDeputadosConnectionError(uri, r.status)
+            raise CamaraDeputadosConnectionError(
+                self._build_url(uri, kwargs),
+                r.status
+            )
         try:
             return json.loads(r.data.decode('utf-8'))
         except:

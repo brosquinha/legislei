@@ -1,19 +1,25 @@
 import json
+import logging
 import unittest
 from datetime import datetime
 from unittest.mock import patch
 
 from legislei.houses.camara_deputados import CamaraDeputadosHandler
-from legislei.models.relatorio import Evento, Orgao, Parlamentar, Proposicao, Relatorio
+from legislei.models.relatorio import (Evento, Orgao, Parlamentar, Proposicao,
+                                       Relatorio)
 from legislei.SDKs.CamaraDeputados.entidades import Deputados
-from legislei.SDKs.CamaraDeputados.mock import Mocker
 from legislei.SDKs.CamaraDeputados.exceptions import CamaraDeputadosError
+from legislei.SDKs.CamaraDeputados.mock import Mocker
 
 
 class TestCamaraDeputadosHandler(unittest.TestCase):
 
     def setUp(self):
         self.dep = CamaraDeputadosHandler()
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def test_obterParlamentares(self):
         def fakeObterDeputados():
@@ -332,8 +338,7 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         self.assertEqual(('Sim', 'Votação 1'), actual_response)
         mock.assert_no_pending_responses()
 
-    @patch("builtins.print")
-    def test_obterVotoDeputado_fail_case(self, mock_print):
+    def test_obterVotoDeputado_fail_case(self):
         mock = Mocker(self.dep.prop)
         mock.add_exception("obterVotacoesProposicao", CamaraDeputadosError)
 

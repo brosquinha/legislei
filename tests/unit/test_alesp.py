@@ -1,3 +1,4 @@
+import logging
 import unittest
 from datetime import datetime
 from unittest.mock import patch
@@ -13,6 +14,10 @@ class TestALESPHandler(unittest.TestCase):
 
     def setUp(self):
         self.dep = ALESPHandler()
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def test_obterDeputado(self):
         mock = Mocker(self.dep.dep)
@@ -292,7 +297,6 @@ class TestALESPHandler(unittest.TestCase):
         self.assertEqual(len(self.dep.relatorio.eventos_previstos), 1)
         mock.assert_no_pending_responses()
 
-    @patch("builtins.print")
     @patch("legislei.houses.alesp.ALESPHandler.obterDatetimeDeStr")
     @patch("legislei.SDKs.AssembleiaLegislativaSP.proposicoes.Proposicoes.obterTodasProposicoes")
     @patch("legislei.SDKs.AssembleiaLegislativaSP.proposicoes.Proposicoes.obterTodosAutoresProposicoes")
@@ -302,8 +306,7 @@ class TestALESPHandler(unittest.TestCase):
         mock_obterNaturezaDocumentos,
         mock_obterTodosAutoresProposicoes,
         mock_obterTodasProposicoes,
-        mock_obterDatetimeDeStr,
-        mock_print
+        mock_obterDatetimeDeStr
     ):
         def fakeObterDatetimeDeStr(txt):
             return txt
