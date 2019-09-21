@@ -100,8 +100,12 @@ class Base():
         :rtype: Generator
         """
         try:
-            return ET.iterparse('.ALESP/{}'.format(file_name))
-        except FileNotFoundError:
+            file_path = '.ALESP/{}'.format(file_name)
+            time_of_file = os.path.getmtime(file_path)
+            if time() > time_of_file + (60 * 60 * 24):
+                os.remove(file_path)
+            return ET.iterparse(file_path)
+        except (FileNotFoundError, OSError):
             r = self.http.request(
                 "GET",
                 "{}{}".format(self.api_endpoint, path)
