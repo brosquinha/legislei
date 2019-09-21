@@ -6,7 +6,8 @@ from unittest.mock import patch
 from legislei.exceptions import ModelError
 from legislei.houses.alesp import ALESPHandler
 from legislei.models.relatorio import Parlamentar
-from legislei.SDKs.AssembleiaLegislativaSP.exceptions import ALESPError
+from legislei.SDKs.AssembleiaLegislativaSP.exceptions import (
+    ALESPConnectionError, ALESPError)
 from legislei.SDKs.AssembleiaLegislativaSP.mock import Mocker
 
 
@@ -381,3 +382,14 @@ class TestALESPHandler(unittest.TestCase):
     def test_obterDatetimeDeStr(self):
         actual_response = self.dep.obterDatetimeDeStr('2018-12-15T00:00:00')
         self.assertEqual(datetime(2018, 12, 15), actual_response)
+
+    def test_alesp_unavailable(self):
+        class FakeHTTPResponse():
+            status = 503
+            def geturl():
+                return 'teste'
+        mock = Mocker(self.dep.dep)
+        mock.add_exception('obterTodosDeputados', ALESPConnectionError(FakeHTTPResponse))
+
+        with self.assertRaises(ModelError) as cm:
+            self.dep.obter_relatorio('123', data_final='2019-09-21')

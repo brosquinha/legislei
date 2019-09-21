@@ -20,7 +20,7 @@ class ALESPConnectionError(ALESPError):
     """
     def __init__(self, response):
         self.url = response.geturl()
-        self.status_code = response.status_code
+        self.status_code = response.status
         super().__init__("Could not connect to {}, received {}".format(
             self.url, self.status_code
         ))
