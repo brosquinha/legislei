@@ -16,7 +16,9 @@ def check_and_send_reports():
     return send_reports(check_reports_to_send())
 
 
-def send_reports(data, data_final = datetime.now()):
+def send_reports(data, data_final = None):
+    if data_final == None:
+        data_final = datetime.now()
     numero_semana = int(data_final.strftime("%V"))
     for user in data:
         reports = []
