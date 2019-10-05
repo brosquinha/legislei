@@ -42,7 +42,8 @@ def send_reports(data, data_final = None):
                     'parlamentar': par,
                     'eventosPresentes': None,
                     'eventosPrevistos': None,
-                    'proposicoes': None
+                    'proposicoes': None,
+                    '_id': None
                 })
         with app.app_context():
             html_report = render_template(
@@ -50,8 +51,6 @@ def send_reports(data, data_final = None):
                 relatorios=reports,
                 data_inicial=data_inicial.strftime('%d/%m/%Y'),
                 data_final=data_final.strftime('%d/%m/%Y'),
-                data_final_link=data_final.strftime('%Y-%m-%d'),
-                intervalo=inscricao["intervalo"],
                 host=os.environ.get('HOST_ENDPOINT')
             )
         send_email(user["email"], html_report)
