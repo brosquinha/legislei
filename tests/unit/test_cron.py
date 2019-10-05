@@ -249,13 +249,12 @@ class TestCron(unittest.TestCase):
                     'parlamentar': parlamentar2,
                     'eventosPresentes': None,
                     'eventosPrevistos': None,
-                    'proposicoes': None
+                    'proposicoes': None,
+                    '_id': None
                 },
                 {"nice": "JSON"},
             ],
             data_inicial=ANY,
             data_final=ANY,
-            data_final_link=ANY,
-            intervalo=7,
             host=ANY
         )

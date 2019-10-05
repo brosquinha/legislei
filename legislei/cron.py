@@ -16,7 +16,9 @@ def check_and_send_reports():
     return send_reports(check_reports_to_send())
 
 
-def send_reports(data, data_final = datetime.now()):
+def send_reports(data, data_final = None):
+    if data_final == None:
+        data_final = datetime.now()
     numero_semana = int(data_final.strftime("%V"))
     for user in data:
         reports = []
@@ -40,7 +42,8 @@ def send_reports(data, data_final = datetime.now()):
                     'parlamentar': par,
                     'eventosPresentes': None,
                     'eventosPrevistos': None,
-                    'proposicoes': None
+                    'proposicoes': None,
+                    '_id': None
                 })
         with app.app_context():
             html_report = render_template(
@@ -48,8 +51,6 @@ def send_reports(data, data_final = datetime.now()):
                 relatorios=reports,
                 data_inicial=data_inicial.strftime('%d/%m/%Y'),
                 data_final=data_final.strftime('%d/%m/%Y'),
-                data_final_link=data_final.strftime('%Y-%m-%d'),
-                intervalo=inscricao["intervalo"],
                 host=os.environ.get('HOST_ENDPOINT')
             )
         send_email(user["email"], html_report)
