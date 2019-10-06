@@ -9,7 +9,10 @@ from legislei.app import rest_api_v1
 class MongoDateTime(fields.DateTime):
     def format(self, value):
         if isinstance(value, str):
-            date = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+            try:
+                date = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                date = datetime.strptime(value, "%Y-%m-%d %H:%M:%S.%f")
         else:
             date = datetime.fromtimestamp(value['$date']/1000, pytz.UTC)
         brasilia_tz = pytz.timezone('America/Sao_Paulo')
