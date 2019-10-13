@@ -35,6 +35,7 @@ A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` dentro da past
 | EMAIL_TLS | `True` se o server SMTP trabalha com TLS |
 | EMAIL_USR | Endereço de email do gmail para envio de relatórios |
 | EMAIL_PSW | Senha do email do gmail para envio de relatórios |
+| FIREBASE_API_TOKEN | Token da API REST legada do Firebase para envio de Push Notifications |
 | PORT | Porta para expor a aplicação Flask |
 | MONGODB_URI | URI de conexão para o MongoDB (normalmente utilizado em produção) |
 | MONGODB_HOST | Host de conexão para o MongoDB (normalmente utilizado em desenvolvimento) |

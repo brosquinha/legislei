@@ -10,7 +10,7 @@ from mongoengine import connect
 
 logging.disable(logging.CRITICAL)
 
-from legislei.cron import send_reports
+from legislei.cron import generate_reports
 from legislei.exceptions import ModelError
 from legislei.house_selector import obter_relatorio
 from legislei.models.inscricoes import Inscricoes
@@ -33,10 +33,8 @@ class TestCron(unittest.TestCase):
         logging.disable(logging.NOTSET)
     
     @patch("legislei.cron.send_email")
-    @patch("legislei.cron.render_template")
-    def test_send_reports_multiplos_parlamentares(
+    def test_generate_reports_multiplos_parlamentares(
             self,
-            mock_render_template,
             mock_send_email
     ):
         brasilia_tz = pytz.timezone('America/Sao_Paulo')
@@ -47,22 +45,21 @@ class TestCron(unittest.TestCase):
         parlamentar1 = Parlamentar(id='1', cargo='BR1')
         parlamentar2 = Parlamentar(id='2', cargo='BR2')
         parlamentar3 = Parlamentar(id='3', cargo='BR1')
-        Relatorio(
+        relatorio1 = Relatorio(
             parlamentar=parlamentar1,
             data_final=data_final,
             data_inicial=data_inicial
-        ).save()
-        Relatorio(
+        ).save().reload()
+        relatorio2 = Relatorio(
             parlamentar=parlamentar2,
             data_final=data_final,
             data_inicial=data_inicial
-        ).save()
-        Relatorio(
+        ).save().reload()
+        relatorio3 = Relatorio(
             parlamentar=parlamentar3,
             data_final=data_final,
             data_inicial=data_inicial
-        ).save()
-        mock_render_template.return_value = "<html>Nice</html>"
+        ).save().reload()
         mock_send_email.return_value = True
         user = [User(
             username='user',
@@ -74,38 +71,39 @@ class TestCron(unittest.TestCase):
             )
         )]
 
-        send_reports(user, data_final=agora)
+        generate_reports(user, data_final=agora)
 
-        self.assertEqual(mock_render_template.call_count, 1)
         mock_send_email.assert_called_once_with(
-            "test@test.com", "<html>Nice</html>")
+            "test@test.com",
+            [relatorio1.to_dict(), relatorio2.to_dict(), relatorio3.to_dict()],
+            dates=ANY
+        )
 
-    def _test_send_reports_multiplos_intervalos(
-        self,
-        agora,
-        mock_render_template,
-        mock_send_email
+    @patch("legislei.cron.send_email")
+    def test_generate_reports_multiplos_intervalos(
+            self,
+            mock_send_email
     ):
         brasilia_tz = pytz.timezone('America/Sao_Paulo')
+        agora = datetime(2019, 6, 29)
         data_final = datetime(agora.year, agora.month, agora.day)
         data_final = brasilia_tz.localize(data_final)
         parlamentar1 = Parlamentar(id='1', cargo='BR1')
-        Relatorio(
+        relatorio1 = Relatorio(
             parlamentar=parlamentar1,
             data_final=data_final,
             data_inicial=data_final - timedelta(days=7)
-        ).save()
-        Relatorio(
+        ).save().reload()
+        relatorio2 = Relatorio(
             parlamentar=parlamentar1,
             data_final=data_final,
             data_inicial=data_final - timedelta(days=14)
-        ).save()
-        Relatorio(
+        ).save().reload()
+        relatorio3 = Relatorio(
             parlamentar=parlamentar1,
             data_final=data_final,
             data_inicial=data_final - timedelta(days=28)
-        ).save()
-        mock_render_template.return_value = "<html>Nice</html>"
+        ).save().reload()
         mock_send_email.return_value = True
         users = [
             User(
@@ -137,81 +135,22 @@ class TestCron(unittest.TestCase):
             )
         ]
 
-        send_reports(users, data_final=agora)
-    
-    @patch("legislei.cron.send_email")
-    @patch("legislei.cron.render_template")
-    def test_send_reports_multiplos_intervalos_sem_4_semanas(
-            self,
-            mock_render_template,
-            mock_send_email
-    ):
-        self._test_send_reports_multiplos_intervalos(
-            agora=datetime(2019, 6, 29),
-            mock_render_template=mock_render_template,
-            mock_send_email=mock_send_email
-        )
+        generate_reports(users, data_final=agora)
 
-        self.assertEqual(mock_render_template.call_count, 2)
-        self.assertEqual(mock_send_email.call_count, 2)
-        mock_send_email.assert_has_calls(
-            [
-                call("test1@test.com", "<html>Nice</html>"),
-                call("test2@test.com", "<html>Nice</html>")
-            ]
-        )
-
-    @patch("legislei.cron.send_email")
-    @patch("legislei.cron.render_template")
-    def test_send_reports_multiplos_intervalos_com_4_semanas(
-            self,
-            mock_render_template,
-            mock_send_email
-    ):
-        self._test_send_reports_multiplos_intervalos(
-            agora=datetime(2019, 6, 15),
-            mock_render_template=mock_render_template,
-            mock_send_email=mock_send_email
-        )
-
-        self.assertEqual(mock_render_template.call_count, 3)
         self.assertEqual(mock_send_email.call_count, 3)
         mock_send_email.assert_has_calls(
             [
-                call("test1@test.com", "<html>Nice</html>"),
-                call("test2@test.com", "<html>Nice</html>"),
-                call("test4@test.com", "<html>Nice</html>")
+                call("test1@test.com", [relatorio1.to_dict()], dates=ANY),
+                call("test2@test.com", [relatorio2.to_dict()], dates=ANY),
+                call("test4@test.com", [relatorio3.to_dict()], dates=ANY)
             ]
         )
 
     @patch("legislei.cron.send_email")
-    @patch("legislei.cron.render_template")
-    def test_send_reports_multiplos_intervalos_semana_impar(
-            self,
-            mock_render_template,
-            mock_send_email
-    ):
-        self._test_send_reports_multiplos_intervalos(
-            agora=datetime(2019, 6, 8),
-            mock_render_template=mock_render_template,
-            mock_send_email=mock_send_email
-        )
-
-        self.assertEqual(mock_render_template.call_count, 1)
-        self.assertEqual(mock_send_email.call_count, 1)
-        mock_send_email.assert_has_calls(
-            [
-                call("test1@test.com", "<html>Nice</html>")
-            ]
-        )
-    
-    @patch("legislei.cron.send_email")
-    @patch("legislei.cron.render_template")
     @patch("legislei.cron.Relatorios")
-    def test_send_reports_one_obter_relatorio_fails(
+    def test_generate_reports_one_obter_relatorio_fails(
         self,
         mock_Relatorios,
-        mock_render_template,
         mock_send_email
     ):
         class FakeRelatorios():
@@ -220,7 +159,6 @@ class TestCron(unittest.TestCase):
                     raise ModelError('msg')
                 return {"nice": "JSON"}
         mock_Relatorios.side_effect = FakeRelatorios
-        mock_render_template.return_value = "<html>Nice</html>"
         mock_send_email.return_value = True
         parlamentar1 = Parlamentar(id='1', cargo='BR1')
         parlamentar2 = Parlamentar(id='2', cargo='BR2')
@@ -235,26 +173,20 @@ class TestCron(unittest.TestCase):
             )
         )]
 
-        send_reports(user)
+        generate_reports(user)
 
         self.assertEqual(mock_Relatorios.call_count, 3)
-        self.assertEqual(mock_render_template.call_count, 1)
         mock_send_email.assert_called_once_with(
-            "test@test.com", "<html>Nice</html>")
-        mock_render_template.assert_called_once_with(
-            'relatorio_deputado_email.out.html',
-            relatorios=[
+            "test@test.com", [
                 {"nice": "JSON"},
                 {
-                    'parlamentar': parlamentar2,
+                    'parlamentar': parlamentar2.to_dict(),
+                    'orgaos': None,
                     'eventosPresentes': None,
                     'eventosPrevistos': None,
+                    'eventosAusentes': None,
                     'proposicoes': None,
                     '_id': None
                 },
                 {"nice": "JSON"},
-            ],
-            data_inicial=ANY,
-            data_final=ANY,
-            host=ANY
-        )
+            ], dates=ANY)
