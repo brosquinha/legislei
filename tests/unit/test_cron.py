@@ -15,7 +15,7 @@ from legislei.exceptions import ModelError
 from legislei.house_selector import obter_relatorio
 from legislei.models.inscricoes import Inscricoes
 from legislei.models.relatorio import Parlamentar, Relatorio
-from legislei.models.user import User
+from legislei.models.user import User, UserDevice
 from legislei.send_reports import send_email
 
 
@@ -190,3 +190,49 @@ class TestCron(unittest.TestCase):
                 },
                 {"nice": "JSON"},
             ], dates=ANY)
+
+    @patch("legislei.cron.send_push_notification")
+    @patch("legislei.cron.send_email")
+    def test_generate_reports_send_to_active_devices_only(
+        self,
+        mock_send_email,
+        mock_send_push_notification
+    ):
+        brasilia_tz = pytz.timezone('America/Sao_Paulo')
+        agora = datetime(2019, 6, 29)
+        data_final = datetime(agora.year, agora.month, agora.day)
+        data_final = brasilia_tz.localize(data_final)
+        parlamentar = Parlamentar(id='1', cargo='BR1')
+        relatorio = Relatorio(
+            parlamentar=parlamentar,
+            data_final=data_final,
+            data_inicial=data_final - timedelta(days=7)
+        ).save().reload()
+        mock_send_email.return_value = True
+        users = [
+            User(
+                username='user1',
+                password='pwd',
+                email='test1@test.com',
+                inscricoes=Inscricoes(
+                    parlamentares=[parlamentar],
+                    intervalo=7
+                ),
+                devices=[
+                    UserDevice(id="device1", token="token1", name="name1", active=True),
+                    UserDevice(id="device2", token="token2", name="name2", active=False),
+                    UserDevice(id="device3", token="token3", name="name3", active=True),
+                    UserDevice(id="device4", token="token4", name="name4", active=False),
+                ]
+            ),
+        ]
+
+        generate_reports(users, data_final=agora)
+
+        self.assertEqual(mock_send_push_notification.call_count, 2)
+        mock_send_push_notification.assert_has_calls(
+            [
+                call("token1", [relatorio.to_dict()]),
+                call("token3", [relatorio.to_dict()])
+            ]
+        )

@@ -48,7 +48,9 @@ def generate_reports(users, data_final = None):
         
         send_email(user["email"], reports, dates=(data_inicial, data_final))
         if user.devices:
-            send_push_notification(user.devices[0].token, reports)
+            for device in user.devices:
+                if device.active:
+                    send_push_notification(device.token, reports)
 
 
 scheduler = BackgroundScheduler()

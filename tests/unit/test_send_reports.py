@@ -86,7 +86,7 @@ class TestSendReports(unittest.TestCase):
         self.assertEqual(1, mock_SMTP.call_count)
 
     @patch("legislei.send_reports.urllib3.PoolManager")
-    def test_send_push_notification(self, mock_urllib3):
+    def test_send_push_notification_success(self, mock_urllib3):
         def assert_equal(actual, expected):
             self.assertEqual(actual, expected)
         data_inicial = datetime(2019, 10, 12)
@@ -122,11 +122,52 @@ class TestSendReports(unittest.TestCase):
             def __init__(self, *args, **kwargs):
                 pass
             def request(self, method, url, headers, body):
+                class response():
+                    status = 200
+                    data = json.dumps({'results': [{'id': '123'}]}).encode('utf-8')
                 assert_equal(method, "POST")
                 assert_equal(url, "https://fcm.googleapis.com/fcm/send")
                 assert_equal(json.loads(body.decode('utf-8'))["data"]["reports"], expected_reports)
+                return response()
         mock_urllib3.side_effect = FakePoolManager
 
-        send_push_notification("token", [relatorio1.to_dict()])
+        result = send_push_notification("token", [relatorio1.to_dict()])
 
         self.assertTrue(mock_urllib3.called)
+        self.assertTrue(result)
+
+    @patch("legislei.send_reports.urllib3.PoolManager")
+    def test_send_push_notification_message_too_big(self, mock_urllib3):
+        def assert_equal(actual, expected):
+            self.assertEqual(actual, expected)
+        class FakePoolManager:
+            def __init__(self, *args, **kwargs):
+                pass
+            def request(self, method, url, headers, body):
+                class response():
+                    status = 200
+                    data = json.dumps({'results': [{'error': 'MessageTooBig'}]}).encode('utf-8')
+                assert_equal(method, "POST")
+                assert_equal(url, "https://fcm.googleapis.com/fcm/send")
+                return response()
+        data_inicial = datetime(2019, 10, 12)
+        data_final = datetime(2019, 10, 19)
+        parlamentar1 = Parlamentar(id='1', cargo='BR1', nome='AMANDA')
+        relatorio1 = Relatorio(
+            id="123",
+            parlamentar=parlamentar1,
+            data_final=data_final,
+            data_inicial=data_inicial,
+            proposicoes=[
+                Proposicao(id="1"), Proposicao(id="2"), Proposicao(id="3"), Proposicao(id="4")],
+            eventos_presentes=[Evento(id="1"), Evento(id="2")],
+            eventos_previstos=None,
+            eventos_ausentes=[Evento(id="4"), Evento(id="5"), Evento(id="6")]
+        )
+
+        mock_urllib3.side_effect = FakePoolManager
+
+        result = send_push_notification("token", [relatorio1.to_dict()])
+
+        self.assertTrue(mock_urllib3.called)
+        self.assertFalse(result)

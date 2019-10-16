@@ -79,7 +79,8 @@ def send_push_notification(user_token, reports):
     notification = {
         "notification": {
             "title": "Relatórios de parlamentares",
-            "subtitle": "Chegaram seus relatórios periódicos de seus parlamentares"
+            "subtitle": "Chegaram seus relatórios periódicos de seus parlamentares",
+            "body": "Chegaram seus relatórios periódicos de seus parlamentares"
         },
         "data": {
             "reports": reports
@@ -96,6 +97,12 @@ def send_push_notification(user_token, reports):
         },
         body=json.dumps(notification, default=str).encode('utf-8')
     )
-    # TODO tratar/alertar se o payload passar de 4096 bytes
+    formatted_response = json.loads(response.data.decode('utf-8'))
     logging.debug(len(json.dumps(notification, default=str).encode('utf-8')))
-    logging.info('Notificacao enviada para {}'.format(user_token))
+    logging.debug(formatted_response)
+    if (response.status == 200 and 'error' not in formatted_response['results'][0]):
+        logging.info('Notificacao enviada para {}'.format(user_token))
+        return True
+    else:
+        logging.error(formatted_response)
+        return False
