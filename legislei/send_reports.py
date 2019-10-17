@@ -98,11 +98,27 @@ def send_push_notification(user_token, reports):
         body=json.dumps(notification, default=str).encode('utf-8')
     )
     formatted_response = json.loads(response.data.decode('utf-8'))
-    logging.debug(len(json.dumps(notification, default=str).encode('utf-8')))
+    logging.debug(len(json.dumps(notification["data"], default=str).encode('utf-8')))
     logging.debug(formatted_response)
     if (response.status == 200 and 'error' not in formatted_response['results'][0]):
-        logging.info('Notificacao enviada para {}'.format(user_token))
+        logging.info('Notificacao padrao enviada para {}'.format(user_token))
         return True
-    else:
-        logging.error(formatted_response)
-        return False
+    elif (formatted_response['results'][0] == {'error': 'MessageTooBig'}):
+        logging.warning('Notificacao padrao muito longa para {}'.format(user_token))
+        notification['data'] = {'reportsIds': [r['_id'] for r in reports]}
+        logging.debug(notification)
+        response = http.request(
+            "POST",
+            "https://fcm.googleapis.com/fcm/send",
+            headers={
+                'Authorization': 'key={}'.format(fcm_access_token),
+                'Content-Type': 'application/json'
+            },
+            body=json.dumps(notification, default=str).encode('utf-8')
+        )
+        formatted_response = json.loads(response.data.decode('utf-8'))
+        if (response.status == 200 and 'error' not in formatted_response['results'][0]):
+            logging.info('Notificacao alternativa enviada para {}'.format(user_token))
+            return True
+    logging.error(formatted_response)
+    return False

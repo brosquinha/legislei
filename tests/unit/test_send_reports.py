@@ -137,16 +137,60 @@ class TestSendReports(unittest.TestCase):
         self.assertTrue(result)
 
     @patch("legislei.send_reports.urllib3.PoolManager")
-    def test_send_push_notification_message_too_big(self, mock_urllib3):
+    def test_send_push_notification_message_too_big_sucess(self, mock_urllib3):
         def assert_equal(actual, expected):
             self.assertEqual(actual, expected)
         class FakePoolManager:
             def __init__(self, *args, **kwargs):
-                pass
+                FakePoolManager.call_count = 0
+            def request(self, method, url, headers, body):
+                class responseFail():
+                    status = 200
+                    data = json.dumps({'results': [{'error': 'MessageTooBig'}]}).encode('utf-8')
+                class responseSucess():
+                    status = 200
+                    data = json.dumps({'results': [{'id': '123'}]}).encode('utf-8')
+                FakePoolManager.call_count += 1
+                assert_equal(method, "POST")
+                assert_equal(url, "https://fcm.googleapis.com/fcm/send")
+                if 'reportsIds' in body.decode('utf-8'):
+                    return responseSucess()
+                return responseFail()
+        data_inicial = datetime(2019, 10, 12)
+        data_final = datetime(2019, 10, 19)
+        parlamentar1 = Parlamentar(id='1', cargo='BR1', nome='AMANDA')
+        relatorio1 = Relatorio(
+            id="123",
+            parlamentar=parlamentar1,
+            data_final=data_final,
+            data_inicial=data_inicial,
+            proposicoes=[
+                Proposicao(id="1"), Proposicao(id="2"), Proposicao(id="3"), Proposicao(id="4")],
+            eventos_presentes=[Evento(id="1"), Evento(id="2")],
+            eventos_previstos=None,
+            eventos_ausentes=[Evento(id="4"), Evento(id="5"), Evento(id="6")]
+        )
+
+        mock_urllib3.side_effect = FakePoolManager
+
+        result = send_push_notification("token", [relatorio1.to_dict()])
+
+        self.assertTrue(mock_urllib3.called)
+        self.assertEqual(2, mock_urllib3.side_effect.call_count)
+        self.assertTrue(result)
+
+    @patch("legislei.send_reports.urllib3.PoolManager")
+    def test_send_push_notification_message_too_big_fails_twice(self, mock_urllib3):
+        def assert_equal(actual, expected):
+            self.assertEqual(actual, expected)
+        class FakePoolManager:
+            def __init__(self, *args, **kwargs):
+                FakePoolManager.call_count = 0
             def request(self, method, url, headers, body):
                 class response():
                     status = 200
                     data = json.dumps({'results': [{'error': 'MessageTooBig'}]}).encode('utf-8')
+                FakePoolManager.call_count += 1
                 assert_equal(method, "POST")
                 assert_equal(url, "https://fcm.googleapis.com/fcm/send")
                 return response()
@@ -170,4 +214,5 @@ class TestSendReports(unittest.TestCase):
         result = send_push_notification("token", [relatorio1.to_dict()])
 
         self.assertTrue(mock_urllib3.called)
+        self.assertEqual(2, mock_urllib3.side_effect.call_count)
         self.assertFalse(result)
