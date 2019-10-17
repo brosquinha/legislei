@@ -16,7 +16,7 @@ class TestDeviceController(ControllerHelperTester):
         login_header = login_api(self.app, "test", "123")
         user = User.objects(username="test").first()
         actual = self.app.get(
-            "/v1/usuarios/{}/dispositivos".format(user.pk),
+            "/v1/usuarios/dispositivos",
             headers=login_header
         )
         actual_data = json.loads(actual.data.decode("utf-8"))
@@ -24,20 +24,10 @@ class TestDeviceController(ControllerHelperTester):
         self.assertIn("dispositivo", str(actual_data))
         self.assertIn("---token---", str(actual_data))
 
-    def test_get_dispositivos_usuario_diferente(self):
-        login_header = login_api(self.app, "test", "123")
-        actual = self.app.get(
-            "/v1/usuarios/{}/dispositivos".format("outrousuario"),
-            headers=login_header
-        )
-        actual_data = json.loads(actual.data.decode("utf-8"))
-        self.assertEqual(actual.status_code, 403)
-        self.assertEqual("Usuário não tem permissão para acessar esse recurso", actual_data["message"])
-
     def test_get_dispositivos_sem_login(self):
         user_id = User.objects(username="test").first().pk
         actual = self.app.get(
-            "/v1/usuarios/{}/dispositivos".format(user_id)
+            "/v1/usuarios/dispositivos".format(user_id)
         )
         actual_data = json.loads(actual.data.decode("utf-8"))
         self.assertEqual(actual.status_code, 401)
@@ -47,7 +37,7 @@ class TestDeviceController(ControllerHelperTester):
         login_header = login_api(self.app, "test", "123")
         user = User.objects(username="test").first()
         actual = self.app.post(
-            "/v1/usuarios/{}/dispositivos".format(user.pk),
+            "/v1/usuarios/dispositivos",
             data=json.dumps({
                 "uuid": "1414",
                 "token": "---token2---",
@@ -66,7 +56,7 @@ class TestDeviceController(ControllerHelperTester):
         login_header = login_api(self.app, "test", "123")
         user = User.objects(username="test").first()
         actual = self.app.post(
-            "/v1/usuarios/{}/dispositivos".format(user.pk),
+            "/v1/usuarios/dispositivos",
             data=json.dumps({
                 "uuid": "14",
                 "token": "---token2---",
@@ -85,7 +75,7 @@ class TestDeviceController(ControllerHelperTester):
         login_header = login_api(self.app, "test", "123")
         user_id = User.objects(username="test").first().pk
         actual = self.app.post(
-            "/v1/usuarios/{}/dispositivos".format(user_id),
+            "/v1/usuarios/dispositivos".format(user_id),
             data=json.dumps({
                 "uuid": "1414",
                 "token": "---token2---",
@@ -101,7 +91,7 @@ class TestDeviceController(ControllerHelperTester):
         login_header = login_api(self.app, "test", "123")
         user_id = User.objects(username="test").first().pk
         actual = self.app.post(
-            "/v1/usuarios/{}/dispositivos".format(user_id),
+            "/v1/usuarios/dispositivos".format(user_id),
             data=json.dumps({
                 "uuid": "1414",
                 "token": True,
@@ -117,7 +107,7 @@ class TestDeviceController(ControllerHelperTester):
     def test_post_dispositivos_sem_login(self):
         user_id = User.objects(username="test").first().pk
         actual = self.app.post(
-            "/v1/usuarios/{}/dispositivos".format(user_id),
+            "/v1/usuarios/dispositivos".format(user_id),
             data=json.dumps({
                 "uuid": "1414",
                 "token": "---token2---",
@@ -130,28 +120,11 @@ class TestDeviceController(ControllerHelperTester):
         self.assertEqual(actual.status_code, 401)
         self.assertIn("message", actual_data)
 
-    def test_post_dispositivos_usuario_diferente(self):
-        login_header = login_api(self.app, "test", "123")
-        actual = self.app.post(
-            "/v1/usuarios/{}/dispositivos".format("124578"),
-            data=json.dumps({
-                "uuid": "1414",
-                "token": "---token2---",
-                "name": "outro_dispositivo",
-                "os": "iOS"
-            }),
-            content_type='application/json',
-            headers=login_header
-        )
-        actual_data = json.loads(actual.data.decode("utf-8"))
-        self.assertEqual(actual.status_code, 403)
-        self.assertIn("message", actual_data)
-
     def test_patch_dispositivos_sucesso(self):
         login_header = login_api(self.app, "test", "123")
         user = User.objects(username="test").first()
         actual = self.app.patch(
-            "/v1/usuarios/{}/dispositivos/14".format(user.pk),
+            "/v1/usuarios/dispositivos/14",
             data=json.dumps({
                 "active": False
             }),
@@ -167,7 +140,7 @@ class TestDeviceController(ControllerHelperTester):
         login_header = login_api(self.app, "test", "123")
         user = User.objects(username="test").first()
         actual = self.app.patch(
-            "/v1/usuarios/{}/dispositivos/14".format(user.pk),
+            "/v1/usuarios/dispositivos/14",
             data=json.dumps({
                 "naoexisto": True
             }),
@@ -183,7 +156,7 @@ class TestDeviceController(ControllerHelperTester):
         login_header = login_api(self.app, "test", "123")
         user = User.objects(username="test").first()
         actual = self.app.patch(
-            "/v1/usuarios/{}/dispositivos/124578".format(user.pk),
+            "/v1/usuarios/dispositivos/124578",
             data=json.dumps({
                 "active": False
             }),
@@ -198,7 +171,7 @@ class TestDeviceController(ControllerHelperTester):
         login_header = login_api(self.app, "test", "123")
         user = User.objects(username="test").first()
         actual = self.app.patch(
-            "/v1/usuarios/{}/dispositivos/14".format(user.pk),
+            "/v1/usuarios/dispositivos/14",
             data=json.dumps({
                 "active": "invalido"
             }),
@@ -212,7 +185,7 @@ class TestDeviceController(ControllerHelperTester):
     def test_patch_dispositivos_sem_login(self):
         user = User.objects(username="test").first()
         actual = self.app.patch(
-            "/v1/usuarios/{}/dispositivos/14".format(user.pk),
+            "/v1/usuarios/dispositivos/14",
             data=json.dumps({
                 "active": False
             }),
@@ -222,25 +195,11 @@ class TestDeviceController(ControllerHelperTester):
         self.assertEqual(actual.status_code, 401)
         self.assertIn("message", actual_data)
 
-    def test_patch_dispositivos_usuario_diferente(self):
-        login_header = login_api(self.app, "test", "123")
-        actual = self.app.patch(
-            "/v1/usuarios/{}/dispositivos/14".format("124578"),
-            data=json.dumps({
-                "active": False
-            }),
-            content_type='application/json',
-            headers=login_header
-        )
-        actual_data = json.loads(actual.data.decode("utf-8"))
-        self.assertEqual(actual.status_code, 403)
-        self.assertIn("message", actual_data)
-
     def test_delete_dispositivos_sucesso(self):
         login_header = login_api(self.app, "test", "123")
         user = User.objects(username="test").first()
         actual = self.app.delete(
-            "/v1/usuarios/{}/dispositivos/14".format(user.pk),
+            "/v1/usuarios/dispositivos/14",
             headers=login_header
         )
         actual_data = json.loads(actual.data.decode("utf-8"))
@@ -251,18 +210,8 @@ class TestDeviceController(ControllerHelperTester):
     def test_delete_dispositivos_sem_login(self):
         user = User.objects(username="test").first()
         actual = self.app.delete(
-            "/v1/usuarios/{}/dispositivos/14".format(user.pk)
+            "/v1/usuarios/dispositivos/14"
         )
         actual_data = json.loads(actual.data.decode("utf-8"))
         self.assertEqual(actual.status_code, 401)
-        self.assertIn("message", actual_data)
-
-    def test_delete_dispositivos_usuario_diferente(self):
-        login_header = login_api(self.app, "test", "123")
-        actual = self.app.delete(
-            "/v1/usuarios/{}/dispositivos/14".format("124578"),
-            headers=login_header
-        )
-        actual_data = json.loads(actual.data.decode("utf-8"))
-        self.assertEqual(actual.status_code, 403)
         self.assertIn("message", actual_data)

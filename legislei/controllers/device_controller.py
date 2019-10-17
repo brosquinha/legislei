@@ -14,7 +14,7 @@ _patch_devices_dto = rest_api_v1.model("Device", {
     'os': fields.String(description="Sistema operacional do dispositivo", required=False)
 })
 
-@rest_api_v1.route("/usuarios/<usuario_id>/dispositivos")
+@rest_api_v1.route("/usuarios/dispositivos")
 class DeviceList(Resource):
     @login_required
     @rest_api_v1.doc(
@@ -27,10 +27,8 @@ class DeviceList(Resource):
         }
     )
     @rest_api_v1.marshal_list_with(devices_dto)
-    def get(self, usuario_id):
-        if str(current_user.id) != usuario_id:
-            abort(403, message="Usuário não tem permissão para acessar esse recurso")
-        return Dispositivo().obter_dispositivos_de_usuario(usuario_id)
+    def get(self):
+        return Dispositivo().obter_dispositivos_de_usuario(str(current_user.id))
 
     @login_required
     @rest_api_v1.doc(
@@ -40,17 +38,14 @@ class DeviceList(Resource):
             201: 'Sucesso',
             400: 'Parâmetros inválidos ou incompletos',
             401: 'Sem autenticação',
-            403: 'Usuário logado sem permissão para acessar dispositivos de outros usuários',
             422: 'Parâmetros inválidos'
         }
     )
     @rest_api_v1.expect(devices_dto, validate=True)
-    def post(self, usuario_id):
-        if str(current_user.id) != usuario_id:
-            abort(403, message="Usuário não tem permissão para acessar esse recurso")
+    def post(self):
         try:
             Dispositivo().adicionar_dispostivo(
-                usuario_id,
+                str(current_user.id),
                 request.json["uuid"],
                 request.json["token"],
                 request.json["name"],
@@ -62,7 +57,7 @@ class DeviceList(Resource):
             abort(422, message=e.message)
 
 
-@rest_api_v1.route("/usuarios/<usuario_id>/dispositivos/<dispositivo_uuid>")
+@rest_api_v1.route("/usuarios/dispositivos/<dispositivo_uuid>")
 class Device(Resource):
     @login_required
     @rest_api_v1.doc(
@@ -72,16 +67,13 @@ class Device(Resource):
             200: 'sucesso',
             400: 'Parâmetros inválidos ou incompletos',
             401: 'Sem autenticação',
-            403: 'Usuário logado sem permissão para acessar dispositivos de outros usuários',
         }
     )
     @rest_api_v1.expect(_patch_devices_dto, validate=True)
-    def patch(self, usuario_id, dispositivo_uuid):
-        if str(current_user.id) != usuario_id:
-            abort(403, message="Usuário não tem permissão para acessar esse recurso")
+    def patch(self, dispositivo_uuid):
         try:
             Dispositivo().atualizar_dispositivo(
-                usuario_id, dispositivo_uuid, **request.json
+                str(current_user.id), dispositivo_uuid, **request.json
             )
             return {'message': 'Ok'}, 200
         except DispositivosModuleError as e:
@@ -97,8 +89,6 @@ class Device(Resource):
             403: 'Usuário logado sem permissão para acessar dispositivos de outros usuários'
         }
     )
-    def delete(self, usuario_id, dispositivo_uuid):
-        if str(current_user.id) != usuario_id:
-            abort(403, message="Usuário não tem permissão para acessar esse recurso")
-        Dispositivo().apagar_dispositivo(usuario_id, dispositivo_uuid)
+    def delete(self, dispositivo_uuid):
+        Dispositivo().apagar_dispositivo(str(current_user.id), dispositivo_uuid)
         return {'message': 'Apagado'}, 200
