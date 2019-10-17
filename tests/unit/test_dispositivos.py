@@ -126,6 +126,30 @@ class TestDispositivos(unittest.TestCase):
                 os="os"
             )
 
+    def test_adicionar_dispositivo_uuid_repetido(self):
+        user = User(
+            username="user",
+            email="user@email.com",
+            password="secret",
+            devices=[UserDevice(
+                id="123",
+                token="---token---",
+                active=True,
+                name="nome",
+                os="os"
+            )]
+        ).save()
+
+        with self.assertRaises(InvalidParametersError):
+            Dispositivo().adicionar_dispostivo(
+                user_id=user.id,
+                uuid="123",
+                token="---token---",
+                active=False,
+                name="nome",
+                os="os"
+            )
+
     def test_atualizar_dispositivo_sucesso(self):
         device = UserDevice(
             id="14",

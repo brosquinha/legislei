@@ -1,4 +1,5 @@
 from .assemblyman_controller import Assemblymen, AssemblymenRatings
+from .device_controller import Device, DeviceList
 from .error_controller import *
 from .house_controller import CountiesHouses, StatesHouses
 from .report_controller import Report, ReportList, ReportRating, ReportRatingList

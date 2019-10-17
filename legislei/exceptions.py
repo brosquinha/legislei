@@ -83,3 +83,6 @@ class InvalidParametersError(DispositivosModuleError):
 class DeviceDoesNotExistError(DispositivosModuleError):
     """ Device does not exist """
     message = "Dispositivo não existe"
+
+    def __init__(self):
+        super().__init__(self.message)

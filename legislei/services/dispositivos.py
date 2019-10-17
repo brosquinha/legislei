@@ -28,6 +28,8 @@ class Dispositivo():
                 name=name,
                 os=os
             )
+            if [x for x in user.devices if x.id == uuid] != []:
+                raise InvalidParametersError("Dispositivo já existe")
             if user.devices:
                 user.devices.append(device)
             else:
@@ -38,8 +40,9 @@ class Dispositivo():
 
     def atualizar_dispositivo(self, user_id, device_id, **kwargs):
         user = self._obter_usuario(user_id)
-        device = next(x for x in user.devices if x.id == device_id)
-        if not device:
+        try:
+            device = next(x for x in user.devices if x.id == device_id)
+        except StopIteration:
             raise DeviceDoesNotExistError()
         for key, item in kwargs.items():
             setattr(device, key, item)

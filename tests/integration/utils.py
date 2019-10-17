@@ -11,7 +11,7 @@ from legislei.app import app
 from legislei.models.avaliacoes import Avaliacoes
 from legislei.models.inscricoes import Inscricoes
 from legislei.models.relatorio import Evento, Orgao, Parlamentar, Relatorio
-from legislei.models.user import User
+from legislei.models.user import User, UserDevice
 
 
 class ControllerHelperTester(TestCase):
@@ -142,5 +142,14 @@ def set_up_db(db):
         username="test",
         email="test@email.com",
         password="$pbkdf2-sha256$16$ZOwdg9A6R2itlTKm9N57bw$J8ut3l2pGwngIOdLZeT/LMHCY/CW75wNZOAk6k6sP1c",
-        inscricoes=inscricoes
+        inscricoes=inscricoes,
+        devices=[
+            UserDevice(
+                id="14",
+                name="dispositivo",
+                token="---token---",
+                active=True,
+                os="Android"
+            )
+        ]
     ).save()
