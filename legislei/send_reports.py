@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import smtplib
+from copy import deepcopy
 from datetime import datetime
 from email.header import Header
 from email.mime.text import MIMEText
@@ -70,12 +71,15 @@ def send_push_notification(user_token, reports):
         cert_reqs='CERT_REQUIRED',
         ca_certs=certifi.where()
     )
+    reduced_reports = []
     for report in reports:
-        report["orgaos"] = len(report["orgaos"]) if report["orgaos"] else 0
-        report["proposicoes"] = len(report["proposicoes"]) if report["proposicoes"] else 0
-        report["eventosPresentes"] = len(report["eventosPresentes"]) if report["eventosPresentes"] else 0
-        report["eventosPrevistos"] = len(report["eventosPrevistos"]) if report["eventosPrevistos"] else 0
-        report["eventosAusentes"] = len(report["eventosAusentes"]) if report["eventosAusentes"] else 0
+        reduced_report = deepcopy(report)
+        reduced_report["orgaos"] = len(report["orgaos"]) if report["orgaos"] else 0
+        reduced_report["proposicoes"] = len(report["proposicoes"]) if report["proposicoes"] else 0
+        reduced_report["eventosPresentes"] = len(report["eventosPresentes"]) if report["eventosPresentes"] else 0
+        reduced_report["eventosPrevistos"] = len(report["eventosPrevistos"]) if report["eventosPrevistos"] else 0
+        reduced_report["eventosAusentes"] = len(report["eventosAusentes"]) if report["eventosAusentes"] else 0
+        reduced_reports.append(reduced_report)
     notification = {
         "notification": {
             "title": "Relatórios de parlamentares",
@@ -83,7 +87,7 @@ def send_push_notification(user_token, reports):
             "body": "Chegaram seus relatórios periódicos de seus parlamentares"
         },
         "data": {
-            "reports": reports
+            "reports": reduced_reports
         },
         "priority": "NORMAL",
         "to": user_token
@@ -125,5 +129,6 @@ def send_push_notification(user_token, reports):
         if (response.status == 200 and 'error' not in formatted_response['results'][0]):
             logging.info('Notificacao alternativa enviada para {}'.format(user_token))
             return True
+    logging.error('Nao foi possivel enviar notificacao para {}'.format(user_token))
     logging.error(formatted_response)
     return False

@@ -131,10 +131,12 @@ class TestSendReports(unittest.TestCase):
                 return response()
         mock_urllib3.side_effect = FakePoolManager
 
-        result = send_push_notification("token", [relatorio1.to_dict()])
+        reports = [relatorio1.to_dict()]
+        result = send_push_notification("token", reports)
 
         self.assertTrue(mock_urllib3.called)
         self.assertTrue(result)
+        self.assertEqual([relatorio1.to_dict()], reports)
 
     @patch("legislei.send_reports.urllib3.PoolManager")
     def test_send_push_notification_message_too_big_sucess(self, mock_urllib3):
