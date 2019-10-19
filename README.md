@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.com/brosquinha/politica.svg?branch=master)](https://travis-ci.com/brosquinha/politica)
+[![Build Status](https://travis-ci.com/brosquinha/legislei.svg?branch=master)](https://travis-ci.com/brosquinha/legislei)
 ![Python 3.5+](https://img.shields.io/badge/python-3.5^-blue.svg)
-![glp](https://img.shields.io/github/license/brosquinha/politica.svg)
+![glp](https://img.shields.io/github/license/brosquinha/legislei.svg)
 [![Documentation Status](https://readthedocs.org/projects/legislei/badge/?version=latest)](https://legislei.readthedocs.io/pt/latest/?badge=latest)
 # Legislei
 
@@ -17,7 +17,7 @@ Projeto de constante monitoramento das atividades de parlamentares de todas as t
 Para obter o código-fonte da aplicação Legislei, clone o repositório git com o seguinte comando:
 
 ```Bash
-git clone https://github.com/brosquinha/politica.git
+git clone https://github.com/brosquinha/legislei.git
 ```
 
 ### Definir as variaveis de ambiente em \.env
