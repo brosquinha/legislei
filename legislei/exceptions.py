@@ -68,3 +68,21 @@ class UserDoesNotExist(InscricoesModuleError):
 
     def __init__(self):
         super().__init__(self.message)
+
+class DispositivosModuleError(AppError):
+    """ Dispositivos module error """
+    message = "Erro do serviço de dispositivos"
+
+class InvalidParametersError(DispositivosModuleError):
+    """ Invalid parameters for device """
+
+    def __init__(self, message = "Parâmetros inválidos"):
+        self.message = message
+        super().__init__(self.message)
+
+class DeviceDoesNotExistError(DispositivosModuleError):
+    """ Device does not exist """
+    message = "Dispositivo não existe"
+
+    def __init__(self):
+        super().__init__(self.message)
