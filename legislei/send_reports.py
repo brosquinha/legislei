@@ -97,7 +97,12 @@ def send_push_notification(user_token, reports):
         },
         body=json.dumps(notification, default=str).encode('utf-8')
     )
-    formatted_response = json.loads(response.data.decode('utf-8'))
+    try:
+        formatted_response = json.loads(response.data.decode('utf-8'))
+    except json.JSONDecodeError:
+        logging.error("Erro de decodificacao JSON do retorno do FCM")
+        logging.error(response.data.decode('utf-8'))
+        return False
     logging.debug(len(json.dumps(notification["data"], default=str).encode('utf-8')))
     logging.debug(formatted_response)
     if (response.status == 200 and 'error' not in formatted_response['results'][0]):

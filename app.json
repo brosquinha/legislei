@@ -27,6 +27,9 @@
       "EMAIL_USR": {
         "required": true
       },
+      "FIREBASE_API_TOKEN": {
+        "required": true
+      },
       "MONGODB_URI": {
         "required": true
       },
