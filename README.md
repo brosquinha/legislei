@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.com/brosquinha/politica.svg?branch=master)](https://travis-ci.com/brosquinha/politica)
+[![Build Status](https://travis-ci.com/brosquinha/legislei.svg?branch=master)](https://travis-ci.com/brosquinha/legislei)
 ![Python 3.5+](https://img.shields.io/badge/python-3.5^-blue.svg)
-![glp](https://img.shields.io/github/license/brosquinha/politica.svg)
+![glp](https://img.shields.io/github/license/brosquinha/legislei.svg)
 [![Documentation Status](https://readthedocs.org/projects/legislei/badge/?version=latest)](https://legislei.readthedocs.io/pt/latest/?badge=latest)
 # Legislei
 
@@ -17,7 +17,7 @@ Projeto de constante monitoramento das atividades de parlamentares de todas as t
 Para obter o código-fonte da aplicação Legislei, clone o repositório git com o seguinte comando:
 
 ```Bash
-git clone https://github.com/brosquinha/politica.git
+git clone https://github.com/brosquinha/legislei.git
 ```
 
 ### Definir as variaveis de ambiente em \.env
@@ -35,6 +35,7 @@ A seguir, acesse a pasta raíz do projeto e crie o arquivo `.env` dentro da past
 | EMAIL_TLS | `True` se o server SMTP trabalha com TLS |
 | EMAIL_USR | Endereço de email do gmail para envio de relatórios |
 | EMAIL_PSW | Senha do email do gmail para envio de relatórios |
+| FIREBASE_API_TOKEN | Token da API REST legada do Firebase para envio de Push Notifications |
 | PORT | Porta para expor a aplicação Flask |
 | MONGODB_URI | URI de conexão para o MongoDB (normalmente utilizado em produção) |
 | MONGODB_HOST | Host de conexão para o MongoDB (normalmente utilizado em desenvolvimento) |

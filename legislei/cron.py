@@ -3,30 +3,28 @@ import os
 from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import render_template
 from pytz import timezone
 
-from legislei.app import app
 from legislei.exceptions import ModelError
-from legislei.send_reports import check_reports_to_send, send_email
+from legislei.send_reports import send_email, send_push_notification
+from legislei.services.inscricoes import Inscricao
 from legislei.services.relatorios import Relatorios
 
 
+def get_users_by_subscriptions():
+    for user in Inscricao().obter_todas_inscricoes_para_processar():
+        yield user
+
 def check_and_send_reports():
-    return send_reports(check_reports_to_send())
+    return generate_reports(get_users_by_subscriptions())
 
 
-def send_reports(data, data_final = None):
+def generate_reports(users, data_final = None):
     if data_final == None:
         data_final = datetime.now()
-    numero_semana = int(data_final.strftime("%V"))
-    for user in data:
+    for user in users:
         reports = []
         inscricao = user.inscricoes
-        if (numero_semana % (inscricao["intervalo"]/7) != 0):
-            logging.info("Pulando {} (intervalo de inscricao: {})".format(
-                user.username, inscricao["intervalo"]))
-            continue
         data_inicial = (data_final - timedelta(days=int(inscricao["intervalo"])))
         logging.info("Obtendo relatorios para {}".format(user.username))
         for par in inscricao["parlamentares"]:
@@ -39,21 +37,20 @@ def send_reports(data, data_final = None):
                 ))
             except ModelError:
                 reports.append({
-                    'parlamentar': par,
+                    'parlamentar': par.to_dict(),
+                    'orgaos': None,
                     'eventosPresentes': None,
                     'eventosPrevistos': None,
+                    'eventosAusentes': None,
                     'proposicoes': None,
                     '_id': None
                 })
-        with app.app_context():
-            html_report = render_template(
-                'relatorio_deputado_email.out.html',
-                relatorios=reports,
-                data_inicial=data_inicial.strftime('%d/%m/%Y'),
-                data_final=data_final.strftime('%d/%m/%Y'),
-                host=os.environ.get('HOST_ENDPOINT')
-            )
-        send_email(user["email"], html_report)
+        
+        send_email(user["email"], reports, dates=(data_inicial, data_final))
+        if user.devices:
+            for device in user.devices:
+                if device.active:
+                    send_push_notification(device.token, reports)
 
 
 scheduler = BackgroundScheduler()

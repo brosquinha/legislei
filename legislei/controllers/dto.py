@@ -125,6 +125,13 @@ reports_dto = rest_api_v1.model('Report', {
         attribute='eventosAusentesEsperadosTotal'
     )
 })
+devices_dto = rest_api_v1.model("Device", {
+    'uuid': fields.String(description="UUID do dispositivo", required=True, attribute='id'),
+    'token': fields.String(description="Token de envio de notificações", required=True),
+    'active': fields.Boolean(description="Se o Legislei deve enviar notificações para esse dispositivo ou não", required=False),
+    'name': fields.String(description="Nome do dispositivo", required=True),
+    'os': fields.String(description="Sistema operacional do dispositivo", required=False)
+})
 users_dto = rest_api_v1.model("User", {
     'username': fields.String(description="Nome de usuário único", required=True),
     'email': fields.String(description="Email de usuário único", required=True),
