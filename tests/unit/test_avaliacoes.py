@@ -111,3 +111,12 @@ class TestAvaliacao(unittest.TestCase):
             '-2': []
         })
         self.assertEqual(actual[2], 9)
+
+    def test_avaliacoes_de_parlamentar_sem_avaliacoes(self):
+        parlamentar = Parlamentar(id='id', cargo='BR1')
+
+        actual = Avaliacao().avaliacoes('BR1', 'id', 'test@email.com')
+
+        self.assertIsNone(actual[0])
+        self.assertIsNone(actual[1])
+        self.assertIsNone(actual[2])
