@@ -73,7 +73,33 @@ class TestApp(ControllerHelperTester):
         self.assertIn(b"ParlamentarTeste", actual.data)
         self.assertIn(b"Saldo total: 1", actual.data)
 
+    def test_minhas_avaliacoes_parlamentar_parlamentar_fora_inscricoes(self):
+        parlamentar = Parlamentar(
+            nome="ParlamentarTeste2",
+            id="1234",
+            cargo="BR1"
+        )
+        Avaliacoes(
+            email="test@email.com",
+            parlamentar=parlamentar,
+            avaliacao="-1",
+            avaliado={}
+        ).save()
+        login(self.app, "test", "123")
+        actual = self.app.get("/minhasAvaliacoes?parlamentarTipo=BR1&parlamentar=1234")
+        self.assertEqual(actual.status_code, 200)
+        self.assertIn(b"ParlamentarTeste2", actual.data)
+        self.assertIn(b"Saldo total: -1", actual.data)
+
     def test_minhas_avaliacoes_parlamentar_sem_avaliacoes(self):
+        Avaliacoes().drop_collection()
+        login(self.app, "test", "123")
+        actual = self.app.get("/minhasAvaliacoes?parlamentarTipo=BR1&parlamentar=123")
+        self.assertEqual(actual.status_code, 200)
+        self.assertIn(b"ParlamentarTeste", actual.data)
+        self.assertIn(b"Saldo total: 0", actual.data)
+    
+    def test_minhas_avaliacoes_parlamentar_sem_avaliacoes_parlamentar_fora_inscricoes(self):
         login(self.app, "test", "123")
         actual = self.app.get("/minhasAvaliacoes?parlamentarTipo=BR1&parlamentar=12345")
         self.assertEqual(actual.status_code, 200)
