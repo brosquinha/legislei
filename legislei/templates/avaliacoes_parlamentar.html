@@ -50,16 +50,16 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-sm-3">Atividades que amei
+            <div class="col-sm-3">Atividades que amei ({{ avaliacoes['2']|length }})
                 {{ cards('2') }}
             </div>
-            <div class="col-sm-3">Atividades que aprovei
+            <div class="col-sm-3">Atividades que aprovei ({{ avaliacoes['1']|length }})
                 {{ cards('1') }}
             </div>
-            <div class="col-sm-3">Atividades que desaprovei
+            <div class="col-sm-3">Atividades que desaprovei ({{ avaliacoes['-1']|length }})
                 {{ cards('-1') }}
             </div>
-            <div class="col-sm-3">Atividades que detestei
+            <div class="col-sm-3">Atividades que detestei ({{ avaliacoes['-2']|length }})
                 {{ cards('-2') }}
             </div>
         </div>
