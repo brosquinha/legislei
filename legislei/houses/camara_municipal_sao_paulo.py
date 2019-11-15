@@ -134,6 +134,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                 self.obter_cargos_parlamentar(item['cargos'])
                 self.relatorio.parlamentar = parlamentar
                 return parlamentar
+        return None
 
     def obter_cargos_parlamentar(self, cargos):
         for cargo in cargos:

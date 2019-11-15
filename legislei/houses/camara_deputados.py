@@ -12,7 +12,8 @@ from legislei.models.relatorio import (Evento, Orgao, Parlamentar, Proposicao,
                                        Relatorio)
 from legislei.SDKs.CamaraDeputados.entidades import (Deputados, Eventos,
                                                      Proposicoes, Votacoes)
-from legislei.SDKs.CamaraDeputados.exceptions import CamaraDeputadosError
+from legislei.SDKs.CamaraDeputados.exceptions import (
+    CamaraDeputadosConnectionError, CamaraDeputadosError)
 
 
 class CamaraDeputadosHandler(CasaLegislativa):
@@ -360,7 +361,10 @@ class CamaraDeputadosHandler(CasaLegislativa):
         return deputados
 
     def obter_parlamentar(self, parlamentar_id):
-        deputado_info = self.dep.obterDeputado(parlamentar_id)
+        try:
+            deputado_info = self.dep.obterDeputado(parlamentar_id)
+        except CamaraDeputadosConnectionError:
+            return None
         parlamentar = Parlamentar()
         parlamentar.cargo = 'BR1'
         parlamentar.id = str(deputado_info['id'])

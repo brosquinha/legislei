@@ -8,7 +8,8 @@ from legislei.houses.camara_deputados import CamaraDeputadosHandler
 from legislei.models.relatorio import (Evento, Orgao, Parlamentar, Proposicao,
                                        Relatorio)
 from legislei.SDKs.CamaraDeputados.entidades import Deputados
-from legislei.SDKs.CamaraDeputados.exceptions import CamaraDeputadosError
+from legislei.SDKs.CamaraDeputados.exceptions import (
+    CamaraDeputadosConnectionError, CamaraDeputadosError)
 from legislei.SDKs.CamaraDeputados.mock import Mocker
 
 
@@ -75,6 +76,38 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         mock.add_response('obterTodosDeputados', fakeObterDeputados())
         actual_response = self.dep.obter_parlamentares()
         self.assertEqual(actual_response, expected)
+
+    def test_obter_parlamentar_success(self):
+        expected = Parlamentar(
+            nome='CESAR DA SILVA',
+            id='1',
+            partido='P1',
+            uf='UF',
+            foto='foto',
+            cargo='BR1'
+        )
+        mock = Mocker(self.dep.dep)
+        mock.add_response('obterDeputado', {
+            'id': '1',
+            'ultimoStatus': {
+                'nome': 'CESAR DA SILVA',
+                'siglaPartido': 'P1',
+                'siglaUf': 'UF',
+                'urlFoto': 'foto'
+            }
+        })
+
+        actual_response = self.dep.obter_parlamentar("1")
+
+        self.assertEqual(actual_response, expected)
+
+    def test_obter_parlamentar_invalid_id(self):
+        mock = Mocker(self.dep.dep)
+        mock.add_exception('obterDeputado', CamaraDeputadosConnectionError("url", 400))
+
+        actual_response = self.dep.obter_parlamentar("invalid")
+
+        self.assertIsNone(actual_response)
 
     @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicialEFinal")
     def test_obterOrgaosDeputado(
