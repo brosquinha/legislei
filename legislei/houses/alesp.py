@@ -71,6 +71,7 @@ class ALESPHandler(CasaLegislativa):
                 parlamentar.foto = deputado['urlFoto']
                 self.relatorio.parlamentar = parlamentar
                 return parlamentar
+        return None
     
     def obter_parlamentares(self):
         try:

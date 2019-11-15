@@ -81,6 +81,26 @@ class TestCamaraMunicipalSaoPauloHandler(unittest.TestCase):
         self.assertEqual(self.cmsp.relatorio.parlamentar.partido, "TESTE")
         self.assertEqual(self.cmsp.relatorio.parlamentar.cargo, "SÃO PAULO")
 
+    @patch("legislei.SDKs.CamaraMunicipalSaoPaulo.base.CamaraMunicipal.obterVereadores")
+    def test_obter_parlamentar(self, mock_obterVereadores):
+        mock_obterVereadores.return_value = [
+            {'chave': '1'},
+            {
+                'chave': '2',
+                'nome': 'Fulana',
+                'cargos': [],
+                'mandatos': [
+                    {'fim': datetime(2020, 12, 31), 'partido': {'sigla': 'TESTE'}},
+                    {'fim': datetime(2018, 12, 31)},
+                ]
+            },
+            {'chave': '3'},
+        ]
+
+        actual_result = self.cmsp.obter_parlamentar('14')
+
+        self.assertIsNone(actual_result)
+
     def test_obter_cargos_parlamentar(self):
         cargos = [
             {'fim': datetime(2018, 12, 31)},

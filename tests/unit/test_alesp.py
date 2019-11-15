@@ -44,6 +44,22 @@ class TestALESPHandler(unittest.TestCase):
         self.assertEqual(expected_response, actual_response.to_dict())
         mock.assert_no_pending_responses()
 
+    def test_obterDeputado_invalid_id(self):
+        mock = Mocker(self.dep.dep)
+        mock.add_response(
+            "obterTodosDeputados",
+            [
+                {'id': '12'},
+                {'id': '11'},
+                {'id': '14', 'nome': 'Teste', 'siglaPartido': 'PPP', 'urlFoto': 'foto'},
+            ]
+        )
+        
+        actual_response = self.dep.obter_parlamentar('28')
+
+        self.assertIsNone(actual_response)
+        mock.assert_no_pending_responses()
+
     def test_obterParlamentares(self):
         mock = Mocker(self.dep.dep)
         mock_response = [
