@@ -13,4 +13,7 @@ services:
   - mongodb
 # command to run tests
 script:
-  - python run_tests.py
+  - coverage run run_tests.py
+# command to run after tests passed
+after_success:
+  bash <(curl -s https://codecov.io/bash)
