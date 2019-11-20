@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.com/brosquinha/legislei.svg?branch=master)](https://travis-ci.com/brosquinha/legislei)
 ![Python 3.5+](https://img.shields.io/badge/python-3.5^-blue.svg)
 ![glp](https://img.shields.io/github/license/brosquinha/legislei.svg)
+[![codecov](https://codecov.io/gh/brosquinha/legislei/branch/master/graph/badge.svg)](https://codecov.io/gh/brosquinha/legislei)
 [![Documentation Status](https://readthedocs.org/projects/legislei/badge/?version=latest)](https://legislei.readthedocs.io/pt/latest/?badge=latest)
 # Legislei
 

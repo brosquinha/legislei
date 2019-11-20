@@ -170,11 +170,11 @@ def obter_relatorio_por_id(id):
 @login_required
 def avaliacoes():
     email = current_user.email
+    parlamentares, intervalo = Inscricao().obter_minhas_inscricoes(email)
     try:
         cargo = request.args['parlamentarTipo']
         parlamentar = request.args['parlamentar']
     except KeyError:
-        parlamentares, intervalo = Inscricao().obter_minhas_inscricoes(email)
         return render_template(
             'avaliacoes_home.html',
             parlamentares=parlamentares,
@@ -182,11 +182,15 @@ def avaliacoes():
         )
     parlamentar_dados, avaliacoes_dados, nota = Avaliacao().avaliacoes(
         cargo, parlamentar, email)
+    try:
+        parlamentar_dados = next(p for p in parlamentares if p.id == parlamentar)
+    except StopIteration:
+        pass
     return render_template(
         'avaliacoes_parlamentar.html',
         parlamentar=parlamentar_dados,
         avaliacoes=avaliacoes_dados,
-        nota=nota
+        nota=nota if nota != None else 0
     ), 200
 
 
