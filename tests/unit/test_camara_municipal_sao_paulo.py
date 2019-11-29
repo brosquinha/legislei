@@ -152,7 +152,7 @@ class TestCamaraMunicipalSaoPauloHandler(unittest.TestCase):
         actual = self.cmsp.obter_parlamentares()
 
         self.assertEqual(actual, [
-            Parlamentar(**{'nome': 'Fulano', 'id': '1', 'partido': 'TESTE', 'uf': 'SP', 'cargo': 'SÃO PAULO'}),
-            Parlamentar(**{'nome': 'Fulana', 'id': '2', 'partido': 'TESTE', 'uf': 'SP', 'cargo': 'SÃO PAULO'}),
-            Parlamentar(**{'nome': 'Joana', 'id': '3', 'partido': 'TESTE', 'uf': 'SP', 'cargo': 'SÃO PAULO'})
+            Parlamentar(**{'nome': 'Fulano', 'id': '1', 'partido': 'TESTE', 'uf': 'SP', 'cargo': 'SÃO PAULO', 'foto': 'https://www.99luca11.com/Users/usuario_sem_foto.png'}),
+            Parlamentar(**{'nome': 'Fulana', 'id': '2', 'partido': 'TESTE', 'uf': 'SP', 'cargo': 'SÃO PAULO', 'foto': 'https://www.99luca11.com/Users/usuario_sem_foto.png'}),
+            Parlamentar(**{'nome': 'Joana', 'id': '3', 'partido': 'TESTE', 'uf': 'SP', 'cargo': 'SÃO PAULO', 'foto': 'https://www.99luca11.com/Users/usuario_sem_foto.png'})
         ])

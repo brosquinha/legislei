@@ -157,7 +157,8 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                     nome=v['nome'],
                     partido=v['mandatos'][0]['partido']['sigla'],
                     uf='SP',
-                    cargo='SÃO PAULO'
+                    cargo='SÃO PAULO',
+                    foto='https://www.99luca11.com/Users/usuario_sem_foto.png'
                 )
             )
         return lista
