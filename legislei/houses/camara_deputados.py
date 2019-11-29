@@ -352,6 +352,7 @@ class CamaraDeputadosHandler(CasaLegislativa):
         for page in self.dep.obterTodosDeputados():
             for item in page:
                 parlamentar = Parlamentar()
+                parlamentar.cargo = 'BR1'
                 parlamentar.id = str(item['id'])
                 parlamentar.nome = item['nome']
                 parlamentar.partido = item['siglaPartido']

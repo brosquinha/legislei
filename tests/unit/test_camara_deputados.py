@@ -56,6 +56,7 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
                 partido='P1',
                 uf='UF',
                 foto='foto',
+                cargo='BR1'
             ),
             Parlamentar(
                 nome='FULANO PESSOA',
@@ -63,6 +64,7 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
                 partido='P2',
                 uf='UF',
                 foto='foto2',
+                cargo='BR1'
             ),
             Parlamentar(
                 nome='SICRANO PINTO',
@@ -70,6 +72,7 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
                 partido='P1',
                 uf='UF2',
                 foto='foto3',
+                cargo='BR1'
             )
         ]
         mock = Mocker(self.dep.dep)
