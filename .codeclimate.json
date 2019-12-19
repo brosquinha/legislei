@@ -1,0 +1,9 @@
+{
+    "checks": {
+        "method-complexity": {
+            "config": {
+                "threshold": 6
+            }
+        }
+    }
+}

@@ -22,7 +22,7 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
     def tearDown(self):
         logging.disable(logging.NOTSET)
 
-    def test_obterParlamentares(self):
+    def test_obter_parlamentares(self):
         def fakeObterDeputados():
             yield [
                 {
@@ -113,7 +113,7 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         self.assertIsNone(actual_response)
 
     @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicialEFinal")
-    def test_obterOrgaosDeputado(
+    def test_get_commissions(
             self,
             mock_obterDataInicialEFinal
     ):
@@ -131,29 +131,28 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         )
         mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
 
-        actual_response = self.dep.obterOrgaosDeputado(
+        actual_response = self.dep.get_commissions(
             '1234', datetime(2018, 10, 28))
 
-        self.assertIn({'nomeOrgao': 'Comissão A', 'dataFim': None}, actual_response)
-        self.assertIn(
-            {'nomeOrgao': 'Comissão C', 'dataFim': '2018-12-31'}, actual_response)
+        self.assertIn(Orgao(nome='Comissão A'), actual_response)
+        self.assertIn(Orgao(nome='Comissão C'), actual_response)
         self.assertEqual(len(actual_response), 2)
 
         mock.assert_no_pending_responses()
         mock_obterDataInicialEFinal.assert_called_once_with(
             datetime(2018, 10, 28))
 
-    def test_obterOrgaosDeputado_fail_case(self):
+    def test_get_commissions_fail_case(self):
         mock = Mocker(self.dep.dep)
-        mock.add_exception('obterOrgaosDeputado', CamaraDeputadosError)
+        mock.add_exception('obterOrgaosDeputado', CamaraDeputadosError('teste'))
 
-        actual_response = self.dep.obterOrgaosDeputado('1234', datetime(2018, 10, 28))
+        actual_response = self.dep.get_commissions('1234', datetime(2018, 10, 28))
 
         self.assertEqual(actual_response, [{'nomeOrgao': None}])
         mock.assert_no_pending_responses()
 
     @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicialEFinal")
-    def test_procurarEventosComDeputado(
+    def test_get_all_events(
             self,
             mock_obterDataInicialEFinal
     ):
@@ -161,11 +160,120 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         mock.add_response(
             "obterTodosEventos",
             [
-                [{'id': '123'}, {'id': '1234'}],
-                [{'id': '12345'}]
+                [
+                    {
+                        'id': '123',
+                        'dataHoraInicio': '2018-10-24T10:00',
+                        'dataHoraFim': '2018-10-24T12:00',
+                        'situacao': 'Encerrada',
+                        'descricao': 'Sessão Ordinária',
+                        'uri': 'uri',
+                        'orgaos': [
+                            {'nome': 'Plenário', 'apelido': 'PLEN'}
+                        ]
+                    },
+                    {
+                        'id': '1234',
+                        'dataHoraInicio': '2018-10-24T14:00',
+                        'dataHoraFim': '2018-10-24T18:45',
+                        'situacao': 'Encerrada',
+                        'descricao': 'Sessão Extraordinária',
+                        'uri': 'uri',
+                        'orgaos': [
+                            {'nome': 'Plenário', 'apelido': 'PLEN'}
+                        ]
+                    }
+                ],
+                [
+                    {
+                        'id': '12345',
+                        'dataHoraInicio': '2018-10-25T10:00',
+                        'dataHoraFim': None,
+                        'situacao': 'Cancelada',
+                        'descricao': 'Sessão Ordinária',
+                        'uri': 'uri',
+                        'orgaos': [
+                            {'nome': 'Comissão de Constituição e Justiça', 'apelido': 'CCJ'}
+                        ]
+                    }
+                ]
             ],
             dataInicio='2018-10-21', dataFim='2018-10-28'
         )
+        mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
+
+        actual_response = self.dep.get_all_events(datetime(2018, 10, 28))
+
+        self.assertEqual([
+            Evento(
+                id='123',
+                data_inicial=self.dep._get_brt(datetime(2018, 10, 24, 10, 0)),
+                data_final=self.dep._get_brt(datetime(2018, 10, 24, 12, 0)),
+                situacao='Encerrada',
+                nome='Sessão Ordinária',
+                url='uri',
+                orgaos=[
+                    Orgao(nome='Plenário', apelido='PLEN')
+                ]
+            ),
+            Evento(
+                id='1234',
+                data_inicial=self.dep._get_brt(datetime(2018, 10, 24, 14, 0)),
+                data_final=self.dep._get_brt(datetime(2018, 10, 24, 18, 45)),
+                situacao='Encerrada',
+                nome='Sessão Extraordinária',
+                url='uri',
+                orgaos=[
+                    Orgao(nome='Plenário', apelido='PLEN')
+                ]
+            ),
+            Evento(
+                id='12345',
+                data_inicial=self.dep._get_brt(datetime(2018, 10, 25, 10, 0)),
+                data_final=None,
+                situacao='Cancelada',
+                nome='Sessão Ordinária',
+                url='uri',
+                orgaos=[
+                    Orgao(nome='Comissão de Constituição e Justiça', apelido='CCJ')
+                ]
+            ),
+        ], actual_response)
+
+        mock_obterDataInicialEFinal.assert_called_once_with(
+            datetime(2018, 10, 28))
+        mock.assert_no_pending_responses()
+
+    def test_build_event(self):
+        event = {
+            'id': '123',
+            'dataHoraInicio': '2019-08-10T10:00',
+            'dataHoraFim': '2019-08-10T12:00',
+            'situacao': 'Encerrada',
+            'descricao': 'Sessão Ordinária',
+            'uri': 'uri',
+            'orgaos': [
+                {'nome': 'Plenário', 'apelido': 'PLEN'}
+            ]
+        }
+        expected = Evento(
+            id='123',
+            data_inicial=self.dep._get_brt(datetime(2019, 8, 10, 10)),
+            data_final=self.dep._get_brt(datetime(2019, 8, 10, 12)),
+            situacao='Encerrada',
+            nome='Sessão Ordinária',
+            url='uri',
+            orgaos=[
+                Orgao(nome='Plenário', apelido='PLEN')
+            ]
+        )
+
+        actual = self.dep.build_event(event)
+
+        self.assertEqual(expected, actual)
+
+    def test_get_attended_events(self):
+        mock = Mocker(self.dep.ev)
         mock.add_response(
             "obterDeputadosEvento",
             [{'id': '12345'}, {'id': '98765'}],
@@ -181,50 +289,36 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
             [{'id': '12345'}, {'id': '98765'}],
             "12345"
         )
-        mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
-        dep_id = '12345'
-
-        actual_response = self.dep.procurarEventosComDeputado(
-            dep_id, data_final=datetime(2018, 10, 28))
-
-        self.assertEqual([
-            {'id': '123'}, {'id': '12345'}
-        ], actual_response[0])
-        self.assertEqual(200/3, actual_response[1])
-        self.assertEqual([
+        events = [
             {'id': '123'},
             {'id': '1234'},
             {'id': '12345'}
-        ], actual_response[2])
+        ]
+        dep_id = '12345'
 
-        mock_obterDataInicialEFinal.assert_called_once_with(
-            datetime(2018, 10, 28))
-        mock.assert_no_pending_responses()
+        actual_response = self.dep.get_attended_events(events, dep_id)
 
-    def test_procurarEventosComDeputado_fail_case(self):
-        mock = Mocker(self.dep.dep)
-        mock.add_exception("obterEventosDeputado", CamaraDeputadosError)
+        self.assertEqual([
+            {'id': '123'}, {'id': '12345'}
+        ], actual_response)
 
-        actual_response = self.dep.obterEventosPrevistosDeputado("123", datetime(2018, 10, 28))
-
-        self.assertEqual(actual_response, [{'id': None}])
         mock.assert_no_pending_responses()
 
     @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicialEFinal")
-    def test_obterEventosPrevistosDeputado(
+    def test_get_expected_events(
             self,
             mock_obterDataInicialEFinal,
     ):
-        eventos = [
-            {'nome': 'Evento 1'},
-            {'nome': 'Evento 2'},
-            {'nome': 'Evento 3'}
+        events = [
+            {'id': 1, 'descricao': 'Evento 1'},
+            {'id': 2, 'descricao': 'Evento 2'},
+            {'id': 3, 'descricao': 'Evento 3'}
         ]
         dep_id = '12345'
         mock = Mocker(self.dep.dep)
         mock.add_response(
             "obterEventosDeputado",
-            [eventos],
+            [events],
             dep_id,
             dataInicio='2018-10-21',
             dataFim='2018-10-28'
@@ -232,16 +326,29 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
 
         mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
 
-        actual_response = self.dep.obterEventosPrevistosDeputado(
+        actual_response = self.dep.get_expected_events(
             dep_id, datetime(2018, 10, 28))
 
-        self.assertEqual(eventos, actual_response)
+        self.assertEqual(actual_response, [
+            Evento(id='1', nome='Evento 1'),
+            Evento(id='2', nome='Evento 2'),
+            Evento(id='3', nome='Evento 3'),
+        ])
 
         mock_obterDataInicialEFinal.assert_called_once_with(
             datetime(2018, 10, 28))
         mock.assert_no_pending_responses()
 
-    def test_obterPautaEvento(
+    def test_get_expected_events_fail_case(self):
+        mock = Mocker(self.dep.dep)
+        mock.add_exception("obterEventosDeputado", CamaraDeputadosError)
+
+        actual_response = self.dep.get_expected_events("123", datetime(2018, 10, 28))
+
+        self.assertEqual(actual_response, [{'id': None}])
+        mock.assert_no_pending_responses()
+
+    def test_get_event_program(
             self,
     ):
         ev_id = '1234'
@@ -289,7 +396,7 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         )
         mock_prop.add_exception("obterProposicao", CamaraDeputadosError, "56789")
 
-        actual_response = self.dep.obterPautaEvento(ev_id)
+        actual_response = self.dep.get_event_program(ev_id)
 
         self.assertEqual(actual_response, [
             {
@@ -318,19 +425,28 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         mock_ev.assert_no_pending_responses()
         mock_prop.assert_no_pending_responses()
 
-    def test_obterPautaEvento_error_case(self):
+    def test_get_event_program_fail_case(self):
         mock = Mocker(self.dep.ev)
         mock.add_exception("obterPautaEvento", CamaraDeputadosError, "12345")
 
-        actual_response = self.dep.obterPautaEvento("12345")
+        actual_response = self.dep.get_event_program("12345")
 
         self.assertEqual(actual_response, [{'error': True}])
         mock.assert_no_pending_responses()
 
-    def test_obterVotoDeputado(
+    def test_get_event_program_program_none(self):
+        mock = Mocker(self.dep.ev)
+        mock.add_response("obterPautaEvento", None, "12345")
+
+        actual_response = self.dep.get_event_program("12345")
+
+        self.assertEqual(actual_response, [])
+        mock.assert_no_pending_responses()
+
+    def test_get_votes(
             self,
     ):
-        votacoes = [
+        votings = [
             {
                 'data': '12/5/2019',
                 'hora': '12:00',
@@ -355,17 +471,17 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         mock = Mocker(self.dep.prop)
         mock.add_response(
             "obterVotacoesProposicao",
-            votacoes
+            votings
         )
 
-        actual_response = self.dep.obterVotoDeputado(
+        actual_response = self.dep.get_votes(
             '12345',
-            proposicao={
+            proposition={
                 'tipo': 'PL',
                 'numero': '1',
                 'ano': '2019'
             },
-            datas_evento={
+            event_dates={
                 'data_inicial': datetime(2019, 5, 12, 10),
                 'data_final': datetime(2019, 5, 12, 14)
             }
@@ -374,18 +490,18 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         self.assertEqual(('Sim', 'Votação 1'), actual_response)
         mock.assert_no_pending_responses()
 
-    def test_obterVotoDeputado_fail_case(self):
+    def test_get_votes_fail_case(self):
         mock = Mocker(self.dep.prop)
         mock.add_exception("obterVotacoesProposicao", CamaraDeputadosError)
 
-        actual_response = self.dep.obterVotoDeputado(
+        actual_response = self.dep.get_votes(
             '12345',
-            proposicao={
+            proposition={
                 'tipo': 'PL',
                 'numero': '1',
                 'ano': '2019'
             },
-            datas_evento={
+            event_dates={
                 'data_inicial': datetime(2019, 5, 12, 10),
                 'data_final': datetime(2019, 5, 12, 14)
             }
@@ -395,60 +511,175 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         self.assertIsNone(actual_response[1])
         mock.assert_no_pending_responses()
 
-    @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterEventosPrevistosDeputado")
-    def test_obterEventosAusentes(
-        self,
-        mock_obterEventosPrevistosDeputado
-    ):
-        mock_obterEventosPrevistosDeputado.return_value = [
-            {'id': '2'},
-            {'id': '3'},
-            {'id': '4'},
+    def test_add_attended_events(self):
+        events_attended = [
+            Evento(
+                id='3',
+                data_inicial=datetime(2019, 12, 10),
+                data_final=datetime(2019, 12, 17)
+            ),
+            Evento(
+                id='4',
+                data_inicial=datetime(2019, 12, 10),
+                data_final=datetime(2019, 12, 17)
+            )
         ]
-        todos_eventos = [
-            {'id': '1', 'orgaos': [{'nome': 'Órgão 1', 'apelido': ''}]},
-            {'id': '2', 'orgaos': [{'nome': 'Órgão 1', 'apelido': ''}]},
-            {'id': '3', 'orgaos': [{'nome': 'Órgão 2', 'apelido': ''}]},
-            {'id': '4', 'orgaos': [{'nome': 'Órgão 2', 'apelido': ''}]},
-            {'id': '5', 'orgaos': [{'nome': 'Órgão 4', 'apelido': ''}]},
-            {'id': '6', 'orgaos': [{'nome': 'Órgão 4', 'apelido': 'PLEN'}]},
+        mock_ev = Mocker(self.dep.ev)
+        mock_prop = Mocker(self.dep.prop)
+        mock_ev.add_response("obterPautaEvento", [
+                {
+                    'codRegime': '123',
+                    'proposicao_': {
+                        'id': '11'
+                    }
+                },
+                {
+                    'codRegime': '123',
+                    'proposicao_': {
+                        'id': '12'
+                    }
+                },
+            ])
+        mock_ev.add_exception("obterPautaEvento", CamaraDeputadosError)
+        mock_prop.add_response("obterProposicao", {
+            'id': '11',
+            'nome': 'Proposição I',
+            'ementa': 'Proposição I',
+            'numero': '11',
+            'ano': 2019
+            })
+        mock_prop.add_exception("obterProposicao", CamaraDeputadosError)
+        mock_prop.add_response("obterVotacoesProposicao", [{
+                'data': '15/12/2019',
+                'hora': '12:00',
+                'resumo': 'Votação 1',
+                'votos': [
+                    {'id': '23456', 'voto': 'Não'},
+                    {'id': '12345', 'voto': 'Sim'},
+                    {'id': '34567', 'voto': 'Abstenção'},
+                ]
+            }])
+        mock_prop.add_response("obterVotacoesProposicao", [{
+                'data': '16/12/2019',
+                'hora': '12:00',
+                'resumo': 'Votação 2',
+                'votos': [
+                    {'id': '23456', 'voto': 'Sim'},
+                    {'id': '12345', 'voto': 'Não'},
+                    {'id': '34567', 'voto': 'Abstenção'},
+                ]
+            }])
+        self.dep.relatorio = Relatorio(
+            parlamentar=Parlamentar(id='12345')
+        )
+
+        self.dep.add_attended_events(events_attended)
+
+        self.assertEqual(self.dep.relatorio.eventos_presentes, [
+            Evento(
+                id='3',
+                data_inicial=datetime(2019, 12, 10),
+                data_final=datetime(2019, 12, 17),
+                presenca=0,
+                pautas=[
+                    Proposicao(
+                        id='11',
+                        numero='11',
+                        ementa='Proposição I',
+                        pauta='Votação 1 de Proposição I',
+                        voto='Sim'
+                    )
+                ]
+            ),
+            Evento(
+                id='4',
+                data_inicial=datetime(2019, 12, 10),
+                data_final=datetime(2019, 12, 17),
+                presenca=0,
+                pautas=[]
+            )
+        ])
+
+    def test_get_absent_events(self):
+        expected_events = [self.dep.build_event(e) for e in
+            [
+                {'id': '2'},
+                {'id': '3'},
+                {'id': '4'},
+            ]
         ]
-        dep_eventos = [
-            {'orgaos': [{'nome': 'Órgão 2', 'apelido': ''}], 'id': '3'},
-            {'id': '4', 'orgaos': [{'nome': 'Órgão 2', 'apelido': ''}]},
+        events = [self.dep.build_event(e) for e in [
+                {'id': '1', 'orgaos': [{'nome': 'Órgão 1', 'apelido': ''}]},
+                {'id': '2', 'orgaos': [{'nome': 'Órgão 1', 'apelido': ''}]},
+                {'id': '3', 'orgaos': [{'nome': 'Órgão 2', 'apelido': ''}]},
+                {'id': '4', 'orgaos': [{'nome': 'Órgão 2', 'apelido': ''}]},
+                {'id': '5', 'orgaos': [{'nome': 'Órgão 4', 'apelido': ''}]},
+                {'id': '6', 'orgaos': [{'nome': 'Órgão 4', 'apelido': 'PLEN'}]},
+            ]
+        ]
+        events_attended = [self.dep.build_event(e) for e in [
+                {'id': '3', 'orgaos': [{'nome': 'Órgão 2', 'apelido': ''}]},
+                {'id': '4', 'orgaos': [{'nome': 'Órgão 2', 'apelido': ''}]},
+            ]
+        ]
+        commissions = [
+            {'nomeOrgao': 'Órgão 1'},
+            {'nomeOrgao': 'Órgão 2'},
+            {'nomeOrgao': 'Órgão 3'}
         ]
 
-        actual_response = self.dep.obterEventosAusentes(
-            '123',
-            datetime(2018, 10, 28),
-            dep_eventos,
-            ['Órgão 1', 'Órgão 2', 'Órgão 3'],
-            todos_eventos
+        actual_response = self.dep.get_absent_events(
+            events,
+            events_attended,
+            expected_events,
+            commissions,
         )
 
         self.assertEqual([
-            {'id': '1', 'orgaos': [
-                {'nome': 'Órgão 1', 'apelido': ''}], 'controleAusencia': 2},
-            {'id': '2', 'orgaos': [
-                {'nome': 'Órgão 1', 'apelido': ''}], 'controleAusencia': 1},
-            {'id': '5', 'orgaos': [
-                {'nome': 'Órgão 4', 'apelido': ''}], 'controleAusencia': None},
-            {'id': '6', 'orgaos': [
-                {'nome': 'Órgão 4', 'apelido': 'PLEN'}], 'controleAusencia': 2},
-        ], actual_response[0])
-        self.assertEqual(3, actual_response[1])
-        self.assertEqual(
-            actual_response[2], ['2', '3', '4'])
+            Evento(
+                id='1', presenca=2, orgaos=[Orgao(nome='Órgão 1', apelido='')]
+            ),
+            Evento(
+                id='2', presenca=3, orgaos=[Orgao(nome='Órgão 1', apelido='')]
+            ),
+            Evento(
+                id='5', presenca=1, orgaos=[Orgao(nome='Órgão 4', apelido='')]
+            ),
+            Evento(
+                id='6', presenca=2, orgaos=[Orgao(nome='Órgão 4', apelido='PLEN')]
+            ),
+        ], actual_response)
 
-        mock_obterEventosPrevistosDeputado.assert_called_once_with(
-            '123', datetime(2018, 10, 28))
+    def test_add_absent_events(self):
+        absent_events = [
+            Evento(
+                id='1', presenca=2, orgaos=[Orgao(nome='Órgão 1', apelido='')]
+            ),
+            Evento(
+                id='2', presenca=3, orgaos=[Orgao(nome='Órgão 1', apelido='')]
+            ),
+            Evento(
+                id='5', presenca=1, orgaos=[Orgao(nome='Órgão 4', apelido='')]
+            ),
+            Evento(
+                id='6', presenca=2, orgaos=[Orgao(nome='Órgão 4', apelido='PLEN')]
+            ),
+        ]
+        self.dep.relatorio = Relatorio()
+
+        self.dep.add_absent_events(absent_events)
+
+        self.assertEqual(self.dep.relatorio.eventos_ausentes, absent_events)
+        absent_events.pop(2)
+        self.assertEqual(self.dep.relatorio.eventos_previstos, absent_events)
+        self.assertEqual(self.dep.relatorio.eventos_ausentes_esperados_total, 3)
 
     @patch("legislei.houses.camara_deputados.CamaraDeputadosHandler.obterDataInicialEFinal")
-    def test_obterProposicoesDeputado(
+    def test_get_propositions(
         self,
         mock_obterDataInicialEFinal,
     ):
-        proposicoes = [
+        propositions = [
             {'id': '1', 'ementa': 'Teste1'},
             {'id': '2', 'ementa': 'Teste2'},
             {'id': '3', 'ementa': 'Teste3'},
@@ -456,7 +687,7 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         mock = Mocker(self.dep.prop)
         mock.add_response(
             "obterTodasProposicoes",
-            [proposicoes],
+            [propositions],
             idDeputadoAutor='123',
             dataApresentacaoInicio='2018-10-21',
             dataApresentacaoFim='2018-10-28'
@@ -478,24 +709,24 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
         )
         mock.add_response(
             "obterProposicao",
-            proposicoes[0],
+            propositions[0],
             "1"
         )
         mock.add_response(
             "obterProposicao",
-            proposicoes[2],
+            propositions[2],
             "3"
         )
         mock_obterDataInicialEFinal.return_value = ('2018-10-21', '2018-10-28')
-        deputado = Parlamentar()
-        deputado.id = '123'
-        deputado.nome = 'Fulano da Silva'
-        self.dep.relatorio.parlamentar = deputado
+        assemblyman = Parlamentar()
+        assemblyman.id = '123'
+        assemblyman.nome = 'Fulano da Silva'
+        self.dep.relatorio.parlamentar = assemblyman
         self.dep.relatorio.data_inicial = datetime(2018, 10, 21)
         self.dep.relatorio.data_final = datetime(2018, 10, 28)
 
-        self.dep.obterProposicoesDeputado(
-            deputado, datetime(2018, 10, 28))
+        self.dep.get_propositions(
+            assemblyman, datetime(2018, 10, 28))
         actual_response = self.dep.relatorio.to_dict()['proposicoes']
 
         self.assertEqual(2, len(actual_response))
@@ -505,7 +736,7 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
             datetime(2018, 10, 28))
         mock.assert_no_pending_responses()
 
-    def test_obterProposicoesDeputado_fail_case(self):
+    def test_get_propositions_fail_case(self):
         mock = Mocker(self.dep.prop)
         mock.add_exception(
             "obterTodasProposicoes",
@@ -514,13 +745,40 @@ class TestCamaraDeputadosHandler(unittest.TestCase):
             dataApresentacaoInicio="2018-10-21",
             dataApresentacaoFim="2018-10-28"
         )
-        deputado = Parlamentar()
-        deputado.id = "12345"
+        assemblyman = Parlamentar()
+        assemblyman.id = "12345"
 
-        self.dep.obterProposicoesDeputado(
-            deputado,
+        self.dep.get_propositions(
+            assemblyman,
             datetime(2018, 10, 28)
         )
 
         self.assertEqual(self.dep.relatorio.aviso_dados, "Não foi possível obter proposições do parlamentar.")
         mock.assert_no_pending_responses()
+
+    def test_build_proposition(self):
+        proposition = {
+            'id': 123,
+            'dataApresentacao': '2018-10-25T00:00',
+            'ementa': 'Dá nova redação ao artigo tal da Constituição Federal',
+            'numero': 14,
+            'ano': 2019,
+            'siglaTipo': 'PEC',
+            'urlInteiroTeor': 'http://www.camara.gov.br/proposicoesWeb/prop_mostrarintegra?codteor=141414',
+            'uriAutores': 'https://dadosabertos.camara.leg.br/api/v2/proposicoes/123/autores'
+        }
+        expected = Proposicao(
+            id='123',
+            data_apresentacao=self.dep._get_brt(datetime(2018, 10, 25)),
+            ementa=proposition['ementa'],
+            numero='14',
+            tipo='PEC',
+            url_documento=proposition['urlInteiroTeor'],
+            url_autores=proposition['uriAutores'],
+            pauta=proposition['ementa']
+        )
+
+        actual = self.dep.build_proposition(proposition)
+
+        self.assertEqual(expected, actual)
+

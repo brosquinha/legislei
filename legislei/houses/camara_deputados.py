@@ -39,311 +39,374 @@ class CamaraDeputadosHandler(CasaLegislativa):
             logging.info('[BR1] Parlamentar: {}'.format(parlamentar_id))
             logging.info('[BR1] Data final: {}'.format(data_final))
             logging.info('[BR1] Intervalo: {}'.format(periodo_dias))
-            self.setPeriodoDias(periodo_dias)
-            deputado_info = self.obter_parlamentar(parlamentar_id)
-            self.relatorio.data_inicial = self.brasilia_tz.localize(
+            self.set_period(periodo_dias)
+            assemblyman_info = self.obter_parlamentar(parlamentar_id)
+            self.relatorio.data_inicial = self._get_brt(
                 self.obterDataInicial(data_final, **self.periodo))
-            self.relatorio.data_final = self.brasilia_tz.localize(data_final)
+            self.relatorio.data_final = self._get_brt(data_final)
             logging.info('[BR1] Deputado obtido em {0:.5f}s'.format(time() - start_time))
-            (
-                eventos,
-                _presenca_total,
-                todos_eventos
-            ) = self.procurarEventosComDeputado(
-                deputado_info.id,
-                data_final
-            )
+            events = self.get_all_events(data_final)
+            events_attended = self.get_attended_events(events, assemblyman_info['id'])
             logging.info('[BR1] Eventos obtidos em {0:.5f}s'.format(time() - start_time))
-            orgaos = self.obterOrgaosDeputado(deputado_info.id, data_final)
+            self.relatorio.orgaos = self.get_commissions(assemblyman_info.id, data_final)
             logging.info('[BR1] Orgaos obtidos em {0:.5f}s'.format(time() - start_time))
-            orgaos_nomes = [orgao['nomeOrgao'] for orgao in orgaos]
-            for e in eventos:
-                evento = Evento()
-                evento.id = str(e['id'])
-                try:
-                    evento.data_inicial = self.obterTimezoneBrasilia(
-                        self.obterDatetimeDeStr(e['dataHoraInicio']))
-                    evento.data_final = self.obterTimezoneBrasilia(
-                        self.obterDatetimeDeStr(e['dataHoraFim']))
-                except ValueError:
-                    pass
-                evento.situacao = e['situacao']
-                evento.nome = e['descricao']
-                evento.url = e['uri']
-                evento.set_presente()
-                for o in e['orgaos']:
-                    orgao = Orgao()
-                    orgao.nome = o['nome']
-                    orgao.apelido = o['apelido']
-                    evento.orgaos.append(orgao)
-                pautas = self.obterPautaEvento(e['id'])
-                if pautas == [{'error': True}]:
-                    evento.pautas.append(None)
-                else:
-                    for pauta in pautas:
-                        proposicao = Proposicao()
-                        if pauta['proposicao_detalhes'] == [{'error': True}]:
-                            proposicao = None
-                        else:
-                            proposicao.id = str(pauta['proposicao_detalhes']['id'])
-                            proposicao.tipo = pauta['proposicao_detalhes']['siglaTipo']
-                            proposicao.url_documento = \
-                                pauta['proposicao_detalhes']['urlInteiroTeor']
-                            proposicao.url_autores = \
-                                pauta['proposicao_detalhes']['uriAutores']
-                            proposicao.pauta = pauta['proposicao_detalhes']['ementa']
-                            voto, pauta_votacao = self.obterVotoDeputado(
-                                deputado_info.id,
-                                proposicao={
-                                    'tipo': proposicao.tipo,
-                                    'numero': pauta['proposicao_detalhes']['numero'],
-                                    'ano': pauta['proposicao_detalhes']['ano']
-                                },
-                                datas_evento={
-                                    'data_inicial': self.obterDatetimeDeStr(e['dataHoraInicio']),
-                                    'data_final': self.obterDatetimeDeStr(e['dataHoraFim'])
-                                }
-                            )
-                            proposicao.voto = voto if voto else "ERROR"
-                            if pauta_votacao:
-                                proposicao.pauta = '{} de {}'.format(
-                                    pauta_votacao, proposicao.pauta)
-                        evento.pautas.append(proposicao)
-                self.relatorio.eventos_presentes.append(evento)
+            self.add_attended_events(events_attended)
             logging.info('[BR1] Pautas obtidas em {0:.5f}s'.format(time() - start_time))
-            (
-                eventos_ausentes,
-                eventos_ausentes_total,
-                _eventos_previstos
-            ) = self.obterEventosAusentes(
-                deputado_info.id,
-                data_final,
-                eventos,
-                orgaos_nomes,
-                todos_eventos
+            events_expected = self.get_expected_events(self.relatorio.parlamentar.id, data_final)
+            events_absent = self.get_absent_events(
+                events,
+                events_attended,
+                events_expected,
+                self.relatorio.orgaos
             )
-            self.relatorio.eventos_ausentes_esperados_total = eventos_ausentes_total
-            for e in eventos_ausentes:
-                evento = Evento()
-                evento.id = str(e['id'])
-                if e['controleAusencia'] == 1:
-                    evento.set_ausente_evento_previsto()
-                elif e['controleAusencia'] == 2:
-                    evento.set_ausencia_evento_esperado()
-                else:
-                    evento.set_ausencia_evento_nao_esperado()
-                try:
-                    evento.data_inicial = self.obterTimezoneBrasilia(
-                        self.obterDatetimeDeStr(e['dataHoraInicio']))
-                    evento.data_final = self.obterTimezoneBrasilia(
-                        self.obterDatetimeDeStr(e['dataHoraFim']))
-                except ValueError:
-                    pass
-                evento.nome = e['descricao']
-                evento.situacao = e['situacao']
-                evento.url = e['uri']
-                for o in e['orgaos']:
-                    orgao = Orgao()
-                    orgao.nome = o['nome']
-                    orgao.apelido = o['apelido']
-                    evento.orgaos.append(orgao)
-                self.relatorio.eventos_ausentes.append(evento)
-                if evento.presenca > 1:
-                    self.relatorio.eventos_previstos.append(evento)
+            self.add_absent_events(events_absent)
             logging.info('[BR1] Ausencias obtidas em {0:.5f}s'.format(time() - start_time))
-            self.obterProposicoesDeputado(deputado_info, data_final)
+            self.get_propositions(assemblyman_info, data_final)
             logging.info('[BR1] Proposicoes obtidas em {0:.5f}s'.format(time() - start_time))
             logging.info('[BR1] Relatorio obtido em {0:.5f}s'.format(time() - start_time))
             return self.relatorio
-        except CamaraDeputadosError as e:
-            logging.error("[BR1] {}".format(e))
+        except CamaraDeputadosError as event:
+            logging.error("[BR1] {}".format(event))
             raise ModelError("API Câmara dos Deputados indisponível")
 
-    def obterOrgaosDeputado(self, deputado_id, data_final=datetime.now()):
-        orgaos = []
-        di, df = self.obterDataInicialEFinal(data_final)
+    def get_commissions(self, assemblyman_id, final_date):
+        """
+        Gets all commissions assemblyman is member of in the report period
+
+        :param assemblyman_id: Assemblyman id
+        :type assemblyman_id: String
+        :param final_date: Report period final date
+        :type final_date: Datetime
+        :return: List of commissions
+        :rtype: List[Orgao]
+        """
+        commissions = []
+        di, df = self.obterDataInicialEFinal(final_date)
         try:
-            for page in self.dep.obterOrgaosDeputado(deputado_id, dataInicio=di, dataFim=df):
-                for item in page:
-                    dataFim = datetime.now()
-                    if item['dataFim'] != None:
-                        dataFim = self.obterDatetimeDeStr(item['dataFim'])
-                    if (item['dataFim'] == None or dataFim > data_final):
-                        orgao = Orgao()
-                        if 'nomeOrgao' in item:
-                            orgao.nome = item['nomeOrgao']
-                        if 'siglaOrgao' in item:
-                            orgao.sigla = item['siglaOrgao']
-                        if 'titulo' in item:
-                            orgao.cargo = item['titulo']
-                        self.relatorio.orgaos.append(orgao)
-                        orgaos.append(item)
-            return orgaos
-        except CamaraDeputadosError as e:
-            logging.error("[BR1] {}".format(e))
+            pages = self.dep.obterOrgaosDeputado(assemblyman_id, dataInicio=di, dataFim=df)
+            for item in [cm for page in pages for cm in page]:
+                end_date = self._parse_datetime(item['dataFim'])
+                if (item['dataFim'] is None or end_date > final_date):
+                    orgao = Orgao()
+                    orgao.nome = item.get("nomeOrgao")
+                    orgao.sigla = item.get("siglaOrgao")
+                    orgao.cargo = item.get("titulo")
+                    commissions.append(orgao)
+            return commissions
+        except CamaraDeputadosError as error:
+            logging.error("[BR1] %s", error)
             return [{'nomeOrgao': None}]
 
-    def procurarEventosComDeputado(self, deputado_id, data_final=datetime.now()):
-        eventos_com_deputado = []
-        eventos_totais = []
-        di, df = self.obterDataInicialEFinal(data_final)
-        for page in self.ev.obterTodosEventos(
+    def get_all_events(self, final_date):
+        """
+        Gets all events that occurred or were scheduled to this report's period
+
+        :param final_date: Report period final date
+        :type final_date: Datetime
+        :return: List of events
+        :rtype: List[Dict]
+        """
+        di, df = self.obterDataInicialEFinal(final_date)
+        pages = self.ev.obterTodosEventos(
             dataInicio=di,
             dataFim=df
-        ):
-            for item in page:
-                eventos_totais.append(item)
-                for dep in self.ev.obterDeputadosEvento(item['id']):
-                    if str(dep['id']) == deputado_id:
-                        eventos_com_deputado.append(item)
-        if len(eventos_totais) == 0:
-            presenca = 0
-        else:
-            presenca = 100*len(eventos_com_deputado)/len(eventos_totais)
-        return eventos_com_deputado, presenca, eventos_totais
+        )
+        return [self.build_event(event) for page in pages for event in page]
 
-    def obterEventosPrevistosDeputado(self, deputado_id, data_final):
-        di, df = self.obterDataInicialEFinal(data_final)
-        eventos = []
+    def build_event(self, event_info):
+        """
+        Builds an Event object with given event data
+
+        :param event_info: Event dict
+        :type event_info: Dict
+        :return: Event object
+        :rtype: Evento
+        """
+        event = Evento()
+        event.id = str(event_info['id'])
+        event.data_inicial = self._get_brt(
+            self._parse_datetime(event_info.get('dataHoraInicio')))
+        event.data_final = self._get_brt(
+            self._parse_datetime(event_info.get('dataHoraFim')))
+        event.situacao = event_info.get('situacao')
+        event.nome = event_info.get('descricao')
+        event.url = event_info.get('uri')
+        event.orgaos = [
+            Orgao(nome=o.get('nome'), apelido=o.get('apelido')) for o in event_info.get('orgaos', [])
+        ]
+        return event
+
+    def get_attended_events(self, events, assemblyman_id):
+        """
+        Gets all events that assemblyman attended in report's period
+
+        :param events: List of all events of report
+        :type events: List[Evento]
+        :param assemblyman_id: Assemblyman id
+        :type assemblyman_id: String
+        :return: List of attended events
+        :rtype: List[Evento]
+        """
+        assemblyman_attented_event = lambda x: [
+            am for am in self.ev.obterDeputadosEvento(x['id']) if am['id'] == assemblyman_id]
+        return [e for e in events if assemblyman_attented_event(e)]
+
+    def get_expected_events(self, assemblyman_id, final_date):
+        """
+        Get all events assemblyman was expected to attend
+
+        :param assemblyman_id: Assemblyman id
+        :type assemblyman_id: String
+        :param final_date: Repor period final date
+        :type final_date: Datetime
+        :return: List of expected events
+        :rtype: List[Dict]
+        """
+        di, df = self.obterDataInicialEFinal(final_date)
         try:
-            for page in self.dep.obterEventosDeputado(
-                deputado_id,
+            pages = self.dep.obterEventosDeputado(
+                assemblyman_id,
                 dataInicio=di,
                 dataFim=df
-            ):
-                for item in page:
-                    eventos.append(item)
-            return eventos
+            )
+            return [self.build_event(event) for page in pages for event in page]
         except CamaraDeputadosError as e:
             logging.error("[BR1] {}".format(e))
             return [{'id': None}]
 
-    def obterPautaEvento(self, ev_id):
+    def get_event_program(self, event_id):
+        """
+        Gets a event's program, listing all propositions that were discussed
+
+        :param event_id: Event id
+        :type event_id: String
+        :return: List of propositions discussed
+        :rtype: List[Dict]
+        """
         try:
-            pautas = self.ev.obterPautaEvento(ev_id)
-            if not pautas:
+            program = self.ev.obterPautaEvento(event_id)
+            if not program:
                 return []
-            pautas_unicas = []
-            pautas_unicas_ids = []
-            for p in pautas:
-                proposicao_id = p['proposicao_']['id']
-                if proposicao_id not in pautas_unicas_ids and proposicao_id != None:
-                    pautas_unicas_ids.append(proposicao_id)
-                    pautas_unicas.append(p)
-                    try:
-                        p['proposicao_detalhes'] = self.prop.obterProposicao(
-                            proposicao_id)
-                    except CamaraDeputadosError as e:
-                        logging.warning("[BR1] {}".format(e))
-                        p['proposicao_detalhes'] = [{'error': True}]
-            return pautas_unicas
-        except CamaraDeputadosError as e:
-            logging.error("[BR1] {}".format(e))
+            propositions = []
+            unique_ids = []
+            for proposition in program:
+                proposition_id = proposition['proposicao_']['id']
+                if proposition_id not in unique_ids and proposition_id != None:
+                    unique_ids.append(proposition_id)
+                    propositions.append(proposition)
+                    proposition['proposicao_detalhes'] = self._get_proposition_details(
+                        proposition_id)
+            return propositions
+        except CamaraDeputadosError as error:
+            logging.error("[BR1] %s", error)
             return [{'error': True}]
 
-    def obterVotoDeputado(self, dep_id, proposicao, datas_evento):
+    def _get_proposition_details(self, proposition_id):
         try:
-            votos = []
+            return self.prop.obterProposicao(proposition_id)
+        except CamaraDeputadosError as error:
+            logging.warning("[BR1] %s", error)
+            return [{'error': True}]
+
+    def get_votes(self, assemblyman_id, proposition, event_dates):
+        """
+        Gets assemblyman votes on given proposition (and its amendments) of an specific event
+
+        :param assemblyman_id: Assemblyman id
+        :type assemblyman_id: String
+        :param proposition: Proposition dict
+        :type proposition: Dict
+        :param event_dates: Start and end date of event
+        :type event_dates: Dict
+        :return: Assemblyman votes on the proposition
+        :rtype: String
+        """
+        try:
             pautas = []
-            for votacao in self.prop.obterVotacoesProposicao(
-                tipo=proposicao['tipo'],
-                numero=proposicao['numero'],
-                ano=proposicao['ano']
+            votes = []
+            for voting in self.prop.obterVotacoesProposicao(
+                    tipo=proposition['tipo'],
+                    numero=proposition['numero'],
+                    ano=proposition['ano']
             ):
-                data_votacao = datetime.strptime(
-                    "{} {}".format(votacao["data"], votacao["hora"]),
+                voting_date = datetime.strptime(
+                    "{} {}".format(voting["data"], voting["hora"]),
                     "%d/%m/%Y %H:%M"
                 )
-                if (data_votacao >= datas_evento['data_inicial'] and
-                        data_votacao <= datas_evento['data_final']):
-                    pautas.append(votacao['resumo'])
-                    for voto in votacao['votos']:
-                        if voto['id'] == dep_id:
-                            votos.append(voto['voto'])
-            if votos == [] and pautas != []:
+                if (voting_date >= event_dates['data_inicial'] and
+                        voting_date <= event_dates['data_final']):
+                    pautas.append(voting['resumo'])
+                    votes = [
+                        vote['voto'] for vote in voting['votos'] if vote['id'] == assemblyman_id]
+            if votes == [] and pautas != []:
                 return 'Não votou', ','.join(pautas)
-            return ','.join(votos), ','.join(pautas)
-        except (CamaraDeputadosError, ValueError) as e:
-            logging.debug(e)
+            return ','.join(votes), ','.join(pautas)
+        except (CamaraDeputadosError, ValueError) as error:
+            logging.debug(error)
             return None, None
 
-    def obterEventosAusentes(
-            self,
-            dep_id,
-            data_final,
-            eventos_dep,
-            orgaos_dep,
-            todos_eventos
-    ):
-        demais_eventos = [x for x in todos_eventos if x not in eventos_dep]
-        eventos_previstos = self.obterEventosPrevistosDeputado(
-            dep_id, data_final)
-        if eventos_previstos:
-            eventos_previstos = [x['id'] for x in eventos_previstos]
-        else:
-            eventos_previstos = []
-        ausencia = 0
-        for e in demais_eventos:
-            if (e['id'] in eventos_previstos):
-                ausencia += 1
-                e['controleAusencia'] = 1
-            elif (e['orgaos'][0]['nome'] in orgaos_dep or
-                    e['orgaos'][0]['apelido'] == 'PLEN'):
-                ausencia += 1
-                e['controleAusencia'] = 2
-            else:
-                e['controleAusencia'] = None
-        return demais_eventos, ausencia, eventos_previstos
+    def add_attended_events(self, events_attended):
+        """
+        Adds given attended events to report
 
-    def obterProposicoesDeputado(self, deputado, data_final):
-        di, df = self.obterDataInicialEFinal(data_final)
+        :param events_attended: List of events attended by assemblyman
+        :type events_attended: List[Evento]
+        :rtype: None
+        """
+        for event in events_attended:
+            event.set_presente()
+            program = self.get_event_program(event.id)
+            if program == [{'error': True}]:
+                # TODO Schema error fields
+                self.relatorio.eventos_presentes.append(event)
+                continue
+            for item in program:
+                self._get_program_propositions(item, event)
+            self.relatorio.eventos_presentes.append(event)
+
+    def _get_program_propositions(self, item, event):
+        if item['proposicao_detalhes'] == [{'error': True}]:
+            # TODO Schema error fields
+            return
+        proposition = self.build_proposition(item['proposicao_detalhes'])
+        vote, voting_agenda = self.get_votes(
+            self.relatorio.parlamentar.id,
+            proposition={
+                'tipo': proposition.tipo,
+                'numero': proposition.numero,
+                'ano': item['proposicao_detalhes']['ano']
+            },
+            event_dates={
+                'data_inicial': event.data_inicial,
+                'data_final': event.data_final,
+            }
+        )
+        proposition.voto = vote if vote else "ERROR"
+        if voting_agenda:
+            proposition.pauta = '{} de {}'.format(
+                voting_agenda, proposition.pauta)
+        event.pautas.append(proposition)
+    
+    def get_absent_events(
+            self,
+            events,
+            attended_events,
+            expected_events,
+            commissions
+    ):
+        """
+        Gets all events that assemblyman was absent
+
+        :param events: All reports' events
+        :type events: List[Evento]
+        :param attended_events: All events that assemblyman attended
+        :type: attended_events: List[Evento]
+        :param expected_events: All events that assemblyman was expected
+        :type: expected_events: List[Evento]
+        :param commissions: List of assemblyman's commissions
+        :type commissions: List[Orgao]
+        :return: List of absent events
+        :rtype: List[Evento]
+        """
+        absent_events = [x for x in events if x not in attended_events]
+        return self._classify_absent_types(absent_events, expected_events, commissions)
+
+    def _classify_absent_types(self, absent_events, expected_events, commissions):
+        expected_events_ids = [x['id'] for x in expected_events]
+        commissions_names = [commission['nomeOrgao'] for commission in commissions]
+        for event in absent_events:
+            if event['id'] in expected_events_ids:
+                event.set_ausente_evento_previsto()
+            elif (event['orgaos'][0]['nome'] in commissions_names or
+                  event['orgaos'][0]['apelido'] == 'PLEN'):
+                event.set_ausencia_evento_esperado()
+            else:
+                event.set_ausencia_evento_nao_esperado()
+        return absent_events
+
+    def add_absent_events(self, absent_events):
+        """
+        Adds given absent events to report
+
+        :param absent_events: List of absent events
+        :type absent_event: List[Evento]
+        :rtype: None
+        """
+        for event in absent_events:
+            self.relatorio.eventos_ausentes.append(event)
+            if event.presenca > 1:
+                self.relatorio.eventos_previstos.append(event)
+        self.relatorio.eventos_ausentes_esperados_total = len(self.relatorio.eventos_previstos)
+
+    def get_propositions(self, assemblyman, final_date):
+        """
+        Gets all assemblyman's proposed propositions on report's timeframe
+
+        :param assemblyman: Assemblyman object
+        :type assemblyman: Parlamentar
+        :param final_date: Report interval final date
+        :type final_date: Datetime
+        :return: List of propositions
+        :rtype: List[Proposicao]
+        """
+        di, df = self.obterDataInicialEFinal(final_date)
         try:
-            for page in self.prop.obterTodasProposicoes(
-                idDeputadoAutor=deputado.id,
+            pages = self.prop.obterTodasProposicoes(
+                idDeputadoAutor=assemblyman.id,
                 dataApresentacaoInicio=di,
                 dataApresentacaoFim=df
-            ):
-                for item in page:
-                    if (deputado.nome.lower() in 
-                            [x['nome'].lower() for x in self.prop.obterAutoresProposicao(item['id'])]):
-                        proposicao = Proposicao()
-                        proposicao.id = str(item['id'])
-                        p = self.prop.obterProposicao(item['id'])
-                        if 'dataApresentacao' in p:
-                            try:
-                                proposicao.data_apresentacao = self.obterTimezoneBrasilia(
-                                    self.obterDatetimeDeStr(p['dataApresentacao']))
-                            except ValueError:
-                                pass
-                        if 'ementa' in p:
-                            proposicao.ementa = p['ementa']
-                        if 'numero' in p:
-                            proposicao.numero = str(p['numero'])
-                        if 'siglaTipo' in p:
-                            proposicao.tipo = p['siglaTipo']
-                        if 'urlInteiroTeor' in p:
-                            proposicao.url_documento = p['urlInteiroTeor']
-                        self.relatorio.proposicoes.append(proposicao)
-        except CamaraDeputadosError as e:
-            logging.error("[BR1] {}".format(e))
+            )
+            for item in [prop for page in pages for prop in page]:
+                if (assemblyman.nome.lower() in 
+                        [x['nome'].lower() for x in self.prop.obterAutoresProposicao(item['id'])]):
+                    details = self.prop.obterProposicao(item['id'])
+                    self.relatorio.proposicoes.append(self.build_proposition(details))
+        except CamaraDeputadosError as error:
+            logging.error("[BR1] %s", error)
             self.relatorio.aviso_dados = 'Não foi possível obter proposições do parlamentar.'
 
-    def obterDatetimeDeStr(self, txt):
-        if txt == None:
+    def build_proposition(self, prop_info):
+        """
+        Builds a proposition object with given proposition info
+
+        :param prop_info: Proposition information
+        :type prop_info: Dict
+        :return: Proposition object
+        :rtype: Proposicao
+        """
+        proposition = Proposicao()
+        proposition.id = str(prop_info['id'])
+        proposition.data_apresentacao = self._get_brt(
+            self._parse_datetime(prop_info.get('dataApresentacao')))
+        proposition.ementa = prop_info.get('ementa')
+        proposition.numero = str(prop_info.get('numero'))
+        proposition.tipo = prop_info.get('siglaTipo')
+        proposition.url_documento = prop_info.get('urlInteiroTeor')
+        proposition.url_autores = prop_info.get('uriAutores')
+        proposition.pauta = prop_info.get('ementa')
+        return proposition
+    
+    def _parse_datetime(self, txt):
+        if txt is None:
             return txt
         try:
-            # Um belo dia a API retornou Epoch ao invés do formato documentado (YYYY-MM-DD), então...
-            data = datetime.fromtimestamp(txt/1000)
+            # One day API returned Epoch instead of documented format
+            date = datetime.fromtimestamp(txt/1000)
         except TypeError:
-            try:
-                data = datetime.strptime(txt, '%Y-%m-%d')
-            except ValueError:
-                #Agora aparentemente ele volta nesse formato aqui... aiai
-                data = datetime.strptime(txt, '%Y-%m-%dT%H:%M')
-        return data
+            return self._try_parse_datetime_formats(txt)
 
-    def obterTimezoneBrasilia(self, date):
-        if date == None:
+    def _try_parse_datetime_formats(self, txt):
+        # Formats that have been used at some point of API history
+        for str_format in ['%Y-%m-%d', '%Y-%m-%dT%H:%M']:
+            try:
+                return datetime.strptime(txt, str_format)
+            except ValueError:
+                continue
+        logging.warn("[BR1] Invalid datetime format: %s", txt)
+        return None
+
+    def _get_brt(self, date):
+        if date is None:
             return None
         return self.brasilia_tz.localize(date)
 
