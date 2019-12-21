@@ -4,6 +4,11 @@
             "config": {
                 "threshold": 6
             }
+        },
+        "file-lines": {
+            "config": {
+                "threshold": 300
+            }
         }
     }
 }
