@@ -74,11 +74,11 @@ def send_push_notification(user_token, reports):
     reduced_reports = []
     for report in reports:
         reduced_report = deepcopy(report)
-        reduced_report["orgaos"] = len(report["orgaos"]) if report["orgaos"] else 0
-        reduced_report["proposicoes"] = len(report["proposicoes"]) if report["proposicoes"] else 0
-        reduced_report["eventosPresentes"] = len(report["eventosPresentes"]) if report["eventosPresentes"] else 0
-        reduced_report["eventosPrevistos"] = len(report["eventosPrevistos"]) if report["eventosPrevistos"] else 0
-        reduced_report["eventosAusentes"] = len(report["eventosAusentes"]) if report["eventosAusentes"] else 0
+        reduced_report["orgaos"] = len(report.get("orgaos", []))
+        reduced_report["proposicoes"] = len(report.get("proposicoes", []))
+        reduced_report["eventosPresentes"] = len(report.get("eventosPresentes", []))
+        reduced_report["eventosPrevistos"] = len(report.get("eventosPrevistos", []))
+        reduced_report["eventosAusentes"] = len(report.get("eventosAusentes", []))
         reduced_reports.append(reduced_report)
     notification = {
         "notification": {
