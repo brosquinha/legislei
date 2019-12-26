@@ -48,7 +48,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
                                 if s['presenca'] == 'Presente':
                                     presenca.append(s['nome'])
                             sessao_total += int(dia['totalOrd']) + int(dia['totalExtra'])
-                            presenca_total += int(v['presenteOrd']) + int(v['presenteExtra'])
+                            presenca_total += sum([int(v['presenteOrd']), int(v['presenteExtra'])])
                     for key, value in dia['sessoes'].items():
                         evento = Evento()
                         orgao = Orgao()
