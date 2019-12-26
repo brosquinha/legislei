@@ -1,4 +1,5 @@
 {
+    "version": "2",
     "checks": {
         "method-complexity": {
             "config": {
@@ -10,5 +11,12 @@
                 "threshold": 300
             }
         }
-    }
+    },
+    "exclude_patterns": [
+        "**/politica/",
+        "**/tests/",
+        "**/migrations/",
+        "**/*mock.py",
+        "**/*.js"
+    ]
 }
