@@ -2,6 +2,7 @@
 ![Python 3.5+](https://img.shields.io/badge/python-3.5^-blue.svg)
 ![glp](https://img.shields.io/github/license/brosquinha/legislei.svg)
 [![codecov](https://codecov.io/gh/brosquinha/legislei/branch/master/graph/badge.svg)](https://codecov.io/gh/brosquinha/legislei)
+[![Maintainability](https://api.codeclimate.com/v1/badges/868a9763b1a0baa8db1a/maintainability)](https://codeclimate.com/github/brosquinha/legislei/maintainability)
 [![Documentation Status](https://readthedocs.org/projects/legislei/badge/?version=latest)](https://legislei.readthedocs.io/pt/latest/?badge=latest)
 # Legislei
 
