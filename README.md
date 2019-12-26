@@ -2,6 +2,7 @@
 ![Python 3.5+](https://img.shields.io/badge/python-3.5^-blue.svg)
 ![glp](https://img.shields.io/github/license/brosquinha/legislei.svg)
 [![codecov](https://codecov.io/gh/brosquinha/legislei/branch/master/graph/badge.svg)](https://codecov.io/gh/brosquinha/legislei)
+[![Maintainability](https://api.codeclimate.com/v1/badges/868a9763b1a0baa8db1a/maintainability)](https://codeclimate.com/github/brosquinha/legislei/maintainability)
 [![Documentation Status](https://readthedocs.org/projects/legislei/badge/?version=latest)](https://legislei.readthedocs.io/pt/latest/?badge=latest)
 # Legislei
 
@@ -133,6 +134,14 @@ Para reverter as migrations:
 ```Bash
 cd ..
 docker run -e env=dev -v $(pwd)/.migrations/config.json:/app/src/config/config.dev.json -v $(pwd)/.migrations:/app/src/migrations skynyrd/cikilop --revert
+```
+
+### Executando CodeClimate no Docker
+
+Para executar uma análise do CodeClimate localmente com Docker:
+
+```bash
+docker run   --interactive --tty --rm   --env CODECLIMATE_CODE="$PWD"   --volume "$PWD":/code   --volume /var/run/docker.sock:/var/run/docker.sock   --volume /tmp/cc:/tmp/cc   codeclimate/codeclimate analyze
 ```
 
 ## Executando no Docker

@@ -30,7 +30,7 @@ class ALESPHandler(CasaLegislativa):
             start_time = time()
             self.relatorio = Relatorio()
             self.relatorio.aviso_dados = u'Dados de sessões plenárias não disponível.'
-            self.setPeriodoDias(periodo_dias)
+            self.set_period(periodo_dias)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
             logging.info('[ALESP] Parlamentar: {}'.format(parlamentar_id))

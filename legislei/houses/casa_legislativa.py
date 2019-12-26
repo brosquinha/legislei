@@ -31,7 +31,7 @@ class CasaLegislativa():
         return self.formatarDatasYMD(data_inicial, data_final)
 
 
-    def setPeriodoDias(self, periodo_dias):
+    def set_period(self, periodo_dias):
         try:
             if int(periodo_dias) in range(7, 29):
                 self.periodo['days'] = int(periodo_dias)
