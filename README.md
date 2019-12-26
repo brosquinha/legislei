@@ -135,6 +135,14 @@ cd ..
 docker run -e env=dev -v $(pwd)/.migrations/config.json:/app/src/config/config.dev.json -v $(pwd)/.migrations:/app/src/migrations skynyrd/cikilop --revert
 ```
 
+### Executando CodeClimate no Docker
+
+Para executar uma análise do CodeClimate localmente com Docker:
+
+```bash
+docker run   --interactive --tty --rm   --env CODECLIMATE_CODE="$PWD"   --volume "$PWD":/code   --volume /var/run/docker.sock:/var/run/docker.sock   --volume /tmp/cc:/tmp/cc   codeclimate/codeclimate analyze
+```
+
 ## Executando no Docker
 
 Para construir a imagem:

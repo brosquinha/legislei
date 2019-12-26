@@ -27,7 +27,7 @@ class CamaraMunicipalSaoPauloHandler(CasaLegislativa):
             start_time = time()
             self.relatorio = Relatorio()
             self.relatorio.aviso_dados = u'Dados de sessões de comissões não disponível.'
-            self.setPeriodoDias(periodo_dias)
+            self.set_period(periodo_dias)
             data_final = datetime.strptime(data_final, '%Y-%m-%d')
             data_inicial = self.obterDataInicial(data_final, **self.periodo)
             logging.info('[SAO PAULO] Parlamentar: {}'.format(parlamentar_id))
