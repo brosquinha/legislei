@@ -38,11 +38,11 @@ def generate_reports(users, data_final = None):
             except ModelError:
                 reports.append({
                     'parlamentar': par.to_dict(),
-                    'orgaos': None,
-                    'eventosPresentes': None,
-                    'eventosPrevistos': None,
-                    'eventosAusentes': None,
-                    'proposicoes': None,
+                    'orgaos': [],
+                    'eventosPresentes': [],
+                    'eventosPrevistos': [],
+                    'eventosAusentes': [],
+                    'proposicoes': [],
                     '_id': None
                 })
         
