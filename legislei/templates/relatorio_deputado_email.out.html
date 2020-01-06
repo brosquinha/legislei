@@ -90,7 +90,7 @@
                     <tr>
                       <td style="border-spacing: 0px; border-collapse: collapse; line-height: 24px; font-size: 16px; padding-top: 24px; margin: 0;" align="left">
                         <p class="" style="line-height: 24px; font-size: 16px; margin: 0;" align="left">
-                          {% if relatorio['eventosPresentes'] == None %}
+                          {% if relatorio['_id'] == None %}
                             Não foi possível obter relatório desse parlamentar essa semana 😣
                           {% else %}
                             Compareceu a {{ relatorio['eventosPresentes']|length }} de {{ relatorio['eventosPrevistos']|length }} eventos previstos.

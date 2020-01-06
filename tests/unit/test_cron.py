@@ -181,11 +181,11 @@ class TestCron(unittest.TestCase):
                 {"nice": "JSON"},
                 {
                     'parlamentar': parlamentar2.to_dict(),
-                    'orgaos': None,
-                    'eventosPresentes': None,
-                    'eventosPrevistos': None,
-                    'eventosAusentes': None,
-                    'proposicoes': None,
+                    'orgaos': [],
+                    'eventosPresentes': [],
+                    'eventosPrevistos': [],
+                    'eventosAusentes': [],
+                    'proposicoes': [],
                     '_id': None
                 },
                 {"nice": "JSON"},
