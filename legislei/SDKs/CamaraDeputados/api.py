@@ -2,7 +2,11 @@ from time import sleep
 
 import certifi
 import urllib3
+from urllib3.exceptions import InvalidHeader
 from urllib3.request import urlencode
+
+from .exceptions import CamaraDeputadosInvalidHeader
+
 
 class Base(object):
     """
@@ -25,13 +29,16 @@ class Base(object):
         :param kwagargs: Named args for urllib3 request
         :return: Request object
         """
-        too_many_requests = True
-        while too_many_requests:
-            r = self.http.request(*args, **kwargs)
-            if r.status == 429:
-                sleep(0.05)
-            else:
-                return r
+        try:
+            too_many_requests = True
+            while too_many_requests:
+                r = self.http.request(*args, **kwargs)
+                if r.status == 429:
+                    sleep(0.05)
+                else:
+                    return r
+        except InvalidHeader as e:
+            raise CamaraDeputadosInvalidHeader(e.args[0])
 
     def _build_url(self, base_url, query_args):
         """
