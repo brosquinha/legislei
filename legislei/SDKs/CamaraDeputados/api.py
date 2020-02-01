@@ -32,7 +32,10 @@ class Base(object):
         try:
             too_many_requests = True
             while too_many_requests:
-                r = self.http.request(*args, **kwargs)
+                # API one day returned "30s" as Retry-After value, which is
+                # an invalid value (per https://tools.ietf.org/html/rfc7231#section-7.1.3)
+                # Therefore, we treating retries manually for now
+                r = self.http.request(*args, retries=False, **kwargs)
                 if r.status == 429:
                     sleep(0.05)
                 else:
