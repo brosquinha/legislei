@@ -409,3 +409,12 @@ class TestALESPHandler(unittest.TestCase):
 
         with self.assertRaises(ModelError) as cm:
             self.dep.obter_relatorio('123', data_final='2019-09-21')
+
+    def test_obter_relatorio_deputado_unavailable(self):
+        mock = Mocker(self.dep.dep)
+        mock.add_response('obterTodosDeputados', [])
+        mock.add_response('obterTodosDeputados', [])
+
+        with self.assertRaises(ModelError) as cm:
+            self.dep.obter_relatorio('123', data_final='2019-09-21')
+        self.assertEqual('Parlamentar não encontrado', str(cm.exception))

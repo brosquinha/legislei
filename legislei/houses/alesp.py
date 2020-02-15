@@ -37,6 +37,9 @@ class ALESPHandler(CasaLegislativa):
             logging.info('[ALESP] Data final: {}'.format(data_final))
             logging.info('[ALESP] Intervalo: {}'.format(periodo_dias))
             self.obter_parlamentar(parlamentar_id)
+            if self.relatorio.parlamentar == None:
+                logging.error("[ALESP] Deputado não encontrado")
+                raise ModelError('Parlamentar não encontrado')
             self.relatorio.data_inicial = self.brasilia_tz.localize(data_inicial)
             self.relatorio.data_final = self.brasilia_tz.localize(data_final)
             logging.info('[ALESP] Deputado obtido em {0:.5f}s'.format(time() - start_time))
