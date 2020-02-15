@@ -40,12 +40,3 @@ class CamaraDeputadosInvalidResponse(CamaraDeputadosError):
     def __init__(self, data):
         super().__init__("Could not parse {} response".format(data))
         self.text = data
-
-class CamaraDeputadosInvalidHeader(CamaraDeputadosError):
-    """
-    Exceção para cabeçalho HTTP de resposta da API com valor inválido
-    """
-
-    def __init__(self, message):
-        super().__init__(message)
-        self.message = message
