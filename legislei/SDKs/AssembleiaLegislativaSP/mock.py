@@ -3,7 +3,7 @@ from unittest.mock import Mock, call
 
 class Mocker():
     """
-    Mocker para testar aplicações com a lib CâmaraDeputados
+    Mocker para testar aplicações com a lib ALESP
 
     Exemplo::
 
