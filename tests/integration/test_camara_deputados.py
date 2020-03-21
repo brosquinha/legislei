@@ -38,12 +38,12 @@ class TestCamaraDeputadosHandlerIntegration(unittest.TestCase):
         self.maxDiff = None
         self.assertDictEqual(actual["parlamentar"], parlamentar)
         self.assertGreaterEqual(len(actual["eventosAusentes"]), 50)
-        self.assertEqual(len(actual["eventosPrevistos"]), 9)
+        self.assertEqual(len(actual["eventosPrevistos"]), 3)
         self.assertEqual(len(actual["eventosPresentes"]), 6)
         self.assertEqual(len(actual["proposicoes"]), 4)
         self.assertEqual(len(actual["orgaos"]), 15)
         self.assertEqual(actual["dataFinal"], brasilia_tz.localize(datetime(2018, 6, 29)))
-        self.assertEqual(actual["eventosAusentesEsperadosTotal"], 9)
+        self.assertEqual(actual["eventosAusentesEsperadosTotal"], 3)
         self.assertEqual(actual["dataInicial"], brasilia_tz.localize(datetime(2018, 6, 22)))
 
     def test_obter_parlamentares(self):
