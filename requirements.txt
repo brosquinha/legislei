@@ -8,6 +8,7 @@ certifi==2018.10.15
 chardet==3.0.4
 Click==7.0
 coverage==4.5.2
+dnspython==1.16.0
 docutils==0.14
 Flask==1.0.2
 Flask-Login==0.4.1
