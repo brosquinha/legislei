@@ -27,6 +27,9 @@
       "EMAIL_USR": {
         "required": true
       },
+      "EMAIL_FROM_EMAIL": {
+        "required": true
+      },
       "FIREBASE_API_TOKEN": {
         "required": true
       },
