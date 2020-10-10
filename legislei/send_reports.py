@@ -16,7 +16,8 @@ from legislei.app import app
 
 smtp_server = os.environ.get("EMAIL_ENDPOINT", "smtp.gmail.com")
 smtp_server_port = os.environ.get("EMAIL_PORT", "587")
-from_email = os.environ.get("EMAIL_USR", None)
+email_user = os.environ.get("EMAIL_USR", None)
+from_email = os.environ.get("EMAIL_FROM_EMAIL", email_user)
 password = os.environ.get("EMAIL_PSW", None)
 uses_ssl = os.environ.get("EMAIL_SSL", "False") in ['True', 'true']
 uses_tls = os.environ.get("EMAIL_TLS", "True") in ['True', 'true']
@@ -49,7 +50,7 @@ def send_email(email, reports, dates):
         s = smtplib.SMTP(smtp_server, int(smtp_server_port))
     if uses_tls:
         s.starttls()
-    s.login(from_email, password)
+    s.login(email_user, password)
     msg = MIMEText(html_report, 'html', 'utf-8')
     msg['Subject'] = Header(u'🇧🇷 Relatório de parlamentares', 'utf-8')
     msg['From'] =  'Legislei <{}>'.format(from_email)
